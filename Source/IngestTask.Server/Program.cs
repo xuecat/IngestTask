@@ -19,8 +19,8 @@ namespace IngestTask.Server
     using IngestTask.Abstractions.Constants;
     using IngestTask.Grains;
     using IngestTask.Server.Options;
-    using Serilog;
-    using Serilog.Core;
+
+    using Sobey.Core.Log;
 
     public static class Program
     {
@@ -36,26 +36,23 @@ namespace IngestTask.Server
             host.Services.GetRequiredService<IHostEnvironment>().ApplicationName =
                 Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>().Product;
 
-            Log.Logger = CreateLogger(host);
+            ILogger logger = LoggerManager.GetLogger(host.ToString());
 
             try
             {
-                Log.Information("Started application");
+                logger.Info("Started application");
                 await host.RunAsync().ConfigureAwait(false);
-                Log.Information("Stopped application");
+                logger.Info("Stopped application");
                 return 0;
             }
 #pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception exception)
 #pragma warning restore CA1031 // Do not catch general exception types
             {
-                Log.Fatal(exception, "Application terminated unexpectedly");
+                logger.Error(exception.Message + "Application terminated unexpectedly");
                 return 1;
             }
-            finally
-            {
-                Log.CloseAndFlush();
-            }
+            
         }
 
         private static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -69,7 +66,6 @@ namespace IngestTask.Server
                             x => x.AddCommandLine(args)))
                 .ConfigureAppConfiguration((hostingContext, config) =>
                     AddConfiguration(config, hostingContext.HostingEnvironment, args))
-                .UseSerilog()
                 .UseDefaultServiceProvider(
                     (context, options) =>
                     {
