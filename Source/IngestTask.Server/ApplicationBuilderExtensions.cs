@@ -3,70 +3,69 @@ namespace IngestTask.Server
     using System;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Http;
-    using Serilog;
-    using Serilog.Events;
 
-    internal static partial class ApplicationBuilderExtensions
-    {
-        /// <summary>
-        /// Uses custom serilog request logging. Adds additional properties to each log.
-        /// See https://github.com/serilog/serilog-aspnetcore.
-        /// </summary>
-        /// <param name="application">The application builder.</param>
-        /// <returns>The application builder with the Serilog middleware configured.</returns>
-        public static IApplicationBuilder UseCustomSerilogRequestLogging(this IApplicationBuilder application) =>
-            application.UseSerilogRequestLogging(
-                options =>
-                {
-                    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
-                    {
-                        var request = httpContext.Request;
-                        var response = httpContext.Response;
-                        var endpoint = httpContext.GetEndpoint();
+    //internal static partial class ApplicationBuilderExtensions
+    //{
+    //    /// <summary>
+    //    /// Uses custom serilog request logging. Adds additional properties to each log.
+    //    /// See https://github.com/serilog/serilog-aspnetcore.
+    //    /// </summary>
+    //    /// <param name="application">The application builder.</param>
+    //    /// <returns>The application builder with the Serilog middleware configured.</returns>
 
-                        diagnosticContext.Set("Host", request.Host);
-                        diagnosticContext.Set("Protocol", request.Protocol);
-                        diagnosticContext.Set("Scheme", request.Scheme);
+    //    public static IApplicationBuilder UseCustomSerilogRequestLogging(this IApplicationBuilder application) =>
+    //        application.UseSerilogRequestLogging(
+    //            options =>
+    //            {
+    //                options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    //                {
+    //                    var request = httpContext.Request;
+    //                    var response = httpContext.Response;
+    //                    var endpoint = httpContext.GetEndpoint();
 
-                        if (request.QueryString.HasValue)
-                        {
-                            diagnosticContext.Set("QueryString", request.QueryString.Value);
-                        }
+    //                    diagnosticContext.Set("Host", request.Host);
+    //                    diagnosticContext.Set("Protocol", request.Protocol);
+    //                    diagnosticContext.Set("Scheme", request.Scheme);
 
-                        if (endpoint is object)
-                        {
-                            diagnosticContext.Set("EndpointName", endpoint.DisplayName);
-                        }
+    //                    if (request.QueryString.HasValue)
+    //                    {
+    //                        diagnosticContext.Set("QueryString", request.QueryString.Value);
+    //                    }
 
-                        diagnosticContext.Set("ContentType", response.ContentType);
-                    };
-                    options.GetLevel = GetLevel;
+    //                    if (endpoint is object)
+    //                    {
+    //                        diagnosticContext.Set("EndpointName", endpoint.DisplayName);
+    //                    }
 
-                    static LogEventLevel GetLevel(HttpContext httpContext, double elapsedMilliseconds, Exception exception)
-                    {
-                        if (exception == null && httpContext.Response.StatusCode <= 499)
-                        {
-                            if (IsHealthCheckEndpoint(httpContext))
-                            {
-                                return LogEventLevel.Verbose;
-                            }
+    //                    diagnosticContext.Set("ContentType", response.ContentType);
+    //                };
+    //                options.GetLevel = GetLevel;
 
-                            return LogEventLevel.Information;
-                        }
+    //                static LogEventLevel GetLevel(HttpContext httpContext, double elapsedMilliseconds, Exception exception)
+    //                {
+    //                    if (exception == null && httpContext.Response.StatusCode <= 499)
+    //                    {
+    //                        if (IsHealthCheckEndpoint(httpContext))
+    //                        {
+    //                            return LogEventLevel.Verbose;
+    //                        }
 
-                        return LogEventLevel.Error;
-                    }
+    //                        return LogEventLevel.Information;
+    //                    }
 
-                    static bool IsHealthCheckEndpoint(HttpContext httpContext)
-                    {
-                        var endpoint = httpContext.GetEndpoint();
-                        if (endpoint is object)
-                        {
-                            return endpoint.DisplayName == "Health checks";
-                        }
+    //                    return LogEventLevel.Error;
+    //                }
 
-                        return false;
-                    }
-                });
-    }
+    //                static bool IsHealthCheckEndpoint(HttpContext httpContext)
+    //                {
+    //                    var endpoint = httpContext.GetEndpoint();
+    //                    if (endpoint is object)
+    //                    {
+    //                        return endpoint.DisplayName == "Health checks";
+    //                    }
+
+    //                    return false;
+    //                }
+    //            });
+    //}
 }

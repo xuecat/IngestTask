@@ -21,6 +21,7 @@ namespace IngestTask.Server
     using IngestTask.Server.Options;
 
     using Sobey.Core.Log;
+    using System.Globalization;
 
     public static class Program
     {
@@ -33,16 +34,21 @@ namespace IngestTask.Server
                 throw new ArgumentNullException(nameof(host));
             }
 
+           
             host.Services.GetRequiredService<IHostEnvironment>().ApplicationName =
                 Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>().Product;
 
+            CreateLogger(host);
             ILogger logger = LoggerManager.GetLogger(host.ToString());
 
             try
             {
+#pragma warning disable CA1303 // 请不要将文本作为本地化参数传递
                 logger.Info("Started application");
                 await host.RunAsync().ConfigureAwait(false);
                 logger.Info("Stopped application");
+#pragma warning restore CA1303 // 请不要将文本作为本地化参数传递
+                
                 return 0;
             }
 #pragma warning disable CA1031 // Do not catch general exception types
@@ -54,7 +60,7 @@ namespace IngestTask.Server
             }
             
         }
-
+        
         private static IHostBuilder CreateHostBuilder(string[] args) =>
             new HostBuilder()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -89,33 +95,56 @@ namespace IngestTask.Server
                         services.Configure<StorageOptions>(context.Configuration.GetSection(nameof(ApplicationOptions.Storage)));
                     })
                 .UseSiloUnobservedExceptionsHandler()
-                .UseAzureStorageClustering(
-                    options => options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString)
+                .UseAdoNetClustering(
+                    options => {
+                        options.Invariant = "MySql.Data.MySqlClient";
+                        options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString;
+                    })
+                //.UseAzureStorageClustering(
+                //    options => {
+                //        options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString;
+                //    })
                 .ConfigureEndpoints(
                     EndpointOptions.DEFAULT_SILO_PORT,
                     EndpointOptions.DEFAULT_GATEWAY_PORT,
                     listenOnAnyHostAddress: !context.HostingEnvironment.IsDevelopment())
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(HelloGrain).Assembly).WithReferences())
-                .AddAzureTableGrainStorageAsDefault(
+                .AddAdoNetGrainStorageAsDefault(
                     options =>
                     {
+                        options.Invariant = "MySql.Data.MySqlClient";
                         options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString;
                         options.ConfigureJsonSerializerSettings = ConfigureJsonSerializerSettings;
-                        options.UseJson = true;
-                    })
-                .UseAzureTableReminderService(
-                    options => options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString)
-                .UseTransactions(withStatisticsReporter: true)
-                .AddAzureTableTransactionalStateStorageAsDefault(
-                    options => options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString)
+                        options.UseJsonFormat = true;
+                    }
+                )
+                //.UseAzureTableReminderService(
+                //    options => options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString)
+                .UseAdoNetReminderService(
+                      options => {
+                          options.Invariant = "MySql.Data.MySqlClient";
+                          options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString;
+                      })
+                //.UseTransactions(withStatisticsReporter: true)
+                //.AddAzureTableTransactionalStateStorageAsDefault(
+                //    options => options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString)
                 .AddSimpleMessageStreamProvider(StreamProviderName.Default)
-                .AddAzureTableGrainStorage(
+                //.AddAzureTableGrainStorage(
+                //    "PubSubStore",
+                //    options =>
+                //    {
+                //        options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString;
+                //        options.ConfigureJsonSerializerSettings = ConfigureJsonSerializerSettings;
+                //        options.UseJson = true;
+                //    })
+                .AddAdoNetGrainStorage(
                     "PubSubStore",
                     options =>
                     {
+                        options.Invariant = "MySql.Data.MySqlClient";
                         options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString;
                         options.ConfigureJsonSerializerSettings = ConfigureJsonSerializerSettings;
-                        options.UseJson = true;
+                        options.UseJsonFormat = true;
                     })
                 .UseIf(
                     RuntimeInformation.IsOSPlatform(OSPlatform.Linux),
@@ -123,7 +152,10 @@ namespace IngestTask.Server
                 .UseIf(
                     RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
                     x => x.UsePerfCounterEnvironmentStatistics())
-                .UseDashboard();
+                .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
+                .UseDashboard(config => {
+                    config.Port = int.Parse(context.Configuration.GetSection("Port").Value, CultureInfo.CurrentCulture);
+                });
 
         private static void ConfigureWebHostBuilder(IWebHostBuilder webHostBuilder) =>
             webHostBuilder
@@ -135,7 +167,6 @@ namespace IngestTask.Server
             IHostEnvironment hostEnvironment,
             string[] args) =>
             configurationBuilder
-                // Add configuration from the appsettings.json file.
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
                 // Add configuration from an optional appsettings.development.json, appsettings.staging.json or
                 // appsettings.production.json file, depending on the environment. These settings override the ones in
@@ -161,18 +192,36 @@ namespace IngestTask.Server
                     args is object,
                     x => x.AddCommandLine(args));
 
-        private static Logger CreateLogger(IHost host)
+        private static void CreateLogger(IHost host)
         {
-            var hostEnvironment = host.Services.GetRequiredService<IHostEnvironment>();
-            return new LoggerConfiguration()
-                .ReadFrom.Configuration(host.Services.GetRequiredService<IConfiguration>())
-                .Enrich.WithProperty("Application", hostEnvironment.ApplicationName)
-                .Enrich.WithProperty("Environment", hostEnvironment.EnvironmentName)
-                .Enrich.With(new TraceIdEnricher())
-                .WriteTo.Conditional(
-                    x => !hostEnvironment.IsProduction(),
-                    x => x.Console().WriteTo.Debug())
-                .CreateLogger();
+            var logConfig = host.Services.GetRequiredService<IConfiguration>().GetSection("Logging");
+
+            int maxDays = 10;
+            string maxFileSize = "10MB";
+            LogLevels logLevel = LogLevels.Info;
+            if (logConfig != null)
+            {
+                _ = Enum.TryParse(logConfig["Level"] ?? "", out logLevel)
+                    && int.TryParse(logConfig["SaveDays"], out maxDays);
+
+                maxFileSize = logConfig["MaxFileSize"];
+                if (string.IsNullOrEmpty(maxFileSize))
+                {
+                    maxFileSize = "10MB";
+                }
+            }
+            LoggerManager.InitLogger(new LogConfig()
+            {
+                LogBaseDir = logConfig["Path"],
+                MaxFileSize = maxFileSize,
+                LogLevels = logLevel,
+                IsAsync = true,
+                LogFileTemplate = LogFileTemplates.PerDayDirAndLogger,
+                LogContentTemplate = LogLayoutTemplates.SimpleLayout,
+                DeleteDay = maxDays.ToString(CultureInfo.CurrentCulture),
+                //TargetConsole = false
+            });
+            LoggerManager.SetLoggerAboveLevels(logLevel);
         }
 
         private static void ConfigureJsonSerializerSettings(JsonSerializerSettings jsonSerializerSettings)

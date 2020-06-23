@@ -15,7 +15,9 @@ namespace IngestTask.Server.IntegrationTest
         }
 
         [Fact]
+#pragma warning disable CA1707 // 标识符不应包含下划线
         public async Task AddCount_PassValue_ReturnsTotalCountAsync()
+#pragma warning restore CA1707 // 标识符不应包含下划线
         {
             var grain = this.Cluster.GrainFactory.GetGrain<ICounterGrain>(Guid.Empty);
 
@@ -25,7 +27,9 @@ namespace IngestTask.Server.IntegrationTest
         }
 
         [Fact]
+#pragma warning disable CA1707 // 标识符不应包含下划线
         public async Task GetCount_Default_ReturnsTotalCountAsync()
+#pragma warning restore CA1707 // 标识符不应包含下划线
         {
             var grain = this.Cluster.GrainFactory.GetGrain<ICounterGrain>(Guid.Empty);
 

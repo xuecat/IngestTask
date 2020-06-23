@@ -11,10 +11,7 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
         {
             this.TestOutputHelper = testOutputHelper;
 
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.Debug()
-                .WriteTo.TestOutput(testOutputHelper, LogEventLevel.Verbose)
-                .CreateLogger();
+            
 
             this.Cluster = this.CreateTestCluster();
             this.Cluster.Deploy();
