@@ -100,10 +100,7 @@ namespace IngestTask.Server
                         options.Invariant = "MySql.Data.MySqlClient";
                         options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString;
                     })
-                //.UseAzureStorageClustering(
-                //    options => {
-                //        options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString;
-                //    })
+                
                 .ConfigureEndpoints(
                     EndpointOptions.DEFAULT_SILO_PORT,
                     EndpointOptions.DEFAULT_GATEWAY_PORT,
@@ -118,25 +115,15 @@ namespace IngestTask.Server
                         options.UseJsonFormat = true;
                     }
                 )
-                //.UseAzureTableReminderService(
-                //    options => options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString)
+               
                 .UseAdoNetReminderService(
                       options => {
                           options.Invariant = "MySql.Data.MySqlClient";
                           options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString;
                       })
-                //.UseTransactions(withStatisticsReporter: true)
-                //.AddAzureTableTransactionalStateStorageAsDefault(
-                //    options => options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString)
+                
                 .AddSimpleMessageStreamProvider(StreamProviderName.Default)
-                //.AddAzureTableGrainStorage(
-                //    "PubSubStore",
-                //    options =>
-                //    {
-                //        options.ConnectionString = GetStorageOptions(context.Configuration).ConnectionString;
-                //        options.ConfigureJsonSerializerSettings = ConfigureJsonSerializerSettings;
-                //        options.UseJson = true;
-                //    })
+               
                 .AddAdoNetGrainStorage(
                     "PubSubStore",
                     options =>
