@@ -8,10 +8,6 @@ namespace IngestTask.Server.HealthChecks
     using Orleans;
     using IngestTask.Abstractions.Grains.HealthChecks;
 
-    /// <summary>
-    /// Verifies whether the <see cref="IStorageHealthCheckGrain"/> can read, write and clear state using the default
-    /// storage provider.
-    /// </summary>
     public class StorageHealthCheck : IHealthCheck
     {
         private const string FailedMessage = "Failed storage health check.";

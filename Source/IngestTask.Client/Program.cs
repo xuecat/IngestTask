@@ -9,6 +9,7 @@ namespace IngestTask.Client
     using Orleans.Streams;
     using IngestTask.Abstractions.Constants;
     using IngestTask.Abstractions.Grains;
+    using Microsoft.Extensions.Logging;
 
     public static class Program
     {
@@ -16,7 +17,15 @@ namespace IngestTask.Client
         {
             try
             {
-                var clusterClient = CreateClientBuilder().Build();
+                var clusterClient = CreateClientBuilder()
+                    .UseLocalhostClustering()
+                    .Configure<ClusterOptions>(options =>
+                    {
+                        options.ClusterId = "ClusterId";
+                        options.ServiceId = "ServiceId";
+                    })
+                    .ConfigureLogging(logging => logging.AddConsole())
+                    .Build();
                 await clusterClient.Connect().ConfigureAwait(false);
 
                 // Set a trace ID, so that requests can be identified.

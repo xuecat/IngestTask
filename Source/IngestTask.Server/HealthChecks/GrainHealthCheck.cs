@@ -8,10 +8,7 @@ namespace IngestTask.Server.HealthChecks
     using Orleans;
     using IngestTask.Abstractions.Grains.HealthChecks;
 
-    /// <summary>
-    /// Verifies connectivity to a <see cref="ILocalHealthCheckGrain"/> activation. As this grain is a
-    /// stateless worker, validation always occurs in the silo where the health check is issued.
-    /// </summary>
+    
     public class GrainHealthCheck : IHealthCheck
     {
         private const string FailedMessage = "Failed local health check.";

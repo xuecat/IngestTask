@@ -22,6 +22,7 @@ namespace IngestTask.Server
 
     using Sobey.Core.Log;
     using System.Globalization;
+    using Microsoft.Extensions.Logging;
 
     public static class Program
     {
@@ -39,7 +40,7 @@ namespace IngestTask.Server
                 Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>().Product;
 
             CreateLogger(host);
-            ILogger logger = LoggerManager.GetLogger(host.ToString());
+            Sobey.Core.Log.ILogger logger = LoggerManager.GetLogger(host.ToString());
 
             try
             {
@@ -60,7 +61,7 @@ namespace IngestTask.Server
             }
             
         }
-        
+
         private static IHostBuilder CreateHostBuilder(string[] args) =>
             new HostBuilder()
                 .UseContentRoot(Directory.GetCurrentDirectory())

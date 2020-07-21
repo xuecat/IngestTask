@@ -7,10 +7,7 @@ namespace IngestTask.Server.HealthChecks
     using Microsoft.Extensions.Diagnostics.HealthChecks;
     using Orleans.Runtime;
 
-    /// <summary>
-    /// Verifies if Orleans services that support health checks implementing <see cref="IHealthCheckParticipant"/>
-    /// are healthy.
-    /// </summary>
+  
     public class SiloHealthCheck : IHealthCheck
     {
         private static long lastCheckTime = DateTime.UtcNow.ToBinary();

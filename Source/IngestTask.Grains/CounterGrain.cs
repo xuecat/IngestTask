@@ -9,7 +9,16 @@ namespace IngestTask.Grains
         public async Task<long> AddCountAsync(long value)
         {
             this.State += value;
-            await this.WriteStateAsync().ConfigureAwait(true);
+            try
+            {
+                await this.WriteStateAsync().ConfigureAwait(true);
+            }
+            catch (System.Exception e)
+            {
+                string s = e.Message;
+                this.State++;
+            }
+            
             return this.State;
         }
 

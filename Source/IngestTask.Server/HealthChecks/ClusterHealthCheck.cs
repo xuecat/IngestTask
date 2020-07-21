@@ -9,9 +9,7 @@ namespace IngestTask.Server.HealthChecks
     using Orleans;
     using Orleans.Runtime;
 
-    /// <summary>
-    /// Verifies whether any silos are unavailable by querying the <see cref="IManagementGrain"/>.
-    /// </summary>
+
     public class ClusterHealthCheck : IHealthCheck
     {
         private const string DegradedMessage = " silo(s) unavailable.";

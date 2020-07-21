@@ -20,8 +20,7 @@ namespace IngestTask.Grains
 
         public override async Task OnActivateAsync()
         {
-            // Reminders are timers that are persisted to storage, so they are resilient if the node goes down. They
-            // should not be used for high-frequency timers their period should be measured in minutes, hours or days.
+            // 每各一段时间推一次流，时间间隔应该再大点毕竟是reminder
             await this.RegisterOrUpdateReminder(
                     ReminderName,
                     TimeSpan.FromSeconds(150),
