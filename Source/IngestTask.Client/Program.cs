@@ -7,8 +7,8 @@ namespace IngestTask.Client
     using Orleans.Hosting;
     using Orleans.Runtime;
     using Orleans.Streams;
-    using IngestTask.Abstractions.Constants;
-    using IngestTask.Abstractions.Grains;
+    using IngestTask.Abstraction.Constants;
+    using IngestTask.Abstraction.Grains;
     using Microsoft.Extensions.Logging;
 
     public static class Program

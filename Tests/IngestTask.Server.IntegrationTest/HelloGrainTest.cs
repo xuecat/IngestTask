@@ -3,8 +3,8 @@ namespace IngestTask.Server.IntegrationTest
     using System;
     using System.Threading.Tasks;
     using Orleans.Streams;
-    using IngestTask.Abstractions.Constants;
-    using IngestTask.Abstractions.Grains;
+    using IngestTask.Abstraction.Constants;
+    using IngestTask.Abstraction.Grains;
     using IngestTask.Server.IntegrationTest.Fixtures;
     using Xunit;
     using Xunit.Abstractions;

@@ -2,7 +2,7 @@ namespace IngestTask.Server.IntegrationTest
 {
     using System;
     using System.Threading.Tasks;
-    using IngestTask.Abstractions.Grains;
+    using IngestTask.Abstraction.Grains;
     using IngestTask.Server.IntegrationTest.Fixtures;
     using Xunit;
     using Xunit.Abstractions;

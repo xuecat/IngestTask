@@ -6,7 +6,7 @@ namespace IngestTask.Server.HealthChecks
     using Microsoft.Extensions.Diagnostics.HealthChecks;
     using Microsoft.Extensions.Logging;
     using Orleans;
-    using IngestTask.Abstractions.Grains.HealthChecks;
+    using IngestTask.Abstraction.Grains.HealthChecks;
 
     public class StorageHealthCheck : IHealthCheck
     {

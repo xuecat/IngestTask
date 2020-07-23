@@ -10,11 +10,13 @@ binu/
 Tests/IngestTask.Server.IntegrationTest/bin/
 Tests/IngestTask.Server.IntegrationTest/obj/
 
-Source/IngestTask.Abstractions/bin/
-Source/IngestTask.Abstractions/obj/
+Source/IngestTask.Abstraction/bin/
+Source/IngestTask.Abstraction/obj/
 Source/IngestTask.Client/bin/
 Source/IngestTask.Client/obj/
-Source/IngestTask.Grains/bin/
-Source/IngestTask.Grains/obj/
+Source/IngestTask.Grain/bin/
+Source/IngestTask.Grain/obj/
 Source/IngestTask.Server/bin/
 Source/IngestTask.Server/obj/
+Source/IngestTask.Tools/obj/
+Source/IngestTask.Tools/bin/

@@ -1,8 +1,6 @@
 namespace IngestTask.Server.IntegrationTest.Fixtures
 {
     using Orleans.TestingHost;
-    using Serilog;
-    using Serilog.Events;
     using Xunit.Abstractions;
 
     public class ClusterFixture : Disposable

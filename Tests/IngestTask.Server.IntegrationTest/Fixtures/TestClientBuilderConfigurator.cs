@@ -4,7 +4,7 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
     using Orleans;
     using Orleans.Hosting;
     using Orleans.TestingHost;
-    using IngestTask.Abstractions.Constants;
+    using IngestTask.Abstraction.Constants;
 
     public class TestClientBuilderConfigurator : IClientBuilderConfigurator
     {

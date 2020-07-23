@@ -16,13 +16,13 @@ namespace IngestTask.Server
     using Orleans.Hosting;
     using Orleans.Runtime;
     using Orleans.Statistics;
-    using IngestTask.Abstractions.Constants;
-    using IngestTask.Grains;
+    using IngestTask.Abstraction.Constants;
     using IngestTask.Server.Options;
 
     using Sobey.Core.Log;
     using System.Globalization;
     using Microsoft.Extensions.Logging;
+    using IngestTask.Grain;
 
     public static class Program
     {

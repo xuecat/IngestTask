@@ -35,12 +35,10 @@
     <PackageReference Include="Microsoft.Orleans.Server" Version="3.2.0" />
     <PackageReference Include="Microsoft.Orleans.Transactions" Version="3.2.0" />
     <PackageReference Include="OrleansDashboard" Version="3.1.3" />
-    <PackageReference Include="Sobey.Core" Version="1.0.4" />
   </ItemGroup>
 
   <ItemGroup Label="Project References">
-    <ProjectReference Include="..\IngestTask.Abstractions\IngestTask.Abstractions.csproj" />
-    <ProjectReference Include="..\IngestTask.Grains\IngestTask.Grains.csproj" />
+    <ProjectReference Include="..\..\IngestTask.Grain\IngestTask.Grain.csproj" />
   </ItemGroup>
 
 </Project>

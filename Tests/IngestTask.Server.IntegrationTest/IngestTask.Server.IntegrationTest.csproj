@@ -14,9 +14,8 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.2" />
   </ItemGroup>
 
-  <ItemGroup Label="Project References">
-    <ProjectReference Include="..\..\Source\IngestTask.Abstractions\IngestTask.Abstractions.csproj" />
-    <ProjectReference Include="..\..\Source\IngestTask.Grains\IngestTask.Grains.csproj" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\IngestTask.Abstraction\IngestTask.Abstraction.csproj" />
   </ItemGroup>
 
 </Project>
