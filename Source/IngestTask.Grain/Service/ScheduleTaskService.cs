@@ -11,11 +11,12 @@ namespace IngestTask.Grain.Service
     using System.Threading.Tasks;
 
     [Reentrant]
-    class RescheduleTaskService : GrainService, IRescheduleService
+    class ScheduleTaskService : GrainService, IScheduleService
     {
-        public Task<int> RescheduleTaskAsync()
+        public Task<int> ScheduleTaskAsync()
         {
             throw new NotImplementedException();
         }
+
     }
 }

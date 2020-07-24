@@ -9,4 +9,8 @@
     <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="3.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Grains\Task\" />
+  </ItemGroup>
+
 </Project>
