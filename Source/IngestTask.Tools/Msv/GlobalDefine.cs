@@ -10,13 +10,13 @@ namespace IngestTask.Tools.Msv
     //SDI信号源的详细信息
     public class SDISignalDetails
     {
-        public int nSDIFormat;
-        public int nDFMode;
-        public int nWidth;
-        public int nHeight;
-        public float fFrameRate;
-        public bool bIsBlack;
-        public SDISignalDetails()
+        public int nSDIFormat { get; set; }
+		public int nDFMode { get; set; }
+		public int nWidth { get; set; }
+		public int nHeight { get; set; }
+		public float fFrameRate { get; set; }
+		public bool bIsBlack { get; set; }
+		public SDISignalDetails()
         {
             nSDIFormat = -1;
             nDFMode = 2;
@@ -29,18 +29,21 @@ namespace IngestTask.Tools.Msv
     }
     public class TaskParam
 	{
-		public int taskID;                          //任务ID
-		public int cutLen;                          //任务分段长度
-		public int inOutCount;                      //上载时多出和入点计数
-		public int[] inFrame = new int[100];       //多出入点开始贞数组
-		public int[] outFrame = new int[100];      //多出入点结束贞数组
-		public int[] totalFrame = new int[100];    //任务总帧数数组(防止出点找不到的情况)
-		public string taskName;                 //任务名称
-		public bool isRetro;                        //是否是回溯任务
-		public int retroFrame;                      //回溯的帧数
-													// TODO: 为MSV的计划任务模式传递任务开始时间
-		public DateTime tmBeg;                      //任务采集开始时间
-		public bool isPlanMode;                 //是否为计划任务
+		public int taskID { get; set; }                          //任务ID
+		public int cutLen { get; set; }                          //任务分段长度
+		public int inOutCount { get; set; }                      //上载时多出和入点计数
+#pragma warning disable CA1819 // 属性不应返回数组
+		public int[] inFrame { get; set; } = new int[100];       //多出入点开始贞数组
+        public int[] outFrame { get; set; } = new int[100];      //多出入点结束贞数组
+        public int[] totalFrame { get; set; } = new int[100];    //任务总帧数数组(防止出点找不到的情况)
+#pragma warning restore CA1819 // 属性不应返回数组
+
+        public string taskName { get; set; }                 //任务名称
+		public bool isRetro { get; set; }                        //是否是回溯任务
+		public int retroFrame { get; set; }                      //回溯的帧数
+																 // TODO: 为MSV的计划任务模式传递任务开始时间
+		public DateTime tmBeg { get; set; }                      //任务采集开始时间
+		public bool isPlanMode { get; set; }                 //是否为计划任务
 
 		public TaskParam()
 		{
@@ -52,10 +55,7 @@ namespace IngestTask.Tools.Msv
 			tmBeg = DateTime.Now; // 当前时间
 			isPlanMode = false;             // 不是计划任务模式，默认值
 		}
-		~TaskParam()
-		{
-		}
-
+		
 	}
 	//public struct _MSVC_TASK_PARAM
 	//{
@@ -77,14 +77,14 @@ namespace IngestTask.Tools.Msv
 
 	public class _ErrorInfo
 	{
-        public string errStr = "";
+        public string errStr { get; set; }
         public string getErrorInfo()
         {
             return errStr;
         }
 	}
 
-	public class G2CommonFun
+	public static class G2CommonFun
 	{
 		public static string ObjectToJson(object obj)
 		{

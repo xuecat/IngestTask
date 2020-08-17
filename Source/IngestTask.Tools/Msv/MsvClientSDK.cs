@@ -12,44 +12,21 @@ namespace IngestTask.Tools.Msv
     {
         //private string m_msvUdpIp = "127.0.0.1";
         //private int m_msvUdpPort;
-        private Hashtable htMsvlst = null;
         //private CClientTaskSDK SDK;
         private TASK_PARAM m_taskParam;
         private TASK_ALL_PARAM_NEW m_taskAllParam;
         private string m_strCaptureParam = "";
         private XmlDocument _xml = new XmlDocument();
-
+        private CClientTaskSDKImp _clientSdk;
         public MsvClientCtrlSDK()
         {
             //m_msvUdpIp = strMsvIp;
             //m_msvUdpPort = msvPort;
             m_taskParam = new TASK_PARAM();
             m_taskAllParam = new TASK_ALL_PARAM_NEW();
+            _clientSdk = new CClientTaskSDKImp();
         }
-        private CClientTaskSDK GetMsvCtrlInstance(int nChPort, string strMsvIP)
-        {
-            CClientTaskSDK msvCtrlSDK = null;
-            if (nChPort > 0 && strMsvIP != "")
-            {
-                if (htMsvlst == null)
-                {
-                    htMsvlst = new Hashtable();
-                }
-                string strkey = strMsvIP;
-                strkey = strkey + "," + nChPort.ToString();
-                if (htMsvlst.ContainsKey(strkey))
-                {
-                    msvCtrlSDK = (CClientTaskSDK)htMsvlst[strkey];
-                }
-                else
-                {
-                    msvCtrlSDK = new CClientTaskSDK(strMsvIP, nChPort, 5000);
-                    htMsvlst.Add(strkey, msvCtrlSDK);
-                }
-
-            }
-            return msvCtrlSDK;
-        }
+        
         public void ClientParam2MSVTskParam(TaskParam tmptaskparam, ref TASK_PARAM pTaskparam)
         {
             if (tmptaskparam != null)
@@ -116,7 +93,7 @@ namespace IngestTask.Tools.Msv
             tmptaskparam.isPlanMode = true;
             tmptaskparam.tmBeg = pTaskparam.tmBeg;
         }
-        public bool QuerySDIFormat(int nChPort, string strMsvIP, out int pnSingleType)
+        public bool QuerySDIFormat(int nChPort, string strMsvIP, out int pnSingleType, Sobey.Core.Log.ILogger logger)
         {
             SDISignalStatus singleType = new SDISignalStatus();
             bool bIsBack = false;
@@ -124,20 +101,19 @@ namespace IngestTask.Tools.Msv
             MSV_RET ret;
             try
             {
-                CClientTaskSDK SDK = GetMsvCtrlInstance(nChPort, strMsvIP);
-                ret = SDK.MSVQuerySDIFormat(strMsvIP, ref singleType, ref bIsBack, nChPort);
+                ret = _clientSdk.MSVQuerySDIFormat(strMsvIP, ref singleType, ref bIsBack, logger, nChPort);
                 if (ret == MSV_RET.MSV_NETERROR)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.ERROR, "Cast Interface Function MSVQuerySDIFormat Error!(error = {0})...........MsvUdpClientCtrlSDK::QuerySDIFormat", SDK.MSVGetLastErrorString());
+                    logger.Error($"Cast Interface Function MSVQuerySDIFormat Error!(error {_clientSdk.MSVGetLastErrorString()})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
                     return false;
                 }
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.ERROR, "Cast Interface Function MSVQuerySDIFormat Error!(error = {0})...........MsvUdpClientCtrlSDK::QuerySDIFormat", SDK.MSVGetLastErrorString());
+                    logger.Error($"Cast Interface Function MSVQuerySDIFormat Error!(error {_clientSdk.MSVGetLastErrorString()})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
                     return false;
                 }
 
-                ApplicationLog.WriteLog(LogMsgLevel.ERROR, "Cast Interface Function QuerySDIFormat!(vedioformat ={0} :width :{1})...........MsvUdpClientCtrlSDK::QuerySDIFormat", singleType.VideoFormat, singleType.nWidth);
+                logger.Info($"Cast Interface Function QuerySDIFormat!(vedioformat ={singleType.VideoFormat} :width :{singleType.nWidth})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
 
                 bool bValidVideo = false;
                 switch (singleType.VideoFormat)
@@ -179,22 +155,20 @@ namespace IngestTask.Tools.Msv
             }
             catch (System.Exception e)
             {
-                ApplicationLog.WriteLog(LogMsgLevel.ERROR, "Cast Interface Function MSVQuerySDIFormat Exception!(exception = {0})...........MsvUdpClientCtrlSDK::QuerySDIFormat", e.Message);
+                logger.Error($"Cast Interface Function MSVQuerySDIFormat Exception! {e.Message})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
                 pnSingleType = 254;
                 return false;
             }
         }
 
-        public bool Record(int nChPort, string strMsvIP, out int nMsvRet)
+        public bool Record(int nChPort, string strMsvIP, out int nMsvRet, Sobey.Core.Log.ILogger logger)
         {
-            ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvSDK Record Ready!, taskID:{0}...........Record", m_taskParam.ulID);
             MSV_RET ret;
             string strMutPath = "";
             string strPath = "";
             nMsvRet = 0;
             try
             {
-                CClientTaskSDK SDK = GetMsvCtrlInstance(nChPort, strMsvIP);
 
                 _xml.LoadXml(m_strCaptureParam);
                 XmlElement _root = _xml.DocumentElement;
@@ -203,51 +177,50 @@ namespace IngestTask.Tools.Msv
                 {
                     strPath = pathNode.InnerText;
                     strMutPath = string.Format("<multiDest><taskid>{0}</taskid>{1}</multiDest>", m_taskParam.ulID, strPath);
-                    ret = SDK.MSVSetMulDestPath(strMsvIP, strMutPath);
+                    ret = _clientSdk.MSVSetMulDestPath(strMsvIP, strMutPath, logger);
                     if (ret == MSV_RET.MSV_NETERROR)
                     {
-                        ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MSVSetMulDestPath::taskName={0};Error:{1}!...........MsvUdpClientCtrlSDK::Record", m_taskParam.strName, SDK.MSVGetLastErrorString());
+                        logger.Error($"MSVSetMulDestPath::taskName={m_taskParam.strName};Error:{_clientSdk.MSVGetLastErrorString()}!");
                     }
                 }
 
                 m_taskAllParam.nCutLen = 10;
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvSDK Record Prepare Cast MSVStartTaskNew Function ip={0} port={1} cutlen={2}!...........MsvUdpClientCtrlSDK::Record", strMsvIP, nChPort, m_taskAllParam.nCutLen);
-                ret = SDK.MSVStartTaskNew(strMsvIP, m_taskAllParam, nChPort);
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvSDK Record Cast MSVStartTaskNew End!...........MsvUdpClientCtrlSDK::Record");
+                logger.Info($"MsvSDK Record Prepare Cast MSVStartTaskNew Function ip={strMsvIP} port={nChPort} cutlen={m_taskAllParam.nCutLen}");
+
+                ret = _clientSdk.MSVStartTaskNew(strMsvIP, m_taskAllParam, nChPort, logger);
                 nMsvRet = Convert.ToInt32(ret);
                 if (ret == MSV_RET.MSV_NETERROR)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.ERROR, "MsvSDK Record Failed(MSV_NETERROR)!...........MsvUdpClientCtrlSDK::Record");
+                    logger.Error("MsvSDK Record Failed(MSV_NETERROR)!...........MsvUdpClientCtrlSDK::Record");
                     return false;
                 }
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvSDK Record Failed(ret = {0})...........MsvUdpClientCtrlSDK::Record", Convert.ToInt32(ret));
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "Cast Interface Function MSVStartTaskNew Error!(error = {0})...........CMsvCtrlCom::Record", SDK.MSVGetLastErrorString());
+                    logger.Error($"MsvSDK Record Failed {ret} {_clientSdk.MSVGetLastErrorString()}");
                     return false;
                 }
                 else if (ret == MSV_RET.MSV_SUCCESS)
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvSDK Record End!...........MsvUdpClientCtrlSDK::Record");
+                    logger.Info("MsvSDK Record End!...........MsvUdpClientCtrlSDK::Record");
             }
             catch (Exception e)
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvUdpClientCtrlSDK::Record, Exception:{0}", e.Message);
+                logger.Error($"MsvUdpClientCtrlSDK::Record, Exception:{e.Message}");
                 return false;
             }
             return true;
         }
 
-        public bool RecordReady(int nChPort, string strMsvIP, ref TaskParam pTaskparam, string strTaskName, string pCaptureparam)
+        public bool RecordReady(int nChPort, string strMsvIP, ref TaskParam pTaskparam, string strTaskName, string pCaptureparam, Sobey.Core.Log.ILogger logger)
         {
             if (pTaskparam == null)
             {
-                ApplicationLog.WriteLog(LogMsgLevel.ERROR, "RecordReady: pTaskparam is null!");
+                logger.Error("RecordReady: pTaskparam is null!");
                 return false;
             }
             TASK_PARAM param = new TASK_PARAM();
             try
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvSDK Record Ready!,taskID:{0},pCaptureparam:{1} ", pTaskparam.taskID, pCaptureparam);
+                logger.Info($"MsvSDK Record Ready!,taskID:{pTaskparam.taskID},pCaptureparam:{pCaptureparam} ");
                 XmlDocument doc = new XmlDocument();
                 doc.LoadXml(pCaptureparam);
                 XmlNode root = doc.DocumentElement;
@@ -275,7 +248,7 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        ApplicationLog.WriteLog(LogMsgLevel.ERROR, "Not find fileName0:");
+                        logger.Error("Not find fileName0:");
                     }
                     XmlNode _fileName1 = root.SelectSingleNode("path1FileName");
                     if (_fileName1 != null)
@@ -294,15 +267,15 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        ApplicationLog.WriteLog(LogMsgLevel.ERROR, "Not find fileName1:");
+                        logger.Error("Not find fileName1:");
                     }
                 }
                 else
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.ERROR, "root is null");
+                    logger.Error("root is null");
                 }
                 pCaptureparam = doc.InnerXml;
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvSDK Record Ready!, taskID:{0}, lastCapture:{1}...........RecordReady", pTaskparam.taskID, pCaptureparam);
+                logger.Info($"MsvSDK Record Ready!, taskID:{pTaskparam.taskID}, lastCapture:{pCaptureparam}...........RecordReady");
                 ClientParam2MSVTskParam(pTaskparam, ref param);
                 m_taskParam.bRetrospect = param.bRetrospect;
                 m_taskParam.bUseTime = param.bUseTime;
@@ -336,41 +309,34 @@ namespace IngestTask.Tools.Msv
                 //m_taskAllParam.taskParam.strName = strTaskName;
                 m_strCaptureParam = "";
                 m_strCaptureParam = pCaptureparam;
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "curent strTaskName:" + strTaskName);
+                logger.Info($"curent strTaskName: {strTaskName}");
             }
             catch (Exception e)
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvUdpClientCtrlSDK::RecordReady, Exception:{0}", e.Message);
+                logger.Error($"MsvUdpClientCtrlSDK::RecordReady, Exception:{e.Message}");
                 return false;
             }
             return true;
         }
 
-        public bool QueryTaskState(int nChPort, string strMsvIP, out TaskParam tskparam)
+        public bool QueryTaskState(int nChPort, string strMsvIP, out TaskParam tskparam, Sobey.Core.Log.ILogger logger)
         {
             MSV_RET ret;
             TASK_PARAM info = new TASK_PARAM();
             tskparam = new TaskParam();
-            ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvSDK prepare QueryTaskState(ip={0})!...........MsvUdpClientCtrlSDK::QueryTaskState", strMsvIP);
+            logger.Info($"MsvSDK prepare QueryTaskState(ip={strMsvIP})");
             try
             {
-                CClientTaskSDK SDK = GetMsvCtrlInstance(nChPort, strMsvIP);
-                if (SDK == null)
-                {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "GetMsvCtrlInstance(SDK==null).......MsvUdpClientCtrlSDK::QueryTaskState");
-                    return false;
-                }
-                ret = SDK.MSVQueryRuningTask(strMsvIP, ref info, nChPort);
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvSDK End MSVQueryRuningTask!...........MsvUdpClientCtrlSDK::QueryTaskState");
+                ret = _clientSdk.MSVQueryRuningTask(strMsvIP, ref info, nChPort, logger);
 
                 if (ret == MSV_RET.MSV_NETERROR)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "Cast Interface Function MSVQueryRuningTask Error!(error = {0})...........MsvUdpClientCtrlSDK::QueryTaskState", SDK.MSVGetLastErrorString());
+                    logger.Error($" MSVQueryRuningTask net Error {_clientSdk.MSVGetLastErrorString()}");
                     return false;
                 }
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "Cast Interface Function MSVQueryRuningTask Error!(error = {0})...........MsvUdpClientCtrlSDK::QueryTaskState", SDK.MSVGetLastErrorString());
+                    logger.Error($" MSVQueryRuningTask Error {_clientSdk.MSVGetLastErrorString()}");
                     return false;
                 }
                 //string strbtime = info.tmBeg.ToString("yy-MM-dd hh:mm:ss");
@@ -381,33 +347,28 @@ namespace IngestTask.Tools.Msv
             }
             catch (Exception e)
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvUdpClientCtrlSDK::QueryTaskState, Exception:{0}", e.Message);
+                logger.Error($"MsvUdpClientCtrlSDK::QueryTaskState, Exception:{e.Message}");
                 return false;
             }
             return true;
         }
-        public bool QueryState(int nChPort, string strMsvIP, out int ds)
+        public bool QueryState(int nChPort, string strMsvIP, out int ds, Sobey.Core.Log.ILogger logger)
         {
             MSV_STATE state = new MSV_STATE();
             MSV_RET ret;
             ds = 1;
             try
             {
-                CClientTaskSDK SDK = GetMsvCtrlInstance(nChPort, strMsvIP);
-                if (SDK == null)
-                {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "GetMsvCtrlInstance(SDK == null) .....MsvUdpClientCtrlSDK::QueryState");
-                }
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "prepare to call MSVQueryState.....MsvUdpClientCtrlSDK::QueryState");
-                ret = SDK.MSVQueryState(strMsvIP, ref state, nChPort);
+                
+                ret = _clientSdk.MSVQueryState(strMsvIP, ref state, nChPort, logger);
                 if (ret == MSV_RET.MSV_NETERROR)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MSVQueryState MSV_NETERROR, {0}:{1}, error:{2}......MsvUdpClientCtrlSDK::QueryState", strMsvIP, nChPort, SDK.MSVGetLastErrorString());
+                    logger.Error($"MSVQueryState MSV_NETERROR, {strMsvIP}:{nChPort}, error: {_clientSdk.MSVGetLastErrorString()}");
                     return false;
                 }
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MSVQueryState failed, {0}:{1}, error:{2}......MsvUdpClientCtrlSDK::QueryState", strMsvIP, nChPort, SDK.MSVGetLastErrorString());
+                    logger.Error($"MSVQueryState failed, {strMsvIP}:{nChPort}, error: {_clientSdk.MSVGetLastErrorString()}");
                     return false;
                 }
                 if (state.msv_capture_state == CAPTURE_STATE.CS_PAUSE)
@@ -416,12 +377,11 @@ namespace IngestTask.Tools.Msv
                     ds = 0;
                 else
                     ds = 1;
-
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MSVQueryState End, state:{0}......MsvUdpClientCtrlSDK::QueryState", ds);
+                logger.Info($"MSVQueryState End, state:{ds}......");
             }
             catch (Exception e)
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvUdpClientCtrlSDK::QueryState, Exception:{0}", e.Message);
+                logger.Error($"MsvUdpClientCtrlSDK::QueryState, Exception {e.Message}");
                 return false;
             }
             return true;
@@ -432,17 +392,11 @@ namespace IngestTask.Tools.Msv
             pErrorInfo = new _ErrorInfo();
             try
             {
-                CClientTaskSDK SDK = GetMsvCtrlInstance(nChPort, strMsvIP);
-                if (SDK == null)
-                {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "GetMsvCtrlInstance(SDK=NULL)......MsvUdpClientCtrlSDK::GetLastErrorInfo");
-                    return false;
-                }
-                pErrorInfo.errStr = SDK.MSVGetLastErrorString();
+               
+                pErrorInfo.errStr = _clientSdk.MSVGetLastErrorString();
             }
-            catch (Exception e)
+            catch (Exception )
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvUdpClientCtrlSDK::GetLastErrorInfo, Exception:{0}", e.Message);
                 return false;
             }
             return true;

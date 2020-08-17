@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,11 +10,11 @@ namespace IngestTask.Tools.Msv
 {
     public class CClientTaskSDKImp
     {
-        public int m_nTimeOut;
-        public int m_nComtype;
-        public int m_iCtrlPort;
-        public string m_error_desc;
-        public string m_iCtrlIp;
+        private int m_nTimeOut;
+        private int m_nComtype;
+        private int m_iCtrlPort;
+        private string m_error_desc;
+        private string m_iCtrlIp;
         private XmlDocument _xml = null;
         private object _msvfunclock = null;
         private G2UdpMsvCtrl m_udpMsv = null;
@@ -40,9 +41,7 @@ namespace IngestTask.Tools.Msv
             m_udpMsv = new G2UdpMsvCtrl();
             _xml = new XmlDocument();
         }
-        ~CClientTaskSDKImp()
-        {
-        }
+
         /************************************************************************/
         /* 返回错误描述                                                        */
         /************************************************************************/
@@ -185,7 +184,6 @@ namespace IngestTask.Tools.Msv
             if (param == null)
             {
                 m_error_desc = "FromatParmaToString: param is null!";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "FromatParmaToString: param is null!");
                 return "";
             }
             if ((param.captureParam.tsParam.nSingleType != 0) && (param.captureParam.tsParam.bNeedDecode == 0 || param.captureParam.tsParam.bNeedDecode == 2))
@@ -451,10 +449,10 @@ namespace IngestTask.Tools.Msv
                 if (param.taskParam.nInOutCount > 100)
                     param.taskParam.nInOutCount = 100;
 
-                strTemp = string.Format("<TimecodeType>%d</TimecodeType>", param.taskParam.nTimeCode);//开始帧 如果为0 ，立即开始
+                strTemp = string.Format("<TimecodeType>{0}</TimecodeType>", param.taskParam.nTimeCode);//开始帧 如果为0 ，立即开始
                 strSend += strTemp;
 
-                strTemp = string.Format("<nInOutCount>%d</nInOutCount>", param.taskParam.nInOutCount);//开始帧 如果为0 ，立即开始
+                strTemp = string.Format("<nInOutCount>{0}</nInOutCount>", param.taskParam.nInOutCount);//开始帧 如果为0 ，立即开始
                 strSend += strTemp;
                 for (int j = 0; j < param.taskParam.nInOutCount; ++j)
                 {
@@ -565,7 +563,6 @@ namespace IngestTask.Tools.Msv
             if (param == null)
             {
                 m_error_desc = "FromatParmaToStringNew: param is null";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
                 return "";
             }
             string strSend = "<?xml version=\"1.0\"?>";
@@ -798,22 +795,22 @@ namespace IngestTask.Tools.Msv
             strSend += param.captureParam;
             /////////////////////////
             strTemp = string.Format("<taskName>{0}</taskName>", param.strTaskName);
-            strSend.Insert(strSend.Length - 15, strTemp);
+            _ = strSend.Insert(strSend.Length - 15, strTemp);
             ///////////////////////////
             strTemp = string.Format("</{0}>\0", formatOrder);
             strSend += strTemp;
             return strSend;
         }
-        public MSV_RET MSVSetControlMode(string strMsvIp, bool bCtrl, int nChannel)
+        public MSV_RET MSVSetControlMode(string strMsvIp, bool bCtrl, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<? xml version =\"1.0\"?><set_msv_ctrlmode><b_mode>{0}</b_mode><nChannel>{1}</nChannel><set_msv_ctrlmode>\0", Convert.ToInt32(bCtrl), nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -856,7 +853,11 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVSetControlMode:" + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null)
+                    {
+                        logger.Error(m_error_desc);
+                    }
+                    
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -865,17 +866,21 @@ namespace IngestTask.Tools.Msv
         /*********************************************************************************
         查询媒体服务器状态
         **********************************************************************************/
-        public MSV_RET MSVQueryState(string strMsvIp, ref MSV_STATE state, int nChannel)
+        public MSV_RET MSVQueryState(string strMsvIp, ref MSV_STATE state, int nChannel, Sobey.Core.Log.ILogger logger)
         {
+            if (state == null)
+            {
+                return MSV_RET.MSV_FAILED;
+            }
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                 
                     string cmd = string.Format("<?xml version =\"1.0\"?><query_state><nChannel>{0}</nChannel></query_state>", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -957,7 +962,10 @@ namespace IngestTask.Tools.Msv
                     catch (System.Exception ex)
                 {
                     m_error_desc = "MSVQueryState: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null)
+                    {
+                        logger.Error(m_error_desc);
+                    }
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -967,16 +975,16 @@ namespace IngestTask.Tools.Msv
         /*********************************************************************************
         切换媒体服务器状态
         **********************************************************************************/
-        public MSV_RET MSVSwitchState(string strMsvIp, WORK_MODE mode, int nChannel)
+        public MSV_RET MSVSwitchState(string strMsvIp, WORK_MODE mode, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><switch_msv_state><s_mode>{0}</s_mode><nChannel>{1}</nChannel></switch_msv_state>\0", Convert.ToInt32(mode), nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1019,7 +1027,10 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVSwitchState: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null)
+                    {
+                        logger.Error(m_error_desc);
+                    }
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -1027,16 +1038,16 @@ namespace IngestTask.Tools.Msv
         /********************************************************************************
             描述 :获得任务队列状态
         ********************************************************************************/
-        public MSV_RET MSVGetTaskListState(string strMsvIp, ref BATCH_STATE state, int nChannel)
+        public MSV_RET MSVGetTaskListState(string strMsvIp, ref BATCH_STATE state, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><get_tasklist_state><nChannel>{0}</nChannel></get_tasklist_state>\0", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1079,7 +1090,10 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVGetTaskListState: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null)
+                    {
+                        logger.Error(m_error_desc);
+                    }
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -1088,16 +1102,16 @@ namespace IngestTask.Tools.Msv
         /************************************************************************/
         /* 启动任务队列                                                         */
         /************************************************************************/
-        public MSV_RET MSVStartTaskList(string strMsvIp, int nChannel)
+        public MSV_RET MSVStartTaskList(string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><set_tasklist_state><s_state>{0}</s_state><nChannel>{1}</nChannel></set_tasklist_state>\0", Convert.ToInt32(BATCH_STATE.BS_RUNNING), nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1140,7 +1154,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVStartTaskList: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -1148,16 +1162,16 @@ namespace IngestTask.Tools.Msv
         /************************************************************************/
         /* 停止媒体服务器任务队列                                               */
         /************************************************************************/
-        public MSV_RET MSVStopTaskList(string strMsvIp, int nChannel)
+        public MSV_RET MSVStopTaskList(string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><set_tasklist_state><s_state>{0}</s_state><nChannel>{1}</nChannel></set_tasklist_state>\0", Convert.ToInt32(BATCH_STATE.BS_STOP), nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1200,7 +1214,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVStopTaskList: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -1208,11 +1222,11 @@ namespace IngestTask.Tools.Msv
         /*********************************************************************************
             描述: 向媒体服务器设置任务（编单）
         *********************************************************************************/
-        public MSV_RET MSVSetTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel)
+        public MSV_RET MSVSetTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MSVSetTask: param is null!");
+                if (logger != null) { logger.Error("MSVSetTask: param is null!"); }
                 return MSV_RET.MSV_FAILED;
             }
             if (/*param.nCutLen > 60 ||*/ param.nCutLen <= 0)
@@ -1225,9 +1239,9 @@ namespace IngestTask.Tools.Msv
                 try
                 {
                     string cmd = FromatParmaToString(param, "set_msv_task", nChannel);
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1270,18 +1284,18 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVSetTask: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
         }
 
-        public MSV_RET MSVSetTaskNew(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel)
+        public MSV_RET MSVSetTaskNew(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
                 m_error_desc = "MSVSetTaskNew: param is null";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
             if (/*param.nCutLen > 60 ||*/ param.nCutLen <= 0)
@@ -1294,9 +1308,9 @@ namespace IngestTask.Tools.Msv
                 try
                 {
                     string cmd = FromatParmaToStringNew(param, "set_msv_task", nChannel);
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1339,7 +1353,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVSetTaskNew: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -1347,16 +1361,16 @@ namespace IngestTask.Tools.Msv
         /**********************************************************************************
             描述: 删除任务
         ***********************************************************************************/
-        public MSV_RET MSVDelTask(string strMsvIp, long taskID, int nChannel)
+        public MSV_RET MSVDelTask(string strMsvIp, long taskID, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><del_msv_task><i_taskID>{0}</i_taskID><nChannel>{1}</nChannel></del_msv_task>\0", taskID, nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1399,35 +1413,31 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVDelTask: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
-
-
         }
-
-
 
         /**********************************************************************************
             描述: 修改任务
         ***********************************************************************************/
-        public MSV_RET MSVModifyTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel)
+        public MSV_RET MSVModifyTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
                 m_error_desc = "MSVModifyTask: param is null";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MSVModifyTask: param is null");
+                if (logger != null) { logger.Error(m_error_desc); }
                 return MSV_RET.MSV_FAILED;
             }
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = FromatParmaToString(param, "update_msv_task", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1470,28 +1480,28 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVModifyTask: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
         }
 
-        public MSV_RET MSVModifyTaskNew(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel)
+        public MSV_RET MSVModifyTaskNew(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
                 m_error_desc = "MSVModifyTaskNew: param is null";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                     string cmd = FromatParmaToStringNew(param, "update_msv_task", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1534,7 +1544,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVModifyTaskNew: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -1543,28 +1553,28 @@ namespace IngestTask.Tools.Msv
         /**********************************************************************************
             描述: 启动一条手动任务
         ***********************************************************************************/
-        public MSV_RET MSVStartTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel)
+        public MSV_RET MSVStartTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
                 m_error_desc = "MSVStartTask: param is null!";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
             if (/*param.nCutLen > 60 || */param.nCutLen <= 0)
             {
                 m_error_desc = "Segment time of task should be greater than 0 minutes";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = FromatParmaToString(param, "start_msv_task", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1607,38 +1617,38 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVStartTaskp: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
 
         }
 
-        public MSV_RET MSVStartTaskNew(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel)
+        public MSV_RET MSVStartTaskNew(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
                 m_error_desc = "MSVStartTaskNew: param is null";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
             //分段时间太长
             if (/*param.nCutLen > 60 || */param.nCutLen <= 0)
             {
                 m_error_desc = "Segment time of task should be greater than 0 minutes";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = FromatParmaToStringNew(param, "start_msv_task", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd, 10);
-                    
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, string.Format("taskID:{0}, MSVStartTaskNew strRet:{1}", param.taskParam.ulID, strRet));
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd, 10);
+                    if (logger != null)
+                        logger.Info(string.Format("taskID:{0}, MSVStartTaskNew strRet:{1}", param.taskParam.ulID, strRet));
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1681,7 +1691,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVStartTaskNew: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -1691,17 +1701,18 @@ namespace IngestTask.Tools.Msv
         /**********************************************************************************
             描述: 停止一条手动任务  taskID 返回停止的任务的ID
         ***********************************************************************************/
-        public MSV_RET MSVStopTask(string strMsvIp, ref long taskID, long lSendTaskID, int nChannel)
+        public MSV_RET MSVStopTask(string strMsvIp, ref long taskID, long lSendTaskID, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><stop_msv_task><nChannel>{0}</nChannel><nSendTaskID>{1}</nSendTaskID></stop_msv_task>\0", nChannel, lSendTaskID);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, string.Format("taskID:{0}, MSVStopTask strRet:{1}", taskID, strRet));
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (logger != null)
+                        logger.Info(string.Format("taskID:{0}, MSVStopTask strRet:{1}", taskID, strRet));
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1746,7 +1757,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVStopTask: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -1757,16 +1768,21 @@ namespace IngestTask.Tools.Msv
         /**********************************************************************************
             描述: 查询手动任务  返回任务的常规参数
         ***********************************************************************************/
-        public MSV_RET MSVQueryManauTask(string strMsvIp, ref TASK_PARAM taskParam, int nChannel)
+        public MSV_RET MSVQueryManauTask(string strMsvIp, ref TASK_PARAM taskParam, int nChannel, Sobey.Core.Log.ILogger logger)
         {
+            if (taskParam == null)
+            {
+                return MSV_RET.MSV_FAILED;
+            }
+
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><query_manu_task><nChannel>{0}</nChannel></query_manu_task>\0", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1872,7 +1888,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVQueryManauTask: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -1881,16 +1897,16 @@ namespace IngestTask.Tools.Msv
         /************************************************************************/
         /* 暂停MSV采集  要取消暂停状态，请调用MSVPauseCapture                    */
         /************************************************************************/
-        public MSV_RET MSVPauseCapture(long taskID, string strMsvIp, int nChannel)
+        public MSV_RET MSVPauseCapture(long taskID, string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><msv_pause_capture><nChannel>{0}</nChannel><taskid>{1}</taskid></msv_pause_capture>\0", nChannel, taskID);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1933,7 +1949,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVPauseCapture: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -1942,16 +1958,16 @@ namespace IngestTask.Tools.Msv
         /************************************************************************/
         /* 继续MSV采集， 取消暂停状态                                          */
         /************************************************************************/
-        public MSV_RET MSVContinueCapture(long taskID, string strMsvIp, int nChannel)
+        public MSV_RET MSVContinueCapture(long taskID, string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><msv_continue_capture><nChannel>{0}</nChannel><taskid>{1}</taskid></msv_continue_capture>\0",nChannel, taskID);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1994,7 +2010,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVContinueCapture: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -2003,18 +2019,22 @@ namespace IngestTask.Tools.Msv
         /**********************************************************************************
             描述: 查询当前运行任务  返回任务的常规参数
         ***********************************************************************************/
-        public MSV_RET MSVQueryRuningTask(string strMsvIp, ref TASK_PARAM taskParam, int nChannel)
+        public MSV_RET MSVQueryRuningTask(string strMsvIp, ref TASK_PARAM taskParam, int nChannel, Sobey.Core.Log.ILogger logger)
         {
+            if (taskParam == null)
+            {
+                return MSV_RET.MSV_FAILED;
+            }
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><query_runing_task><nChannel>{0}</nChannel></query_runing_task>\0", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
  
                     
-                    if (strRet != "")
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2125,7 +2145,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVQueryRuningTask: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -2135,16 +2155,16 @@ namespace IngestTask.Tools.Msv
         /************************************************************************/
         /* 查询任务状态                                                         */
         /************************************************************************/
-        public MSV_RET MSVQueryTaskState(string strMsvIp, long taskID, ref TASK_STATE state, int nChannel)
+        public MSV_RET MSVQueryTaskState(string strMsvIp, long taskID, ref TASK_STATE state, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><query_task_state><s_taskid>{0}</s_taskid><nChannel>{1}</nChannel></query_task_state>\0", taskID, nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2192,22 +2212,22 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVQueryTaskState: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
 
         }
-        public MSV_RET MSVQuerySDIFormat(string strMsvIp, ref SDISignalStatus FormatStatus, ref bool bIsBlack, int nChannel = -1)
+        public MSV_RET MSVQuerySDIFormat(string strMsvIp, ref SDISignalStatus FormatStatus, ref bool bIsBlack, Sobey.Core.Log.ILogger logger,int nChannel = -1)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><query_SDI_format><nChannel>{0}</nChannel></query_SDI_format>\0", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2297,35 +2317,35 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "" + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
 
         }
-        public MSV_RET MSVStartRetrospectTask(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel)
+        public MSV_RET MSVStartRetrospectTask(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if(param == null)
             {
                 m_error_desc = "MSVStartRetrospectTask: param is null";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
             if (/*param.nCutLen > 60 || */param.nCutLen <= 0)
             {
                 m_error_desc = "Segment time of task should be greater than 0 minutes";
                 string strLog = string.Format("MSVStartRetrospectTask(ID:{0},Name:{1}) MSV_FAILED.{2}", param.taskParam.ulID, param.taskParam.strName, m_error_desc);
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, strLog);
+                if (logger != null) { logger.Error(strLog); }
                 return MSV_RET.MSV_FAILED;
             }
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = FromatParmaToStringNew(param, "start_msv_retrospecttask", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2368,23 +2388,28 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVStartRetrospectTask: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
 
         }
         //手动打点
-        public MSV_RET SetEssenceMark(string strMSVIP, ref MANUALKEYFRAME KeyFrmParam)
+        public MSV_RET SetEssenceMark(string strMSVIP, ref MANUALKEYFRAME KeyFrmParam, Sobey.Core.Log.ILogger logger)
         {
+            if (KeyFrmParam == null)
+            {
+                return MSV_RET.MSV_FAILED;
+            }
+
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMSVIP != "") ? strMSVIP : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
                     string cmd = "<Set_MSV_EssenceMark></Set_MSV_EssenceMark>\0";
-                    string strRet = m_udpMsv.GetMsvUdpData("", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2452,23 +2477,23 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "SetEssenceMark: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
 
         }
         //发送智能分段命令 by yj
-        public MSV_RET MSVSetExceptCutClip(string strMSVIP, bool bEnable)
+        public MSV_RET MSVSetExceptCutClip(string strMSVIP, bool bEnable, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMSVIP != "") ? strMSVIP : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><Set_MSV_ExceptCut><bEnable>{0}</bEnable></Set_MSV_ExceptCut>\0", Convert.ToInt32(bEnable));
-                    string strRet = m_udpMsv.GetMsvUdpData("", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2511,114 +2536,120 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVSetExceptCutClip: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
 
         }
         //查询MSV本地缓存容量
-        public MSV_RET MsvQueryLocalStorage(string strMsvIP, ref MSV_LocalStorage LocalStorage, int nChannel)
-        {
-            lock (_msvfunclock)
-            {
-                try
-                {
-                    string ip = (strMsvIP != "") ? strMsvIP : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><msv_query_LocalStorage><nChannel>{0}</nChannel></msv_query_LocalStorage>\0", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
-                    {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
-                        {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
-                            {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    XmlNode _diskCnNode = _root.SelectSingleNode("DiskCount");
-                                    if(_diskCnNode != null)
-                                    {
-                                        LocalStorage.iDiskCount = Convert.ToInt32(_diskCnNode.InnerText);
-                                    }
+        //public MSV_RET MsvQueryLocalStorage(string strMsvIP, ref MSV_LocalStorage LocalStorage, int nChannel, Sobey.Core.Log.ILogger logger)
+        //{
+        //    lock (_msvfunclock)
+        //    {
+        //        try
+        //        {
+        //            string ip = (strMsvIP != "") ? strMsvIP : m_iCtrlIp;
+        //            string cmd = string.Format("<?xml version=\"1.0\"?><msv_query_LocalStorage><nChannel>{0}</nChannel></msv_query_LocalStorage>\0", nChannel);
+        //            string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
+        //            if (strRet != "")
+        //            {
+        //                _xml.LoadXml(strRet);
+        //                XmlElement _root = _xml.DocumentElement;
+        //                if (_root != null && _root.Name == "std_reply")
+        //                {
+        //                    XmlNode _retNode = _root.SelectSingleNode("s_result");
+        //                    if (_retNode != null)
+        //                    {
+        //                        string _result = _retNode.InnerText;
+        //                        if (_result == "succeed")
+        //                        {
+        //                            XmlNode _diskCnNode = _root.SelectSingleNode("DiskCount");
+        //                            if(_diskCnNode != null)
+        //                            {
+        //                                LocalStorage.iDiskCount = Convert.ToInt32(_diskCnNode.InnerText);
+        //                            }
 
-                                    string strNode = "";
-                                    XmlNode _node;
-                                    for (int i = 0; i < LocalStorage.iDiskCount; ++i)
-                                    {
-                                        strNode = string.Format("TotalSpace{0}", i);
-                                        _node = _root.SelectSingleNode(strNode);
-                                        if (_node != null)
-                                        {
-                                            LocalStorage.dwTotalSpace[i] = Convert.ToUInt32(_node.InnerText);
-                                        }
+        //                            string strNode = "";
+        //                            XmlNode _node;
+        //                            for (int i = 0; i < LocalStorage.iDiskCount; ++i)
+        //                            {
+        //                                strNode = string.Format("TotalSpace{0}", i);
+        //                                _node = _root.SelectSingleNode(strNode);
+        //                                if (_node != null)
+        //                                {
+        //                                    LocalStorage.dwTotalSpace[i] = Convert.ToUInt32(_node.InnerText);
+        //                                }
                                         
-                                        strNode = string.Format("FreeSpace{0}", i);
-                                        _node = _root.SelectSingleNode(strNode);
-                                        if (_node != null)
-                                        {
-                                            LocalStorage.dwFreeSpace[i] = Convert.ToUInt32(_node.InnerText);
-                                        }
+        //                                strNode = string.Format("FreeSpace{0}", i);
+        //                                _node = _root.SelectSingleNode(strNode);
+        //                                if (_node != null)
+        //                                {
+        //                                    LocalStorage.dwFreeSpace[i] = Convert.ToUInt32(_node.InnerText);
+        //                                }
 
-                                        strNode = string.Format("Driver{0}", i);
-                                        _node = _root.SelectSingleNode(strNode);
-                                        if (_node != null)
-                                        {
-                                            LocalStorage.strDisk[i] = _node.InnerText;
-                                        }
-                                    }
+        //                                strNode = string.Format("Driver{0}", i);
+        //                                _node = _root.SelectSingleNode(strNode);
+        //                                if (_node != null)
+        //                                {
+        //                                    LocalStorage.strDisk[i] = _node.InnerText;
+        //                                }
+        //                            }
 
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
-                            }
-                            else
-                            {
-                                return MSV_RET.MSV_XMLERROR;
-                            }
-                        }
-                        else
-                        {
-                            return MSV_RET.MSV_XMLERROR;
-                        }
-                    }
-                    else
-                    {
-                        return MSV_RET.MSV_NETERROR;
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    m_error_desc = "MsvQueryLocalStorage:" + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
-                    return MSV_RET.MSV_FAILED;
-                }
+        //                            m_error_desc = "Operation succeed";
+        //                            return MSV_RET.MSV_SUCCESS;
+        //                        }
+        //                        else
+        //                        {
+        //                            XmlNode nError = _root.SelectSingleNode("s_error_string");
+        //                            if (nError != null)
+        //                            {
+        //                                m_error_desc = nError.InnerText;
+        //                            }
+        //                            return MSV_RET.MSV_FAILED;
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        return MSV_RET.MSV_XMLERROR;
+        //                    }
+        //                }
+        //                else
+        //                {
+        //                    return MSV_RET.MSV_XMLERROR;
+        //                }
+        //            }
+        //            else
+        //            {
+        //                return MSV_RET.MSV_NETERROR;
+        //            }
+        //        }
+        //        catch (System.Exception ex)
+        //        {
+        //            m_error_desc = "MsvQueryLocalStorage:" + ex.Message;
+        //            if (logger != null){logger.Error(m_error_desc);}
+        //            return MSV_RET.MSV_FAILED;
+        //        }
+        //    }
+
+        //}
+        //根据传入得盘符，获得网络状态
+        public MSV_RET MsvQueryNetDriverStatus(string  strMsvIp, string strDisk, ref bool bStatus, int nChannel, Sobey.Core.Log.ILogger logger)
+        {
+            if (string.IsNullOrEmpty(strDisk))
+            {
+                return MSV_RET.MSV_FAILED;
             }
 
-        }
-        //根据传入得盘符，获得网络状态
-        public MSV_RET MsvQueryNetDriverStatus(string  strMsvIp, string  strDisk, ref bool bStatus, int nChannel)
-        {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><msv_NetDriver_Status><disk>{0}</disk><nChannel>{1}</nChannel></msv_NetDriver_Status>\0", strDisk.Substring(0, 1), nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                    string cmd = string.Format("<?xml version=\"1.0\"?><msv_NetDriver_Status><disk>{0}</disk><nChannel>{1}</nChannel></msv_NetDriver_Status>\0",
+                        strDisk.Substring(0, 1), nChannel);
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2666,22 +2697,22 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MsvQueryNetDriverStatus: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
 
         }
-        public MSV_RET MSVQueryDBEChannel(string strMsvIP, ref ulong dwDBEChannel, int nChannel = -1)
+        public MSV_RET MSVQueryDBEChannel(string strMsvIP, ref ulong dwDBEChannel, Sobey.Core.Log.ILogger logger, int nChannel = -1)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIP != "") ? strMsvIP : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIP)) ? strMsvIP : m_iCtrlIp;
                     string cmd = string.Format("<?xml version=\"1.0\"?><msv_query_DBEChannel><nChannel>{0}</nChannel></msv_query_DBEChannel>\0", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2729,7 +2760,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVQueryDBEChannel: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
@@ -2760,13 +2791,13 @@ namespace IngestTask.Tools.Msv
         // // 说明：
         // //     
         // //-----------------------------------------------------------
-        public MSV_RET MSG_NetPreview(string strMSVIP,int nOperaType, ref int nPort, ref int nState)
+        public MSV_RET MSG_NetPreview(string strMSVIP,int nOperaType, ref int nPort, ref int nState, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMSVIP != "") ? strMSVIP : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
                     string cmd = "<?xml version=\"1.0\"?>";
                     switch (nOperaType)
                     {
@@ -2793,8 +2824,8 @@ namespace IngestTask.Tools.Msv
                         default:
                             break;
                     }
-                    string strRet = m_udpMsv.GetMsvUdpData("", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2847,23 +2878,23 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSG_NetPreview: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
 
         }
         
-        public MSV_RET MSV_Relocate(long taskID, string  strMsvIp, string  lpStrTargetIP, int nPort, string  lpStrLocalIP, int bUDP, int nPgmID)
+        public MSV_RET MSV_Relocate(long taskID, string  strMsvIp, string  lpStrTargetIP, int nPort, string  lpStrLocalIP, int bUDP, int nPgmID, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version =\"1.0\"?><Relocate><Port>{0}</Port><TargetIP>{1}</TargetIP><LocalIP>{2}</LocalIP><PgmID>{3}</PgmID><bUdp>{4}</bUdp><taskID>{5}</taskID></Relocate>", nPort, lpStrTargetIP, lpStrLocalIP, nPgmID, bUDP, taskID);
-                    string strRet = m_udpMsv.GetMsvUdpData("", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2906,23 +2937,23 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSV_Relocate: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
 
         }
         // //该接口暂时未用
-        public MSV_RET MSV_Relocate(long taskID, string  strTSIp,int nTSPort, string lpStrTargetIP,int nPort, string lpStrLocalIP,ref int nAnalyzeID)
+        public MSV_RET MSV_Relocate(long taskID, string  strTSIp,int nTSPort, string lpStrTargetIP,int nPort, string lpStrLocalIP,ref int nAnalyzeID, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strTSIp != "") ? strTSIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strTSIp)) ? strTSIp : m_iCtrlIp;
                     string cmd = string.Format("<?xml version =\"1.0\"?><Relocate><Port>{0}</Port><TargetIP>{1}</TargetIP><LocalIP>{2}</LocalIP><PgmID>{3}</PgmID><taskID>{4}</taskID></Relocate>", nPort, lpStrTargetIP, lpStrLocalIP, nAnalyzeID, taskID);
-                    string strRet = m_udpMsv.GetMsvUdpData("", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -2970,35 +3001,39 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSV_Relocate: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
 
         }
-        public MSV_RET MSVStartRetrospectTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel)
+        public MSV_RET MSVStartRetrospectTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
                 m_error_desc = "MSVStartRetrospectTask: param is null";
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
             if (/*param.nCutLen > 60 || */param.nCutLen <= 0)
             {
                 m_error_desc = "Segment time of task should be greater than 0 minutes";
                 string strLog = string.Format("MSVStartRetrospectTask(ID:{0},Name:{1}) MSV_FAILED.{2}", param.taskParam.ulID, param.taskParam.strName, m_error_desc);
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, strLog);
+                if (logger != null)
+                {
+                    logger.Info(strLog);
+                }
+                
                 return MSV_RET.MSV_FAILED;
             }
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMsvIp != "") ? strMsvIp : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                     string cmd = FromatParmaToString(param, "start_msv_retrospecttask", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -3041,22 +3076,22 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVStartRetrospectTask: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }
         }
 
-        public MSV_RET MSVSetMulDestPath(string strMSVIP, string strMulDestPathXML)
+        public MSV_RET MSVSetMulDestPath(string strMSVIP, string strMulDestPathXML, Sobey.Core.Log.ILogger logger)
         {
             lock (_msvfunclock)
             {
                 try
                 {
-                    string ip = (strMSVIP != "") ? strMSVIP : m_iCtrlIp;
+                    string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
                     string cmd = string.Format("<?xml version =\"1.0\"?><set_muldest_path>{0}</set_muldest_path>\0", strMulDestPathXML);
-                    string strRet = m_udpMsv.GetMsvUdpData("", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (strRet != "")
+                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
+                    if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -3099,7 +3134,7 @@ namespace IngestTask.Tools.Msv
                 catch (System.Exception ex)
                 {
                     m_error_desc = "MSVSetMulDestPath: " + ex.Message;
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, m_error_desc);
+                    if (logger != null){logger.Error(m_error_desc);}
                     return MSV_RET.MSV_FAILED;
                 }
             }

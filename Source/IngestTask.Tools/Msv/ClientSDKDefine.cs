@@ -608,6 +608,7 @@ namespace IngestTask.Tools.Msv
             _720_608_50I = 65, // 0x41	//SD PAL
             _invalid_vid_format = 0xfe, // for internal lock mode
             _unknown_vid_format = 0xff, // for input lock mode
+            _rtmp_vid_format = 0xfff, // for input lock mode
         }
         /**/
         public enum TimeCodeMode
