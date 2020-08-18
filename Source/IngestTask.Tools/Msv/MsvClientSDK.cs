@@ -402,50 +402,35 @@ namespace IngestTask.Tools.Msv
             return true;
         }
 
-        public bool Stop(int nChPort, string strMsvIP, int taskID, out int nMsvStopRet)
+        public bool Stop(int nChPort, string strMsvIP, int taskID, out int nMsvStopRet, Sobey.Core.Log.ILogger logger)
         {
             MSV_RET ret;
             nMsvStopRet = 0;
             try
             {
-                CClientTaskSDK SDK = GetMsvCtrlInstance(nChPort, strMsvIP);
-                if (SDK == null)
-                {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "GetMsvCtrlInstance(SDK=NULL)......MsvUdpClientCtrlSDK::Stop");
-                    return false;
-                }
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "prepare to MSVStopTask......MsvUdpClientCtrlSDK::Stop");
                 long nRetTaskId = -1;
-                ret = SDK.MSVStopTask(strMsvIP, ref nRetTaskId, taskID, nChPort);
+                ret = _clientSdk.MSVStopTask(strMsvIP, ref nRetTaskId, taskID, nChPort, logger);
                 nMsvStopRet = Convert.ToInt32(ret);
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MSVStopTask failed, error:{0} .......MsvUdpClientCtrlSDK::Stop", SDK.MSVGetLastErrorString());
+                    logger.Error($"MSVStopTask failed, error:{_clientSdk.MSVGetLastErrorString()} ");
                     return false;
                 }
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MSVStopTask end, nRetTaskId:{0} .......MsvUdpClientCtrlSDK::Stop", nRetTaskId);
+                logger.Info($"MSVStopTask end,MsvUdpClientCtrlSDK::Stop nRetTaskId::{nRetTaskId} ");
             }
             catch (Exception e)
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvUdpClientCtrlSDK::Stop, Exception:{0}", e.Message);
+                logger.Error($"MsvUdpClientCtrlSDK::Stop, Exception:{e.Message} ");
                 return false;
             }
             return true;
         }
 
-        public bool Trace(int nChPort, string strMsvIP, ref TaskParam pTaskparam, string strTaskName, string pCaptureparam)
+        public bool Trace(int nChPort, string strMsvIP, ref TaskParam pTaskparam, string strTaskName, string pCaptureparam, Sobey.Core.Log.ILogger logger)
         {
             MSV_RET ret;
             try
             {
-                CClientTaskSDK SDK = GetMsvCtrlInstance(nChPort, strMsvIP);
-
-                if (SDK == null)
-                {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "Tace(SDK=null) .....MsvUdpClientCtrlSDK::Trace");
-                    return false;
-                }
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "prepare to MSVStartRetrospectTask......MsvUdpClientCtrlSDK::Trace");
                 TASK_PARAM tmptaskparam = new TASK_PARAM();
                 ClientParam2MSVTskParam(pTaskparam, ref tmptaskparam);
                 TASK_ALL_PARAM_NEW task = new TASK_ALL_PARAM_NEW();
@@ -453,23 +438,23 @@ namespace IngestTask.Tools.Msv
                 task.taskParam.strName = strTaskName;
                 task.nCutLen = 10;
                 task.captureParam = pCaptureparam;
-                ret = SDK.MSVStartRetrospectTask(strMsvIP, task, nChPort);
+                ret = _clientSdk.MSVStartRetrospectTask(strMsvIP, task, nChPort, logger);
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MSVStartRetrospectTask falied, error:{0}", SDK.MSVGetLastErrorString());
+                    logger.Error($"MSVStartRetrospectTask falied, error:{_clientSdk.MSVGetLastErrorString()} ");
                     return false;
                 }
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MSVStartRetrospectTask end......MsvUdpClientCtrlSDK::Trace");
+                logger.Info($"MSVStartRetrospectTask end......MsvUdpClientCtrlSDK Trace");
             }
             catch (Exception e)
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvUdpClientCtrlSDK::Trace, Exception:{0}", e.Message);
+                logger.Error($"MsvUdpClientCtrlSDK::Trace falied, Exception:{e.Message} ");
                 return false;
             }
             return true;
         }
 
-        public bool QuerySignalStatus(int nChPort, string strMsvIP, out SDISignalDetails _SDISignalDetails)
+        public bool QuerySignalStatus(int nChPort, string strMsvIP, out SDISignalDetails _SDISignalDetails, Sobey.Core.Log.ILogger logger)
         {
             MSV_RET ret;
             SDISignalStatus status = new SDISignalStatus();
@@ -477,19 +462,11 @@ namespace IngestTask.Tools.Msv
             bool bIsBlack = false;
             try
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "************Prepare Cast Interface Function QuerySignalStatus!...........MsvUdpClientCtrlSDK::QuerySignalStatus");
-
-                CClientTaskSDK SDK = GetMsvCtrlInstance(nChPort, strMsvIP);
-                if (SDK == null)
-                {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "GetMsvCtrlInstance(SDK=null), MsvUdpClientCtrlSDK::QuerySignalStatus");
-                    return false;
-                }
-                ret = SDK.MSVQuerySDIFormat(strMsvIP, ref status, ref bIsBlack, nChPort);
+                ret = _clientSdk.MSVQuerySDIFormat(strMsvIP, ref status, ref bIsBlack, logger, nChPort);
 
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
-                    ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "Cast Interface Function QuerySignalStatus Error!(error = {0})...........MsvUdpClientCtrlSDK::QuerySignalStatus", SDK.MSVGetLastErrorString());
+                    logger.Error($"Cast Interface Function QuerySignalStatus Error!(error{_clientSdk.MSVGetLastErrorString()}");
                     return false;
                 }
                 //处理数据
@@ -509,7 +486,8 @@ namespace IngestTask.Tools.Msv
             }
             catch (System.Exception e)
             {
-                ApplicationLog.WriteLog(LogMsgLevel.DEBUG, "MsvUdpClientCtrlSDK::QuerySignalStatus Exception:{0}", e.Message);
+                logger.Error($"MsvUdpClientCtrlSDK::QuerySignalStatus Exception:{e.Message}");
+
                 return false;
             }
             return true;

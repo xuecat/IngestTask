@@ -21,8 +21,9 @@ namespace IngestTask.Server
 
     using Sobey.Core.Log;
     using System.Globalization;
-    using Microsoft.Extensions.Logging;
     using IngestTask.Grain;
+    using IngestTask.Tools.Msv;
+    using IngestTask.Tool;
 
     public static class Program
     {
@@ -91,6 +92,8 @@ namespace IngestTask.Server
                 .ConfigureServices(
                     (context, services) =>
                     {
+                        services.AddScoped<MsvClientCtrlSDK>();
+                        services.AddSingleton<RestClient>();
                         services.Configure<ApplicationOptions>(context.Configuration);
                         services.Configure<ClusterOptions>(context.Configuration.GetSection(nameof(ApplicationOptions.Cluster)));
                         services.Configure<StorageOptions>(context.Configuration.GetSection(nameof(ApplicationOptions.Storage)));

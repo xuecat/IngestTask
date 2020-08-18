@@ -127,4 +127,22 @@ namespace IngestTask.Tools.Dto
         /// <summary>上载独占</summary>
         ONLYUPLOAD
     }
+    /// <summary>程序类型</summary>
+    public enum ProgrammeType
+    {
+        PT_Null = -1,
+        PT_SDI,
+        PT_IPTS,
+        PT_StreamMedia
+    }
+
+    /// <summary>图像类型</summary>
+    public enum ImageType
+    {
+        IT_Null = -1,
+        IT_Original = 0,
+        IT_SD_4_3 = 1,
+        IT_SD_16_9 = 2,
+        IT_HD_16_9 = 4
+    }
 }

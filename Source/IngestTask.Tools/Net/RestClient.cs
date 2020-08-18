@@ -1,4 +1,5 @@
 ﻿using IngestTask.Tools;
+using IngestTask.Tools.Dto;
 using Sobey.Core.Log;
 using System;
 using System.Collections.Generic;
@@ -30,43 +31,25 @@ namespace IngestTask.Tool
             _httpClient.DefaultRequestHeaders.Add("sobeyhive-http-tool", "INGESTSERVER");
         }
 
-        public void UseCodeHeader(string usercode)
+        public Dictionary<string, string> GetTokenHeader(string usertoken)
         {
-            if (_httpClient.DefaultRequestHeaders.Contains("sobeyhive-http-token"))
-            {
-                _ = _httpClient.DefaultRequestHeaders.Remove("sobeyhive-http-token");
-            }
-
-            if (_httpClient.DefaultRequestHeaders.Contains("sobeyhive-http-secret"))
-            {
-                _ = _httpClient.DefaultRequestHeaders.Remove("sobeyhive-http-secret");
-            }
-            if (_httpClient.DefaultRequestHeaders.Contains("current-user-code"))
-            {
-                _ = _httpClient.DefaultRequestHeaders.Remove("current-user-code");
-            }
-
-            _httpClient.DefaultRequestHeaders.Add("sobeyhive-http-secret", RSAHelper.RSAstr());
-            _httpClient.DefaultRequestHeaders.Add("current-user-code", usercode);
+            return new Dictionary<string, string>() { 
+                {"sobeyhive-http-token", usertoken }
+            };
         }
 
-        public void UseTokenHeader(string usertoken)
+        public Dictionary<string, string> GetCodeHeader(string usertoken)
         {
-            if (_httpClient.DefaultRequestHeaders.Contains("sobeyhive-http-secret"))
-            {
-                _ = _httpClient.DefaultRequestHeaders.Remove("sobeyhive-http-secret");
-            }
-            if (_httpClient.DefaultRequestHeaders.Contains("current-user-code"))
-            {
-                _ = _httpClient.DefaultRequestHeaders.Remove("current-user-code");
-            }
-
-            if (_httpClient.DefaultRequestHeaders.Contains("sobeyhive-http-token"))
-            {
-                _ = _httpClient.DefaultRequestHeaders.Remove("sobeyhive-http-token");
-            }
-
-            _httpClient.DefaultRequestHeaders.Add("sobeyhive-http-token", usertoken);
+            return new Dictionary<string, string>() {
+                {"sobeyhive-http-secret", RSAHelper.RSAstr()},
+                {"current-user-code", usertoken }
+            };
+        }
+        public Dictionary<string, string> GetIngestHeader()
+        {
+            return new Dictionary<string, string>() {
+                {"sobeyhive-ingest-signature", Base64SQL.ToBase64String($"ingest_server;{DateTime.Now}")},
+            };
         }
 
         public async Task<TResponse> PostAsync<TResponse>(string url, object body, string method = "POST", NameValueCollection queryString = null, int timeout = 60)
@@ -160,6 +143,44 @@ namespace IngestTask.Tool
             {
                 response = "ERROR";
                 //Logger.Error("请求异常：\r\n{0}", e.ToString());
+            }
+            return response;
+        }
+
+        public async Task<TResponse> GetAsync<TResponse>(string url, NameValueCollection queryString, Dictionary<string, string> header)
+                    where TResponse : class, new()
+        {
+            TResponse response = null;
+            try
+            {
+                HttpClient client = _httpClient;
+                if (queryString == null)
+                {
+                    queryString = new NameValueCollection();
+                }
+                url = CreateUrl(url, queryString);
+                //Logger.Debug("请求：{0} {1}", "GET", url);
+                using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, url))
+                {
+                    if (header != null)
+                    {
+                        foreach (var item in header)
+                        {
+                            requestMessage.Headers.Add(item.Key, item.Value);
+                        }
+                    }
+                    var backinfo = await client.SendAsync(requestMessage).ConfigureAwait(true);
+                    var rJson = await backinfo.Content.ReadAsStringAsync().ConfigureAwait(true);
+                    Logger.Info("url response：\r\n{0} {1}", url, rJson);
+                    response = JsonHelper.ToObject<TResponse>(rJson);
+                }
+                
+            }
+            catch (System.Exception)
+            {
+                TResponse r = new TResponse();
+                //Logger.Error("请求异常：\r\n{0}", e.ToString());
+                return r;
             }
             return response;
         }
@@ -392,13 +413,82 @@ namespace IngestTask.Tool
 
         }
 
+        #region Task
+        #endregion
+
+        #region Device
+        public async Task<List<CaptureDeviceInfo>> GetAllCaptureDevicesAsync()
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureDeviceInfo>>>(() => {
+                return GetAsync<ResponseMessage<List<CaptureDeviceInfo>>>(
+                    string.Format("{0}/api/v2/device/capturedevice/all", ApplicationContext.Current.CMServerUrl), null, GetIngestHeader()
+                    );
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
+
+        public async Task<List<CaptureChannelInfo>> GetAllCaptureChannelAsync()
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureChannelInfo>>>(() =>
+            {
+                return GetAsync<ResponseMessage<List<CaptureChannelInfo>>>(
+                    string.Format("{0}/api/v2/device/capturechannel/all", ApplicationContext.Current.CMServerUrl), null, GetIngestHeader()
+                    );
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
+
+        public async Task<List<SignalSrc>> GetAllSignalSrcAsync()
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<List<SignalSrc>>>(() =>
+            {
+                return GetAsync<ResponseMessage<List<SignalSrc>>>(
+                    string.Format("{0}/api/v2/device/signalsrc/all", ApplicationContext.Current.CMServerUrl), null, GetIngestHeader()
+                    );
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
+
+        public async Task<List<ProgrammeInfo>> GetAllProgrammeAsync()
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<List<ProgrammeInfo>>>(() =>
+            {
+                return GetAsync<ResponseMessage<List<ProgrammeInfo>>>(
+                    string.Format("{0}/api/v2/device/programme/all", ApplicationContext.Current.CMServerUrl), null, GetIngestHeader()
+                    );
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
+        #endregion
+
         #region cmapi接口统一管理，方便后面修改
         public async Task<string> GetGlobalParamAsync(bool usetokencode, string userTokenOrCode, string key)
         {
+            Dictionary<string, string> header = null;
             if (usetokencode)
-                UseTokenHeader(userTokenOrCode);
+                header = GetTokenHeader(userTokenOrCode);
             else
-                UseCodeHeader(userTokenOrCode);
+                header = GetCodeHeader(userTokenOrCode);
 
             var back = await AutoRetry.RunAsync<ResponseMessage<CmParam>>(() =>
             {
@@ -410,7 +500,7 @@ namespace IngestTask.Tool
                 };
                 return PostAsync<ResponseMessage<CmParam>>(
                 string.Format("{0}/CMApi/api/basic/config/getsysparam", ApplicationContext.Current.CMServerUrl),
-                param);
+                param, header);
 
             }).ConfigureAwait(true);
 
@@ -424,10 +514,11 @@ namespace IngestTask.Tool
 
         public async Task<int> GetUserParamTemplateIDAsync(bool usetokencode, string userTokenOrCode)
         {
+            Dictionary<string, string> header = null;
             if (usetokencode)
-                UseTokenHeader(userTokenOrCode);
+                header = GetTokenHeader(userTokenOrCode);
             else
-                UseCodeHeader(userTokenOrCode);
+                header = GetCodeHeader(userTokenOrCode);
 
             var back = await AutoRetry.RunAsync<ResponseMessage<CmParam>>(() =>
                 {
@@ -439,7 +530,7 @@ namespace IngestTask.Tool
                     };
                     return PostAsync<ResponseMessage<CmParam>>(
                     string.Format("{0}/CMApi/api/basic/config/getuserparam", ApplicationContext.Current.CMServerUrl),
-                    param);
+                    param, header);
 
                 }).ConfigureAwait(true);
 
@@ -454,10 +545,11 @@ namespace IngestTask.Tool
 
         public async Task<CMUserInfo> GetUserInfoAsync(bool usetokencode, string userTokenOrCode, string userCode)
         {
+            Dictionary<string, string> header = null;
             if (usetokencode)
-                UseTokenHeader(userTokenOrCode);
+                header = GetTokenHeader(userTokenOrCode);
             else
-                UseCodeHeader(userTokenOrCode);
+                header = GetCodeHeader(userTokenOrCode);
 
 
             var back = await AutoRetry.RunAsync<ResponseMessage<CMUserInfo>>(() =>
