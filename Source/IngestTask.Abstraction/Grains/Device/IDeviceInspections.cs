@@ -8,6 +8,6 @@ namespace IngestTask.Abstraction.Grains
     using System.Threading.Tasks;
     public interface IDeviceInspections
     {
-        Task<int> CheckSiloChannelAsync();
+        Task<int> CheckChannelSatetAsync();
     }
 }

@@ -1,4 +1,4 @@
-namespace IngestTask.Grains.HealthCheck
+namespace IngestTask.Grain.HealthCheck
 {
     using System;
     using System.Threading.Tasks;

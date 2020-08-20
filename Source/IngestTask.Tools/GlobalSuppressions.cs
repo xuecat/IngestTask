@@ -27,3 +27,5 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Design", "CA1062:验证公共方法的参数", Justification = "<挂起>", Scope = "member", Target = "~M:IngestTask.Tools.Msv.MsvClientCtrlSDK.Stop(System.Int32,System.String,System.Int32,System.Int32@,Sobey.Core.Log.ILogger)~System.Boolean")]
 [assembly: SuppressMessage("Design", "CA1062:验证公共方法的参数", Justification = "<挂起>", Scope = "member", Target = "~M:IngestTask.Tools.Msv.MsvClientCtrlSDK.Trace(System.Int32,System.String,IngestTask.Tools.Msv.TaskParam@,System.String,System.String,Sobey.Core.Log.ILogger)~System.Boolean")]
 [assembly: SuppressMessage("Design", "CA1062:验证公共方法的参数", Justification = "<挂起>", Scope = "member", Target = "~M:IngestTask.Tools.Msv.MsvClientCtrlSDK.QuerySignalStatus(System.Int32,System.String,IngestTask.Tools.Msv.SDISignalDetails@,Sobey.Core.Log.ILogger)~System.Boolean")]
+[assembly: SuppressMessage("Usage", "CA2227:集合属性应为只读", Justification = "<挂起>", Scope = "member", Target = "~P:IngestTask.Tools.Dto.PeriodParamResponse.Params")]
+[assembly: SuppressMessage("Usage", "CA2227:集合属性应为只读", Justification = "<挂起>", Scope = "member", Target = "~P:IngestTask.Tools.Dto.PeriodParam.Params")]
