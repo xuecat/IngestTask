@@ -56,7 +56,7 @@ namespace IngestTask.Grain.Device
             {
                 foreach (var item in _channelInfoList)
                 {
-
+                    Task.Run(() = > _msvClient.QueryState(item.ChannelIndex, item.));
                 }
             }
         }

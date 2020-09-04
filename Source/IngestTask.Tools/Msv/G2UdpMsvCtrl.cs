@@ -87,7 +87,7 @@ namespace IngestTask.Tools.Msv
                             nRecvedLen += (uint)data.Length;
                             if (nRecvedLen < 4)
                             {
-                                System.Threading.Thread.Sleep(500);
+                                //System.Threading.Thread.Sleep(500);
                                 buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数   
                                 continue;
                             }
@@ -113,7 +113,7 @@ namespace IngestTask.Tools.Msv
                         }
 
                     }
-                    System.Threading.Thread.Sleep(200);
+                    
                     buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数  
 
                     if (buffSizeCurrent <= 0)
@@ -127,6 +127,7 @@ namespace IngestTask.Tools.Msv
                     {
                         break;
                     }
+                    System.Threading.Thread.Sleep(200);
                 }
                 //udpClient.Close();
                 if (nRecvedLen > 0)
