@@ -31,5 +31,27 @@ namespace IngestTask.Tools.Dto
         /// <summary>序号</summary>
         public int OrderCode { get; set; }
     }
+
+    public class DeviceInfo : CaptureDeviceInfo
+    {
+        public Device_State CurrentDevState { get; set; } = Device_State.DISCONNECTTED;
+        public Device_State LastDevState { get; set; } = Device_State.DISCONNECTTED;
+
+       
+        /// <summary>MSV模式</summary>
+        public MSV_Mode LastMsvMode { get; set; } = MSV_Mode.LOCAL;
+        /// <summary>vtrId</summary>
+        public int VtrId { get; set; } = -1;
+
+        /// <summary>当前用户Code</summary>
+        public string UserCode { get; set; } = string.Empty;
+
+        /// <summary>kamataki信息</summary>
+        public string KamatakiInfo { get; set; } = string.Empty;
+
+        /// <summary>上载模式</summary>
+        public Upload_Mode UploadMode { get; set; } = Upload_Mode.NOUPLOAD;
+
+    }
 }
 

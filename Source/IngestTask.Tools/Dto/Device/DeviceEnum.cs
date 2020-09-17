@@ -108,6 +108,7 @@ namespace IngestTask.Tools.Dto
     /// <summary>MSV模式</summary>
     public enum MSV_Mode
     {
+        ERROR =-1,
         /// <summary>本地</summary>
         LOCAL,
 
@@ -144,5 +145,18 @@ namespace IngestTask.Tools.Dto
         IT_SD_4_3 = 1,
         IT_SD_16_9 = 2,
         IT_HD_16_9 = 4
+    }
+    //public enum DeviceStatus
+    //{
+    //    Error,
+    //    Idle,
+    //    Running,
+    //}
+
+    public enum DeviceType
+    {
+        MSV = 1,
+        IPTS,
+        StreamMedia
     }
 }

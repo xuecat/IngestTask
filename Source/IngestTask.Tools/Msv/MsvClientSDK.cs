@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Xml;
+using IngestTask.Tools.Dto;
 
 namespace IngestTask.Tools.Msv
 {
@@ -352,11 +353,10 @@ namespace IngestTask.Tools.Msv
             }
             return true;
         }
-        public bool QueryState(int nChPort, string strMsvIP, out int ds, Sobey.Core.Log.ILogger logger)
+        public Device_State QueryDeviceState(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
         {
             MSV_STATE state = new MSV_STATE();
             MSV_RET ret;
-            ds = 1;
             try
             {
                 
@@ -364,27 +364,25 @@ namespace IngestTask.Tools.Msv
                 if (ret == MSV_RET.MSV_NETERROR)
                 {
                     logger.Error($"MSVQueryState MSV_NETERROR, {strMsvIP}:{nChPort}, error: {_clientSdk.MSVGetLastErrorString()}");
-                    return false;
+                    return Device_State.DISCONNECTTED;
                 }
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
                     logger.Error($"MSVQueryState failed, {strMsvIP}:{nChPort}, error: {_clientSdk.MSVGetLastErrorString()}");
-                    return false;
+                    return Device_State.DISCONNECTTED;
                 }
-                if (state.msv_capture_state == CAPTURE_STATE.CS_PAUSE)
-                    ds = 2;
-                else if (state.msv_capture_state == CAPTURE_STATE.CS_CAPTURE)
-                    ds = 0;
+                logger.Info($"MSVQueryState End, state:{state.msv_capture_state}......");
+                if (state.msv_capture_state == CAPTURE_STATE.CS_PAUSE || state.msv_capture_state == CAPTURE_STATE.CS_CAPTURE)
+                    return Device_State.WORKING;
                 else
-                    ds = 1;
-                logger.Info($"MSVQueryState End, state:{ds}......");
+                    return Device_State.CONNECTED;
+                
             }
             catch (Exception e)
             {
                 logger.Error($"MsvUdpClientCtrlSDK::QueryState, Exception {e.Message}");
-                return false;
+                return Device_State.DISCONNECTTED;
             }
-            return true;
         }
 
         public bool GetLastErrorInfo(int nChPort, string strMsvIP, out _ErrorInfo pErrorInfo)

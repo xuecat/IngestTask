@@ -18,6 +18,9 @@ namespace IngestTask.Tool
         ILogger Logger = LoggerManager.GetLogger("ApiClient");
 
         private static HttpClient _httpClient = null;
+        const string TASKAPI = "api/v2/task";
+        const string DEVICEAPI21 = "api/v2.1/device";
+        const string DEVICEAPI20 = "api/v2/device";
 
         public RestClient()
         {
@@ -154,11 +157,11 @@ namespace IngestTask.Tool
             try
             {
                 HttpClient client = _httpClient;
-                if (queryString == null)
+                if (queryString != null)
                 {
-                    queryString = new NameValueCollection();
+                    url = CreateUrl(url, queryString);
                 }
-                url = CreateUrl(url, queryString);
+                
                 //Logger.Debug("请求：{0} {1}", "GET", url);
                 using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, url))
                 {
@@ -185,32 +188,32 @@ namespace IngestTask.Tool
             return response;
         }
 
-        public async Task<TResponse> GetAsync<TResponse>(string url, NameValueCollection queryString)
-                    where TResponse : class, new()
-        {
-            TResponse response = null;
-            try
-            {
-                HttpClient client = _httpClient;
-                if (queryString == null)
-                {
-                    queryString = new NameValueCollection();
-                }
-                url = CreateUrl(url, queryString);
-                //Logger.Debug("请求：{0} {1}", "GET", url);
-                byte[] rData = await client.GetByteArrayAsync(url).ConfigureAwait(true);
-                string rJson = Encoding.UTF8.GetString(rData);
-                Logger.Info("url response：\r\n{0} {1}", url, rJson);
-                response = JsonHelper.ToObject<TResponse>(rJson);
-            }
-            catch (System.Exception )
-            {
-                TResponse r = new TResponse();
-                //Logger.Error("请求异常：\r\n{0}", e.ToString());
-                return r;
-            }
-            return response;
-        }
+        //public async Task<TResponse> GetAsync<TResponse>(string url, NameValueCollection queryString)
+        //            where TResponse : class, new()
+        //{
+        //    TResponse response = null;
+        //    try
+        //    {
+        //        HttpClient client = _httpClient;
+        //        if (queryString != null)
+        //        {
+        //            url = CreateUrl(url, queryString);
+        //        }
+        //        
+        //        //Logger.Debug("请求：{0} {1}", "GET", url);
+        //        byte[] rData = await client.GetByteArrayAsync(url).ConfigureAwait(true);
+        //        string rJson = Encoding.UTF8.GetString(rData);
+        //        Logger.Info("url response：\r\n{0} {1}", url, rJson);
+        //        response = JsonHelper.ToObject<TResponse>(rJson);
+        //    }
+        //    catch (System.Exception )
+        //    {
+        //        TResponse r = new TResponse();
+        //        //Logger.Error("请求异常：\r\n{0}", e.ToString());
+        //        return r;
+        //    }
+        //    return response;
+        //}
         public async Task<TResponse> PostAsync<TResponse>(string url, object body, Dictionary<string, string> header, string method = null, NameValueCollection queryString = null)
         {
             TResponse response = default(TResponse);
@@ -258,44 +261,44 @@ namespace IngestTask.Tool
             }
         }
 
-        public async Task<string> PostAsync(string url, object body, string method, NameValueCollection queryString)
-        {
-            string response = null;
-            try
-            {
-                string json = JsonHelper.ToJson(body);
-                HttpClient client = _httpClient;
-                if (queryString == null)
-                {
-                    queryString = new NameValueCollection();
-                }
+        //public async Task<string> PostAsync(string url, object body, string method, NameValueCollection queryString)
+        //{
+        //    string response = null;
+        //    try
+        //    {
+        //        string json = JsonHelper.ToJson(body);
+        //        HttpClient client = _httpClient;
+        //        if (queryString == null)
+        //        {
+        //            queryString = new NameValueCollection();
+        //        }
 
-                url = CreateUrl(url, queryString);
-                if (String.IsNullOrEmpty(method))
-                {
-                    method = "POST";
-                }
-                //Logger.Debug("请求：{0} {1}", method, url);
-                byte[] strData = Encoding.UTF8.GetBytes(json);
-                MemoryStream ms = new MemoryStream(strData);
-                using (StreamContent sc = new StreamContent(ms))
-                {
-                    sc.Headers.ContentType = new MediaTypeWithQualityHeaderValue("application/json");
-                    var res = await client.PostAsync(url, sc).ConfigureAwait(true);
-                    byte[] rData = await res.Content.ReadAsByteArrayAsync().ConfigureAwait(true);
-                    string rJson = Encoding.UTF8.GetString(rData);
-                    //Logger.Debug("应答：\r\n{0}", rJson);
-                    response = rJson;
-                    return response;
-                }
+        //        url = CreateUrl(url, queryString);
+        //        if (String.IsNullOrEmpty(method))
+        //        {
+        //            method = "POST";
+        //        }
+        //        //Logger.Debug("请求：{0} {1}", method, url);
+        //        byte[] strData = Encoding.UTF8.GetBytes(json);
+        //        MemoryStream ms = new MemoryStream(strData);
+        //        using (StreamContent sc = new StreamContent(ms))
+        //        {
+        //            sc.Headers.ContentType = new MediaTypeWithQualityHeaderValue("application/json");
+        //            var res = await client.PostAsync(url, sc).ConfigureAwait(true);
+        //            byte[] rData = await res.Content.ReadAsByteArrayAsync().ConfigureAwait(true);
+        //            string rJson = Encoding.UTF8.GetString(rData);
+        //            //Logger.Debug("应答：\r\n{0}", rJson);
+        //            response = rJson;
+        //            return response;
+        //        }
                     
-            }
-            catch (System.Exception )
-            {
-                //Logger.Error("请求异常：\r\n{0}", e.ToString());
-                throw;
-            }
-        }
+        //    }
+        //    catch (System.Exception )
+        //    {
+        //        //Logger.Error("请求异常：\r\n{0}", e.ToString());
+        //        throw;
+        //    }
+        //}
 
         public async Task<TResult> PostWithTokenAsync<TResult>(string url, object body, string token, string userId = null, string method = "Post")
         {
@@ -481,6 +484,40 @@ namespace IngestTask.Tool
         }
         #endregion
 
+
+        #region Device
+        public async Task<bool> UpdateMSVChannelStateAsync(int id, MSV_Mode mode, Device_State state)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+            {
+                return PostAsync<ResponseMessage<bool>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{DEVICEAPI20}/channelstate/{id}", 
+                    new { DevState = state, MSVMode = mode }, GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return false;
+        }
+
+        public async Task<List<DeviceInfo>> GetAllDeviceInfoAsync()
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<List<DeviceInfo>>>(() =>
+            {
+                return GetAsync<ResponseMessage<List<DeviceInfo>>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{DEVICEAPI21}/device/all", null, GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
+        #endregion
+
         #region cmapi接口统一管理，方便后面修改
         public async Task<string> GetGlobalParamAsync(bool usetokencode, string userTokenOrCode, string key)
         {
@@ -559,7 +596,7 @@ namespace IngestTask.Tool
                 v.Add("usercode", userCode);
                 return GetAsync<ResponseMessage<CMUserInfo>>(
                     string.Format("{0}/CMApi/api/basic/account/getuserinfobyusercode", ApplicationContext.Current.CMServerUrl),
-                    v);
+                    v, header);
             }).ConfigureAwait(true);
 
             if (back != null)
