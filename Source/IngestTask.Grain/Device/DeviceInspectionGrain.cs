@@ -18,10 +18,11 @@ namespace IngestTask.Grain.Device
     class DeviceInspectionGrain : Grain, IDeviceInspections
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("DeviceInfo");
-        private readonly List<DeviceInfo> _deviceInfoList;//不存在并发问题，没有锁
         private readonly GrainObserverManager<IDeviceChange> _observerManager;
         private readonly MsvClientCtrlSDK _msvClient;
         private readonly RestClient _restClient;
+        private List<DeviceInfo> _deviceInfoList;//不存在并发问题，没有锁
+        private int _actionType;
 
         DeviceInspectionGrain(MsvClientCtrlSDK msv, RestClient client)
         {
@@ -33,7 +34,7 @@ namespace IngestTask.Grain.Device
 
         public override Task OnActivateAsync()
         {
-            RegisterTimer(this.OnCheckAllChannelsAsync, _deviceInfoList, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            RegisterTimer(this.OnCheckAllChannelsAsync, _actionType, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
             Logger.Info(" DeviceInspectionGrain active");
             return base.OnActivateAsync();
         }
@@ -44,42 +45,69 @@ namespace IngestTask.Grain.Device
         public Task<int> OnDeviceChangeAsync(int type, string message)
         {
             /*
-             * 重新更新内存数据并通知外面
+             * flag 重新更新内存数据并通知外面
              */
 
             _observerManager.Notify(s => s.ReceiveDeveiceChange(type, message));
             return Task.FromResult(0);
         }
-        private async Task OnCheckAllChannelsAsync(object Channels)
+        private async Task OnCheckAllChannelsAsync(object type)
         {
-            if (Channels != null)
+
+            switch (type)
             {
-                foreach (var item in _deviceInfoList)
-                {
-                    await Task.Run(async () => {
-                        var state = _msvClient.QueryDeviceState(item.ChannelIndex, item.Ip, Logger);
-                        
-                        MSV_Mode msvmode = MSV_Mode.NETWORK;
-                        if (state == Device_State.DISCONNECTTED)
+                case 0:
+                    {
+                        _actionType = 1;
+                    } break;
+                case 1:
+                    {
+                        foreach (var item in _deviceInfoList)
                         {
-                            msvmode = MSV_Mode.ERROR;
-                            Logger.Warn($"QueryDeviceState {state}");
-                        }
+                            await Task.Run(async () => {
+                                var state = _msvClient.QueryDeviceState(item.ChannelIndex, item.Ip, Logger);
 
-                        if (item.CurrentDevState != state || msvmode != item.LastMsvMode)
-                        {
-                            item.LastDevState = item.CurrentDevState;
-                            item.LastMsvMode = msvmode;
-                            item.CurrentDevState = state;
+                                MSV_Mode msvmode = MSV_Mode.NETWORK;
+                                if (state == Device_State.DISCONNECTTED)
+                                {
+                                    msvmode = MSV_Mode.ERROR;
+                                    Logger.Warn($"QueryDeviceState {state}");
+                                }
 
-                            if (!await _restClient.UpdateMSVChannelStateAsync(item.ChannelId, item.LastMsvMode, item.CurrentDevState))
-                            {
-                                Logger.Error("OnCheckAllChannelsAsync UpdateMSVChannelStateAsync error");
-                            }
+                                if (item.CurrentDevState != state || msvmode != item.LastMsvMode)
+                                {
+                                    item.LastDevState = item.CurrentDevState;
+                                    item.LastMsvMode = msvmode;
+                                    item.CurrentDevState = state;
+
+                                    if (!await _restClient.UpdateMSVChannelStateAsync(item.ChannelId, item.LastMsvMode, item.CurrentDevState))
+                                    {
+                                        Logger.Error("OnCheckAllChannelsAsync UpdateMSVChannelStateAsync error");
+                                    }
+                                }
+
+                                if (item.LastDevState == Device_State.DISCONNECTTED
+                                     && item.CurrentDevState == Device_State.DISCONNECTTED
+                                     && item.NeedStopFlag)
+                                {
+                                    /*
+                                     * flag 需要用流通知到各个通道，通道异常
+                                     */
+                                }
+
+
+
+
+                            }).ConfigureAwait(true);
                         }
-                    }).ConfigureAwait(true);
-                }
+                    }
+                    break;
+                default:
+                    break;
             }
+
+            
+            
         }
 
        

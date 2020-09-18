@@ -34,6 +34,7 @@ namespace IngestTask.Tools.Dto
 
     public class DeviceInfo : CaptureDeviceInfo
     {
+        public bool NeedStopFlag { get; set; }
         public Device_State CurrentDevState { get; set; } = Device_State.DISCONNECTTED;
         public Device_State LastDevState { get; set; } = Device_State.DISCONNECTTED;
 
