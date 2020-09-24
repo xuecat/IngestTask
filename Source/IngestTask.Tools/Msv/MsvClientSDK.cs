@@ -320,11 +320,10 @@ namespace IngestTask.Tools.Msv
             return true;
         }
 
-        public bool QueryTaskState(int nChPort, string strMsvIP, out TaskParam tskparam, Sobey.Core.Log.ILogger logger)
+        public TASK_PARAM QueryTaskInfo(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
         {
             MSV_RET ret;
             TASK_PARAM info = new TASK_PARAM();
-            tskparam = new TaskParam();
             logger.Info($"MsvSDK prepare QueryTaskState(ip={strMsvIP})");
             try
             {
@@ -333,25 +332,25 @@ namespace IngestTask.Tools.Msv
                 if (ret == MSV_RET.MSV_NETERROR)
                 {
                     logger.Error($" MSVQueryRuningTask net Error {_clientSdk.MSVGetLastErrorString()}");
-                    return false;
+                    return null;
                 }
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
                     logger.Error($" MSVQueryRuningTask Error {_clientSdk.MSVGetLastErrorString()}");
-                    return false;
+                    return null;
                 }
                 //string strbtime = info.tmBeg.ToString("yy-MM-dd hh:mm:ss");
                 //string stretime = info.tmBeg.ToString("yy-MM-dd hh:mm:ss");
                 //info.tmBeg = Convert.ToDateTime(strbtime);
                 //info.tmEnd = Convert.ToDateTime(stretime);
-                MSVTskParam2ClientParam(info, ref tskparam);
+                //MSVTskParam2ClientParam(info, ref tskparam);
             }
             catch (Exception e)
             {
                 logger.Error($"MsvUdpClientCtrlSDK::QueryTaskState, Exception:{e.Message}");
-                return false;
+                return null;
             }
-            return true;
+            return info;
         }
         public Device_State QueryDeviceState(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
         {

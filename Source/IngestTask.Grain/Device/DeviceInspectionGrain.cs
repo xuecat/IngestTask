@@ -51,7 +51,7 @@ namespace IngestTask.Grain.Device
             _observerManager.Notify(s => s.ReceiveDeveiceChange(type, message));
             return Task.FromResult(0);
         }
-        private async Task OnCheckAllChannelsAsync(object type)
+        private Task OnCheckAllChannelsAsync(object type)
         {
 
             switch (type)
@@ -64,7 +64,8 @@ namespace IngestTask.Grain.Device
                     {
                         foreach (var item in _deviceInfoList)
                         {
-                            await Task.Run(async () => {
+                            _ = Task.Run(async () =>
+                            {
                                 var state = _msvClient.QueryDeviceState(item.ChannelIndex, item.Ip, Logger);
 
                                 MSV_Mode msvmode = MSV_Mode.NETWORK;
@@ -74,13 +75,15 @@ namespace IngestTask.Grain.Device
                                     Logger.Warn($"QueryDeviceState {state}");
                                 }
 
+                                bool changedstate = false;
                                 if (item.CurrentDevState != state || msvmode != item.LastMsvMode)
                                 {
+                                    changedstate = true;
                                     item.LastDevState = item.CurrentDevState;
                                     item.LastMsvMode = msvmode;
                                     item.CurrentDevState = state;
 
-                                    if (!await _restClient.UpdateMSVChannelStateAsync(item.ChannelId, item.LastMsvMode, item.CurrentDevState))
+                                    if (!await _restClient.UpdateMSVChannelStateAsync(item.ChannelId, item.LastMsvMode, item.CurrentDevState).ConfigureAwait(true))
                                     {
                                         Logger.Error("OnCheckAllChannelsAsync UpdateMSVChannelStateAsync error");
                                     }
@@ -95,10 +98,31 @@ namespace IngestTask.Grain.Device
                                      */
                                 }
 
+                                if (item.LastDevState == Device_State.DISCONNECTTED
+                                     && item.CurrentDevState >= Device_State.CONNECTED
+                                     && changedstate
+                                     && item.NeedStopFlag)
+                                {
+                                    var taskinfo = _msvClient.QueryTaskInfo(item.ChannelIndex, item.Ip, Logger);
+                                    if (taskinfo != null && taskinfo.ulID > 0)
+                                    {
+                                        var cptaskinfo = await _restClient.GetChannelCapturingTaskInfoAsync(item.ChannelId);
+
+                                        bool needstop = true;
+                                        if (cptaskinfo != null && cptaskinfo.TaskId == taskinfo.ulID)
+                                        {
+                                            needstop = false;
+                                        }
+
+                                        if (needstop)
+                                        {
+
+                                        }
+                                    }
+                                }
 
 
-
-                            }).ConfigureAwait(true);
+                            });
                         }
                     }
                     break;
@@ -106,8 +130,8 @@ namespace IngestTask.Grain.Device
                     break;
             }
 
-            
-            
+
+            return Task.CompletedTask;
         }
 
        

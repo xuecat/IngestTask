@@ -18,7 +18,7 @@ namespace IngestTask.Tool
         ILogger Logger = LoggerManager.GetLogger("ApiClient");
 
         private static HttpClient _httpClient = null;
-        const string TASKAPI = "api/v2/task";
+        const string TASKAPI20 = "api/v2/task";
         const string DEVICEAPI21 = "api/v2.1/device";
         const string DEVICEAPI20 = "api/v2/device";
 
@@ -417,6 +417,24 @@ namespace IngestTask.Tool
         }
 
         #region Task
+
+        public async Task<TaskContent> GetChannelCapturingTaskInfoAsync(int channelid)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() => {
+                NameValueCollection v = new NameValueCollection();
+                v.Add("newest", "1");
+
+                return GetAsync<ResponseMessage<TaskContent>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/capturing/{channelid}", v, GetIngestHeader()
+                    );
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
         #endregion
 
         #region Device
@@ -424,7 +442,7 @@ namespace IngestTask.Tool
         {
             var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureDeviceInfo>>>(() => {
                 return GetAsync<ResponseMessage<List<CaptureDeviceInfo>>>(
-                    string.Format("{0}/api/v2/device/capturedevice/all", ApplicationContext.Current.CMServerUrl), null, GetIngestHeader()
+                    $"{ApplicationContext.Current.IngestDBUrl}/{DEVICEAPI20}/capturedevice/all", null, GetIngestHeader()
                     );
             }).ConfigureAwait(true);
 
@@ -440,7 +458,7 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureChannelInfo>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<CaptureChannelInfo>>>(
-                    string.Format("{0}/api/v2/device/capturechannel/all", ApplicationContext.Current.CMServerUrl), null, GetIngestHeader()
+                    $"{ApplicationContext.Current.IngestDBUrl}/{DEVICEAPI20}/capturechannel/all", null, GetIngestHeader()
                     );
             }).ConfigureAwait(true);
 
@@ -456,7 +474,7 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<SignalSrc>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<SignalSrc>>>(
-                    string.Format("{0}/api/v2/device/signalsrc/all", ApplicationContext.Current.CMServerUrl), null, GetIngestHeader()
+                    $"{ApplicationContext.Current.IngestDBUrl}/{DEVICEAPI20}/signalsrc/all", null, GetIngestHeader()
                     );
             }).ConfigureAwait(true);
 
@@ -472,7 +490,7 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<ProgrammeInfo>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<ProgrammeInfo>>>(
-                    string.Format("{0}/api/v2/device/programme/all", ApplicationContext.Current.CMServerUrl), null, GetIngestHeader()
+                    $"{ApplicationContext.Current.IngestDBUrl}/{DEVICEAPI20}/programme/all", null, GetIngestHeader()
                     );
             }).ConfigureAwait(true);
 

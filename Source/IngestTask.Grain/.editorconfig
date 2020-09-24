@@ -1,0 +1,40 @@
+[*.cs]
+
+# CA1707: 标识符不应包含下划线
+dotnet_diagnostic.CA1707.severity = silent
+
+# CA1031: 不捕获常规异常类型
+dotnet_diagnostic.CA1031.severity = silent
+
+# CA2225: 运算符重载具有命名的备用项
+dotnet_diagnostic.CA2225.severity = none
+
+# CA1303: 请不要将文本作为本地化参数传递
+dotnet_diagnostic.CA1303.severity = none
+
+# CA1307: 指定 StringComparison
+dotnet_diagnostic.CA1307.severity = none
+
+# CA1507: 使用 nameof 表达符号名称
+dotnet_diagnostic.CA1507.severity = none
+
+# CA1054: URI 参数不应为字符串
+dotnet_diagnostic.CA1054.severity = none
+
+# CA2234: 传递系统 URI 对象而不是字符串
+dotnet_diagnostic.CA2234.severity = none
+
+# CA1055: URI 返回值不应是字符串
+dotnet_diagnostic.CA1055.severity = none
+
+# CA1056: URI 属性不应是字符串
+dotnet_diagnostic.CA1056.severity = silent
+
+# CA1305: 指定 IFormatProvider
+dotnet_diagnostic.CA1305.severity = none
+
+# CA1062: 验证公共方法的参数
+dotnet_diagnostic.CA1062.severity = silent
+
+# CA2007: 考虑对等待的任务调用 ConfigureAwait
+dotnet_diagnostic.CA2007.severity = silent
