@@ -13,6 +13,7 @@ namespace IngestTask.Grain.Device
     using Sobey.Core.Log;
     using IngestTask.Tools.Msv;
     using IngestTask.Tool;
+    using AutoMapper;
 
     [StatelessWorker(1)]
     class DeviceInspectionGrain : Grain, IDeviceInspections
@@ -21,14 +22,16 @@ namespace IngestTask.Grain.Device
         private readonly GrainObserverManager<IDeviceChange> _observerManager;
         private readonly MsvClientCtrlSDK _msvClient;
         private readonly RestClient _restClient;
-        private List<DeviceInfo> _deviceInfoList;//不存在并发问题，没有锁
+        private List<ChannelInfo> _channelInfoList;//不存在并发问题，没有锁
         private int _actionType;
 
-        DeviceInspectionGrain(MsvClientCtrlSDK msv, RestClient client)
+        private readonly IMapper Mapper;
+
+        DeviceInspectionGrain(MsvClientCtrlSDK msv, RestClient client, IMapper mapper)
         {
+            Mapper = mapper;
             _restClient = client;
             _msvClient = msv;
-            _deviceInfoList = new List<DeviceInfo>();
             _observerManager = new GrainObserverManager<IDeviceChange>();
         }
 
@@ -42,15 +45,16 @@ namespace IngestTask.Grain.Device
         {
             return base.OnDeactivateAsync();
         }
-        public Task<int> OnDeviceChangeAsync(int type, string message)
-        {
-            /*
-             * flag 重新更新内存数据并通知外面
-             */
 
-            _observerManager.Notify(s => s.ReceiveDeveiceChange(type, message));
-            return Task.FromResult(0);
+        public async Task InitLoad()
+        {
+            var lstdevice = await _restClient.GetAllDeviceInfoAsync();
+            var channelstate = await _restClient.GetAllChannelStateAsync();
+
+            _channelInfoList = Mapper.Map<List<ChannelInfo>>(lstdevice);
+            _channelInfoList = Mapper.Map<List<ChannelInfo>>(channelstate, _channelInfoList);
         }
+        
         private Task OnCheckAllChannelsAsync(object type)
         {
 
@@ -62,7 +66,7 @@ namespace IngestTask.Grain.Device
                     } break;
                 case 1:
                     {
-                        foreach (var item in _deviceInfoList)
+                        foreach (var item in _channelInfoList)
                         {
                             _ = Task.Run(async () =>
                             {
@@ -90,16 +94,14 @@ namespace IngestTask.Grain.Device
                                 }
 
                                 if (item.LastDevState == Device_State.DISCONNECTTED
-                                     && item.CurrentDevState == Device_State.DISCONNECTTED
+                                     && item.CurrentDevState == Device_State.CONNECTED
                                      && item.NeedStopFlag)
                                 {
-                                    /*
-                                     * flag 需要用流通知到各个通道，通道异常
-                                     */
+                                    item.NeedStopFlag = false;
                                 }
 
                                 if (item.LastDevState == Device_State.DISCONNECTTED
-                                     && item.CurrentDevState >= Device_State.CONNECTED
+                                     && item.CurrentDevState == Device_State.WORKING
                                      && changedstate
                                      && item.NeedStopFlag)
                                 {
@@ -111,13 +113,18 @@ namespace IngestTask.Grain.Device
                                         bool needstop = true;
                                         if (cptaskinfo != null && cptaskinfo.TaskId == taskinfo.ulID)
                                         {
+                                            Logger.Info("OnCheckAllChannelsAsync not needstop");
                                             needstop = false;
                                         }
 
                                         if (needstop)
                                         {
-
+                                            /*
+                                             * flag 通知出去走正常流程stop，并任务complete状态
+                                             */
                                         }
+
+                                        item.NeedStopFlag = false;
                                     }
                                 }
 
@@ -134,7 +141,16 @@ namespace IngestTask.Grain.Device
             return Task.CompletedTask;
         }
 
-       
+        public Task<int> OnDeviceChangeAsync(int type, string message)
+        {
+            /*
+             * flag 重新更新内存数据并通知外面
+             */
+
+            _observerManager.Notify(s => s.ReceiveDeveiceChange(type, message));
+            return Task.FromResult(0);
+        }
+
         public Task<int> CheckChannelSatetAsync() 
         {
             throw new NotImplementedException();

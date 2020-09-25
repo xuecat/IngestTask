@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace IngestTask.Tools.Dto
 {
     /// <summary>采集设备详情</summary>
-    public class CaptureDeviceInfo
+    public class DeviceInfo
     {
         public int Id { get; set; }
         /// <summary>通道id</summary>
@@ -32,7 +32,7 @@ namespace IngestTask.Tools.Dto
         public int OrderCode { get; set; }
     }
 
-    public class DeviceInfo : CaptureDeviceInfo
+    public class ChannelInfo : DeviceInfo
     {
         public bool NeedStopFlag { get; set; }
         public Device_State CurrentDevState { get; set; } = Device_State.DISCONNECTTED;

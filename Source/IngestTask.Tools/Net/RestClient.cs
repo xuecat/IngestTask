@@ -438,21 +438,7 @@ namespace IngestTask.Tool
         #endregion
 
         #region Device
-        public async Task<List<CaptureDeviceInfo>> GetAllCaptureDevicesAsync()
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureDeviceInfo>>>(() => {
-                return GetAsync<ResponseMessage<List<CaptureDeviceInfo>>>(
-                    $"{ApplicationContext.Current.IngestDBUrl}/{DEVICEAPI20}/capturedevice/all", null, GetIngestHeader()
-                    );
-            }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return null;
-        }
-
+       
         public async Task<List<CaptureChannelInfo>> GetAllCaptureChannelAsync()
         {
             var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureChannelInfo>>>(() =>
@@ -485,6 +471,22 @@ namespace IngestTask.Tool
             return null;
         }
 
+        public async Task<List<MsvChannelState>> GetAllChannelStateAsync()
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<List<MsvChannelState>>>(() =>
+            {
+                return GetAsync<ResponseMessage<List<MsvChannelState>>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{DEVICEAPI20}/channelstate/all", null, GetIngestHeader()
+                    );
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
+
         public async Task<List<ProgrammeInfo>> GetAllProgrammeAsync()
         {
             var back = await AutoRetry.RunAsync<ResponseMessage<List<ProgrammeInfo>>>(() =>
@@ -500,10 +502,6 @@ namespace IngestTask.Tool
             }
             return null;
         }
-        #endregion
-
-
-        #region Device
         public async Task<bool> UpdateMSVChannelStateAsync(int id, MSV_Mode mode, Device_State state)
         {
             var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
