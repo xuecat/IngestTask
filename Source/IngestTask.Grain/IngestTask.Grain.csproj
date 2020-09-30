@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\IngestTask.Abstraction\IngestTask.Abstraction.csproj" />
-    <ProjectReference Include="..\IngestTask.Tools\IngestTask.Tools.csproj" />
   </ItemGroup>
 
 </Project>

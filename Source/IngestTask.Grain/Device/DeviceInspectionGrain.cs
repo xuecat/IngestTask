@@ -1,6 +1,6 @@
 ﻿
 
-namespace IngestTask.Grain.Device
+namespace IngestTask.Grain
 {
     using Orleans.Concurrency;
     using IngestTask.Abstraction.Grains;
@@ -46,13 +46,23 @@ namespace IngestTask.Grain.Device
             return base.OnDeactivateAsync();
         }
 
-        public async Task InitLoad()
+        public async Task<bool> InitLoadAsync()
         {
-            var lstdevice = await _restClient.GetAllDeviceInfoAsync();
-            var channelstate = await _restClient.GetAllChannelStateAsync();
+            try
+            {
+                var lstdevice = await _restClient.GetAllDeviceInfoAsync();
+                var channelstate = await _restClient.GetAllChannelStateAsync();
 
-            _channelInfoList = Mapper.Map<List<ChannelInfo>>(lstdevice);
-            _channelInfoList = Mapper.Map<List<ChannelInfo>>(channelstate, _channelInfoList);
+                _channelInfoList = Mapper.Map<List<ChannelInfo>>(lstdevice);
+                _channelInfoList = Mapper.Map<List<MsvChannelState>, List<ChannelInfo>>(channelstate, _channelInfoList);
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"DeviceInspectionGrain InitLoadAsync {e.Message}");
+                return false;
+            }
+            
+            return true;
         }
         
         private Task OnCheckAllChannelsAsync(object type)
