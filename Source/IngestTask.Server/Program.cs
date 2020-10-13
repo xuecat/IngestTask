@@ -24,6 +24,7 @@ namespace IngestTask.Server
     using IngestTask.Grain;
     using IngestTask.Tools.Msv;
     using IngestTask.Tool;
+    using Orleans.Serialization.ProtobufNet;
 
     public static class Program
     {
@@ -89,6 +90,7 @@ namespace IngestTask.Server
             Microsoft.Extensions.Hosting.HostBuilderContext context,
             ISiloBuilder siloBuilder) =>
             siloBuilder
+                .Configure<SerializationProviderOptions>(opt => opt.SerializationProviders.Add(typeof(ProtobufNetSerializer).GetTypeInfo()))
                 .ConfigureServices(
                     (context, services) =>
                     {
