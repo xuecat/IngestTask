@@ -11,6 +11,7 @@ namespace IngestTask.Grain
     using System;
     using System.Threading.Tasks;
 
+    //要不要存数据库呢
     //[StorageProvider(ProviderName="store1")]
     [Reentrant]
     public class TaskBase : JournaledGrain<TaskState,TaskEvent>, ITask
