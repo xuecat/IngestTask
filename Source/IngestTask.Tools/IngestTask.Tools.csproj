@@ -19,4 +19,8 @@
     <Folder Include="Msv\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\IngestTask.Dto\IngestTask.Dto.csproj" />
+  </ItemGroup>
+
 </Project>

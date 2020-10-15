@@ -9,21 +9,31 @@ namespace IngestTask.Grain
     using System.Text;
     using System.Threading.Tasks;
     using Orleans;
-    using IngestTask.Tools.Dto;
+    using IngestTask.Dto;
     using Sobey.Core.Log;
     using IngestTask.Tools.Msv;
     using IngestTask.Tool;
     using AutoMapper;
+    using ProtoBuf;
+
+    //[ProtoContract]
+    [Serializable]
+    class DeviceState
+    {
+        //[ProtoMember(1)]
+        public int ActionType { get; set; }
+        //[ProtoMember(2)]
+        public List<ChannelInfo> ChannelInfos { get; set; }
+        
+    }
 
     [StatelessWorker(1)]
-    class DeviceInspectionGrain : Grain, IDeviceInspections
+    class DeviceInspectionGrain : Grain<DeviceState>, IDeviceInspections
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("DeviceInfo");
-        private readonly GrainObserverManager<IDeviceChange> _observerManager;
+        private readonly GrainObserverManager<IDeviceChange> _observerManager = new GrainObserverManager<IDeviceChange>();
         private readonly MsvClientCtrlSDK _msvClient;
         private readonly RestClient _restClient;
-        private List<ChannelInfo> _channelInfoList;//不存在并发问题，没有锁
-        private int _actionType;
 
         private readonly IMapper Mapper;
 
@@ -32,12 +42,11 @@ namespace IngestTask.Grain
             Mapper = mapper;
             _restClient = client;
             _msvClient = msv;
-            _observerManager = new GrainObserverManager<IDeviceChange>();
         }
 
         public override Task OnActivateAsync()
         {
-            RegisterTimer(this.OnCheckAllChannelsAsync, _actionType, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            RegisterTimer(this.OnCheckAllChannelsAsync, State.ActionType, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
             Logger.Info(" DeviceInspectionGrain active");
             return base.OnActivateAsync();
         }
@@ -53,8 +62,8 @@ namespace IngestTask.Grain
                 var lstdevice = await _restClient.GetAllDeviceInfoAsync();
                 var channelstate = await _restClient.GetAllChannelStateAsync();
 
-                _channelInfoList = Mapper.Map<List<ChannelInfo>>(lstdevice);
-                _channelInfoList = Mapper.Map<List<MsvChannelState>, List<ChannelInfo>>(channelstate, _channelInfoList);
+                State.ChannelInfos = Mapper.Map<List<ChannelInfo>>(lstdevice);
+                State.ChannelInfos = Mapper.Map<List<MsvChannelState>, List<ChannelInfo>>(channelstate, State.ChannelInfos);
             }
             catch (Exception e)
             {
@@ -72,11 +81,11 @@ namespace IngestTask.Grain
             {
                 case 0:
                     {
-                        _actionType = 1;
+                        State.ActionType = 1;
                     } break;
                 case 1:
                     {
-                        foreach (var item in _channelInfoList)
+                        foreach (var item in State.ChannelInfos)
                         {
                             _ = Task.Run(async () =>
                             {

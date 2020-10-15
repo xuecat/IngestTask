@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using IngestTask.Tools.Dto;
+using IngestTask.Dto;
 using System;
 using System.Collections.Generic;
 using System.Linq;

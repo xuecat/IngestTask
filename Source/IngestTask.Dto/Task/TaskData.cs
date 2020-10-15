@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace IngestTask.Tools.Dto
+namespace IngestTask.Dto
 {
+    [Serializable]
     public class TaskContent
     {
         /// <summary>任务id</summary>
@@ -115,6 +116,8 @@ namespace IngestTask.Tools.Dto
         public int AppDate { get; set; }
         public string AppDateFormat { get; set; }
         public int Mode { get; set; }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2227:集合属性应为只读", Justification = "<挂起>")]
         public List<int> Params { get; set; }//DAY
     }
     public class TaskContentMeta

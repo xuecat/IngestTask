@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IngestTask.Tools.Dto
+namespace IngestTask.Dto
 {
     /// <summary>采集设备详情</summary>
     public class DeviceInfo

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace IngestTask.Tools
+namespace IngestTask.Dto
 {
     public class CmParam
     {

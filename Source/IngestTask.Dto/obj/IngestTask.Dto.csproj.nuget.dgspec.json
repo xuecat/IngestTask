@@ -1,0 +1,88 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Project\\git\\IngestTask\\Source\\IngestTask.Dto\\IngestTask.Dto.csproj": {}
+  },
+  "projects": {
+    "C:\\Project\\git\\IngestTask\\Source\\IngestTask.Dto\\IngestTask.Dto.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Project\\git\\IngestTask\\Source\\IngestTask.Dto\\IngestTask.Dto.csproj",
+        "projectName": "IngestTask.Dto",
+        "projectPath": "C:\\Project\\git\\IngestTask\\Source\\IngestTask.Dto\\IngestTask.Dto.csproj",
+        "packagesPath": "C:\\Users\\haoyong\\.nuget\\packages\\",
+        "outputPath": "C:\\Project\\git\\IngestTask\\Source\\IngestTask.Dto\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\haoyong\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "netcoreapp3.1"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Project\\Gen2\\XDCamAirApiProject-1.9\\XDCamApiCore\\dll": {},
+          "C:\\Project\\NWorkflow\\LocalNuGet\\Packages": {},
+          "C:\\Project\\git\\IngestDB\\LocalNuget": {},
+          "http://172.16.135.97/nuget": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "netcoreapp3.1": {
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "allWarningsAsErrors": true,
+          "noWarn": [
+            "NU5105"
+          ],
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "netcoreapp3.1": {
+          "dependencies": {
+            "Microsoft.CodeAnalysis.FxCopAnalyzers": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[3.0.0, )"
+            },
+            "Microsoft.VisualStudio.Threading.Analyzers": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[16.6.13, )"
+            },
+            "MinVer": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.3.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.201\\RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

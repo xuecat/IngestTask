@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace IngestTask.Tools.Dto
+namespace IngestTask.Dto
 {
     /// <summary> 信号来源 </summary>
     public enum emSignalSource

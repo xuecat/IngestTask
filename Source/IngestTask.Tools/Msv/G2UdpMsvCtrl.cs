@@ -8,6 +8,7 @@ using System.Collections;
 using System.Net;
 using System.Net.Sockets;
 using Sobey.Core.Log;
+using System.Reflection;
 
 namespace IngestTask.Tools.Msv
 { 
@@ -16,14 +17,12 @@ namespace IngestTask.Tools.Msv
         public G2UdpMsvCtrl()
         {
         }
-        public string GetMsvUdpData(ILogger logger,string strlocip, int nlocport, string strmsvip, int nmsvchport, string strcmd, int nTimeOut = 5)
+        public async Task<string> SendMsvCommandAsync(
+            ILogger logger,string strlocip,
+            int nlocport, string strmsvip,
+            int nmsvchport, string strcmd)
         {
             string strret = "";
-            //IPEndPoint localIpep = new IPEndPoint(IPAddress.Parse(strlocip), nlocport); // 本机IP，指定的端口号
-            //             if(udpClient == null)
-            //             {
-            //                 udpClient = new UdpClient();
-            //             }
 
             if (logger == null)
             {
@@ -48,74 +47,19 @@ namespace IngestTask.Tools.Msv
                 byteL[1] = (byte)(u >> 16);
                 byteL[0] = (byte)(u >> 24);
                 bytes.CopyTo(byteL, 4);
-                udpClient.Send(byteL, byteL.Length, remoteIpep);
+                await udpClient.SendAsync(byteL, byteL.Length, remoteIpep).ConfigureAwait(true);
 
                 udpClient.Client.Blocking = false;
-                int buffSizeCurrent;
-                buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数            
-                int i = 0;
+                int buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数   
+
+                logger.Info($"SendAsync one times {udpClient.Available}");
+
                 int ntimes = 3;
                 uint nNeedRecvLen = 0;
                 uint nRecvedLen = (uint)0;
                 byte[] bytedata = new byte[2048];
-                DateTime dtbegin = DateTime.Now;
                 while (true)
                 {
-                    i++;  
-                    DateTime dtend = DateTime.Now;
-                    TimeSpan ts = dtend - dtbegin;
-                    if (ts.TotalSeconds > nTimeOut)
-                    {
-                        strtmplog = string.Format("{0}:{1}", strmsvip, nmsvchport);
-                        logger.Error(strtmplog + ",Recv Time out" );
-                        break;
-                    }
-                    if (buffSizeCurrent == 1)
-                    {
-                        udpClient.Send(byteL, byteL.Length, remoteIpep);
-                        System.Threading.Thread.Sleep(200);
-                        buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数  
-                        continue;
-                    }
-
-                    if (buffSizeCurrent > 0)     //有数据时候才读，不然会出异常哦
-                    {
-                        byte[] data = udpClient.Receive(ref remoteIpep);  
-                        if (nNeedRecvLen == 0)
-                        {
-                            data.CopyTo(bytedata, nRecvedLen);
-                            nRecvedLen += (uint)data.Length;
-                            if (nRecvedLen < 4)
-                            {
-                                //System.Threading.Thread.Sleep(500);
-                                buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数   
-                                continue;
-                            }
-                            else
-                            {
-                                uint nlen = (uint)(bytedata[3] | bytedata[2] << 8 | bytedata[1] << 16 | bytedata[0] << 24);
-                                nNeedRecvLen = nlen;  
-                                if (nRecvedLen == nNeedRecvLen)
-                                {
-                                    break;
-                                }
-                            }
-
-                        }
-                        else
-                        {
-                            data.CopyTo(bytedata, nRecvedLen);
-                            nRecvedLen += (uint)data.Length;
-                            if (nRecvedLen == nNeedRecvLen)
-                            {
-                                break;
-                            }
-                        }
-
-                    }
-                    
-                    buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数  
-
                     if (buffSizeCurrent <= 0)
                     {
                         ntimes--;
@@ -125,11 +69,59 @@ namespace IngestTask.Tools.Msv
 
                     if (ntimes <= 0)//连续四次recevice还出错说明有问题网络
                     {
+                        logger.Error($"SendMsvCommandAsync over times {ntimes}");
                         break;
                     }
-                    System.Threading.Thread.Sleep(200);
+
+                    if (buffSizeCurrent == 1)
+                    {
+                        await udpClient.SendAsync(byteL, byteL.Length, remoteIpep).ConfigureAwait(true);
+                        buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数  
+                        logger.Info($"SendAsync two times {udpClient.Available}");
+
+                        continue;
+                    }
+
+                    if (buffSizeCurrent > 0)     //有数据时候才读，不然会出异常哦
+                    {
+                        //byte[] data = await udpClient.ReceiveAsync(ref remoteIpep).ConfigureAwait(true);  
+                        var backinfo = await udpClient.ReceiveAsync().ConfigureAwait(true);
+                        if (nNeedRecvLen == 0)
+                        {
+                            backinfo.Buffer.CopyTo(bytedata, nRecvedLen);
+                            nRecvedLen += (uint)backinfo.Buffer.Length;
+                            if (nRecvedLen < 4)
+                            {
+                                buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数   
+                                continue;
+                            }
+                            else
+                            {
+                                uint nlen = (uint)(bytedata[3] | bytedata[2] << 8 | bytedata[1] << 16 | bytedata[0] << 24);
+                                nNeedRecvLen = nlen;  
+                                if (nRecvedLen >= nNeedRecvLen)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            backinfo.Buffer.CopyTo(bytedata, nRecvedLen);
+                            nRecvedLen += (uint)backinfo.Buffer.Length;
+                            if (nRecvedLen >= nNeedRecvLen)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    
+                    buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数  
+
+                    await Task.Delay(200).ConfigureAwait(true);
+                    //System.Threading.Thread.Sleep(100);
                 }
-                //udpClient.Close();
+
                 if (nRecvedLen > 0)
                 {
                     byte[] datatmp = new byte[nRecvedLen - 4 - 1];
@@ -140,8 +132,9 @@ namespace IngestTask.Tools.Msv
                     
                     //bytedata[nRecvedLen - 1] = Convert.ToByte('\0');
                     strret = Encoding.Unicode.GetString(datatmp).TrimEnd('\0');
-                    strtmplog = string.Format("{0}:{1}", strmsvip, nmsvchport);
-                    logger.Info(strtmplog  + "len:" + nRecvedLen + ",Recv:" +strret );
+                    
+                    logger.Info($"{strmsvip}:{nmsvchport} len: {nRecvedLen} recv: {strret}");
+                    datatmp = null;
                 }
                 else
                 {

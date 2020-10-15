@@ -16,10 +16,12 @@ namespace IngestTask.Tools.Msv
             MSV_XMLERROR = -1, //XML解析错误
             MSV_NETERROR = -2  // 网络连接错误
         }
-        /// <summary>
-        /// MSV启动模式
-        /// </summary>
-        public enum MSV_MODE
+
+       
+    /// <summary>
+    /// MSV启动模式
+    /// </summary>
+    public enum MSV_MODE
         {
             CM_LOCAL = 0,           //本地
             CM_REMOTE = 1,          //远程
@@ -41,9 +43,11 @@ namespace IngestTask.Tools.Msv
         /// </summary>
         public enum BATCH_STATE
         {
+            
             BS_STOP = 0,            //任务队列停止
-            BS_RUNNING = 1          //任务队列运行
-        }
+            BS_RUNNING = 1,          //任务队列运行
+            BS_ERROR
+    }
         /// <summary>
         /// 采集状态
         /// </summary>

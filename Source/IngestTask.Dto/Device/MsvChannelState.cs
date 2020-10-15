@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace IngestTask.Tools.Dto
+namespace IngestTask.Dto
 {
     /// <summary>MSV设备状态信息</summary>
     public class MsvChannelState

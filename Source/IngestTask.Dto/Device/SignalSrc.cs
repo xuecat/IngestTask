@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IngestTask.Tools.Dto
+namespace IngestTask.Dto
 {
     /// <summary>信号源详情</summary>
     public class SignalSrc

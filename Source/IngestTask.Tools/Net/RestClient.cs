@@ -1,5 +1,5 @@
 ﻿using IngestTask.Tools;
-using IngestTask.Tools.Dto;
+using IngestTask.Dto;
 using Sobey.Core.Log;
 using System;
 using System.Collections.Generic;

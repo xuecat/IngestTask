@@ -1,4 +1,4 @@
-﻿using IngestTask.Tools.Dto;
+﻿using IngestTask.Dto;
 using Orleans;
 using Orleans.CodeGeneration;
 using System;
