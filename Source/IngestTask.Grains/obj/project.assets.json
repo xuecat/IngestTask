@@ -1,0 +1,83 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETStandard,Version=v2.1": {
+      "IngestTask.Abstractions/1.0.0": {
+        "type": "project",
+        "framework": ".NETStandard,Version=v2.1",
+        "compile": {
+          "bin/placeholder/IngestTask.Abstractions.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/IngestTask.Abstractions.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "IngestTask.Abstractions/1.0.0": {
+      "type": "project",
+      "path": "../IngestTask.Abstractions/IngestTask.Abstractions.csproj",
+      "msbuildProject": "../IngestTask.Abstractions/IngestTask.Abstractions.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    ".NETStandard,Version=v2.1": [
+      "IngestTask.Abstractions >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\Administrator\\.nuget\\packages\\": {},
+    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "D:\\Project\\IngestTask\\Source\\IngestTask.Grains\\IngestTask.Grains.csproj",
+      "projectName": "IngestTask.Grains",
+      "projectPath": "D:\\Project\\IngestTask\\Source\\IngestTask.Grains\\IngestTask.Grains.csproj",
+      "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+      "outputPath": "D:\\Project\\IngestTask\\Source\\IngestTask.Grains\\obj\\",
+      "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+      ],
+      "configFilePaths": [
+        "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "netstandard2.1"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "D:\\Project\\IngestDB\\LocalNuget": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "netstandard2.1": {
+          "projectReferences": {
+            "D:\\Project\\IngestTask\\Source\\IngestTask.Abstractions\\IngestTask.Abstractions.csproj": {
+              "projectPath": "D:\\Project\\IngestTask\\Source\\IngestTask.Abstractions\\IngestTask.Abstractions.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "allWarningsAsErrors": true,
+        "warnAsError": [
+          "NU1605"
+        ]
+      }
+    },
+    "frameworks": {
+      "netstandard2.1": {
+        "imports": [
+          "net461"
+        ],
+        "assetTargetFallback": true,
+        "warn": true
+      }
+    }
+  }
+}

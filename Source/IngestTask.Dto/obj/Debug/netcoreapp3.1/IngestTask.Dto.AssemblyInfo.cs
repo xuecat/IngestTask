@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("IngestTask.Dto")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.0-preview.0.17")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.0-preview.0.18")]
 [assembly: System.Reflection.AssemblyProductAttribute("IngestTask.Dto")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IngestTask.Dto")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.0.0.0")]

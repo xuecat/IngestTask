@@ -1347,43 +1347,37 @@ namespace IngestTask.Tools.Msv
         /**********************************************************************************
             描述: 删除任务
         ***********************************************************************************/
-        public MSV_RET MSVDelTask(string strMsvIp, long taskID, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVDelTaskAsync(string strMsvIp, long taskID, int nChannel, Sobey.Core.Log.ILogger logger)
         {
-            lock (_msvfunclock)
+           
+            try
             {
-                try
+                string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><del_msv_task><i_taskID>{0}</i_taskID><nChannel>{1}</nChannel></del_msv_task>\0", taskID, nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><del_msv_task><i_taskID>{0}</i_taskID><nChannel>{1}</nChannel></del_msv_task>\0", taskID, nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -1393,22 +1387,27 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVDelTask: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVDelTask: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
         }
 
         /**********************************************************************************
             描述: 修改任务
         ***********************************************************************************/
-        public MSV_RET MSVModifyTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVModifyTaskAsync(string strMsvIp, TASK_ALL_PARAM param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
@@ -1416,41 +1415,35 @@ namespace IngestTask.Tools.Msv
                 if (logger != null) { logger.Error(m_error_desc); }
                 return MSV_RET.MSV_FAILED;
             }
-            lock (_msvfunclock)
+            
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = FromatParmaToString(param, "update_msv_task", nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = FromatParmaToString(param, "update_msv_task", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -1460,19 +1453,24 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVModifyTask: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVModifyTask: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
         }
 
-        public MSV_RET MSVModifyTaskNew(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVModifyTaskNewAsync(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
@@ -1480,41 +1478,35 @@ namespace IngestTask.Tools.Msv
                 if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
-            lock (_msvfunclock)
+            
+            try
             {
-                try
+                string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
+                string cmd = FromatParmaToStringNew(param, "update_msv_task", nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
-                    string cmd = FromatParmaToStringNew(param, "update_msv_task", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -1524,22 +1516,27 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVModifyTaskNew: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVModifyTaskNew: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
         }
 
         /**********************************************************************************
             描述: 启动一条手动任务
         ***********************************************************************************/
-        public MSV_RET MSVStartTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVStartTaskAsync(string strMsvIp, TASK_ALL_PARAM param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
@@ -1553,41 +1550,35 @@ namespace IngestTask.Tools.Msv
                 if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
-            lock (_msvfunclock)
+            
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = FromatParmaToString(param, "start_msv_task", nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = FromatParmaToString(param, "start_msv_task", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -1597,20 +1588,25 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVStartTaskp: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVStartTaskp: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
 
         }
 
-        public MSV_RET MSVStartTaskNew(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVStartTaskNewAsync(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
@@ -1625,43 +1621,37 @@ namespace IngestTask.Tools.Msv
                 if (logger != null){logger.Error(m_error_desc);}
                 return MSV_RET.MSV_FAILED;
             }
-            lock (_msvfunclock)
+            
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = FromatParmaToStringNew(param, "start_msv_task", nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (logger != null)
+                    logger.Info(string.Format("taskID:{0}, MSVStartTaskNew strRet:{1}", param.taskParam.ulID, strRet));
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = FromatParmaToStringNew(param, "start_msv_task", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd, 10);
-                    if (logger != null)
-                        logger.Info(string.Format("taskID:{0}, MSVStartTaskNew strRet:{1}", param.taskParam.ulID, strRet));
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -1671,82 +1661,84 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVStartTaskNew: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVStartTaskNew: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
 
         }
 
         /**********************************************************************************
             描述: 停止一条手动任务  taskID 返回停止的任务的ID
         ***********************************************************************************/
-        public MSV_RET MSVStopTask(string strMsvIp, ref long taskID, long lSendTaskID, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<long> MSVStopTaskAsync(string strMsvIp, long lSendTaskID, int nChannel, Sobey.Core.Log.ILogger logger)
         {
-            lock (_msvfunclock)
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><stop_msv_task><nChannel>{0}</nChannel><nSendTaskID>{1}</nSendTaskID></stop_msv_task>\0", nChannel, lSendTaskID);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (logger != null)
+                    logger.Info(string.Format("{0}, MSVStopTask ", strRet));
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><stop_msv_task><nChannel>{0}</nChannel><nSendTaskID>{1}</nSendTaskID></stop_msv_task>\0", nChannel, lSendTaskID);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (logger != null)
-                        logger.Info(string.Format("taskID:{0}, MSVStopTask strRet:{1}", taskID, strRet));
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    XmlNode _taskIdNode = _root.SelectSingleNode("s_taskid");
-                                    taskID = Convert.ToInt64(_taskIdNode.InnerText);
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                XmlNode _taskIdNode = _root.SelectSingleNode("s_taskid");
+                                return Convert.ToInt64(_taskIdNode.InnerText);
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return 0;
                             }
                         }
                         else
                         {
-                            return MSV_RET.MSV_XMLERROR;
+                            return -1;
                         }
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return -1;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVStopTask: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return 0;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVStopTask: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return 0;
+            }
+            
 
         }
 
@@ -1754,172 +1746,161 @@ namespace IngestTask.Tools.Msv
         /**********************************************************************************
             描述: 查询手动任务  返回任务的常规参数
         ***********************************************************************************/
-        public MSV_RET MSVQueryManauTask(string strMsvIp, ref TASK_PARAM taskParam, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<TASK_PARAM> MSVQueryManauTaskAsync(string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
         {
-            if (taskParam == null)
-            {
-                return MSV_RET.MSV_FAILED;
-            }
+            TASK_PARAM taskParam = new TASK_PARAM();
 
-            lock (_msvfunclock)
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><query_manu_task><nChannel>{0}</nChannel></query_manu_task>\0", nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><query_manu_task><nChannel>{0}</nChannel></query_manu_task>\0", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
+                                XmlNode _taskIdNode = _root.SelectSingleNode("s_taskid");
+                                if (_taskIdNode != null)
                                 {
-                                    XmlNode _taskIdNode = _root.SelectSingleNode("s_taskid");
-                                    if (_taskIdNode != null)
-                                    {
-                                        taskParam.ulID = Convert.ToInt64(_taskIdNode.InnerText);
-                                    }
-                                    XmlNode _taskNameNode = _root.SelectSingleNode("s_taskname");
-                                    if (_taskNameNode != null)
-                                    {
-                                        taskParam.strName = _taskNameNode.InnerText;
-                                    }
-                                    XmlNode _taskDescNode = _root.SelectSingleNode("s_taskdesc");
-                                    if (_taskDescNode != null)
-                                    {
-                                        taskParam.strDesc = _taskDescNode.InnerText;
-                                    }
-                                    XmlNode _beginNode = _root.SelectSingleNode("s_tmbegin");
-                                    if (_beginNode != null)
-                                    {
-                                        taskParam.tmBeg = Convert.ToDateTime(_beginNode.InnerText);
-                                    }
-                                    XmlNode _EndNode = _root.SelectSingleNode("s_tmEnd");
-                                    if (_EndNode != null)
-                                    {
-                                        taskParam.tmEnd = Convert.ToDateTime(_EndNode.InnerText);
-                                    }
-                                    XmlNode _bUseTimeNode = _root.SelectSingleNode("s_UseTime");
-                                    if (_bUseTimeNode != null)
-                                    {
-                                        taskParam.bUseTime = Convert.ToBoolean(Convert.ToInt32(_bUseTimeNode.InnerText));
-                                    }
-                                    XmlNode _inOutCntNode = _root.SelectSingleNode("s_InOutCount");
-                                    if (_inOutCntNode != null)
-                                    {
-                                        taskParam.nInOutCount = Convert.ToInt32(_inOutCntNode.InnerText);
-                                    }
-                                    if (taskParam.nInOutCount > 100)
-                                        taskParam.nInOutCount = 100;
-                                    XmlNode _inFrameNode, _outFrameNode;
-                                    string strTemp = "";
-                                    //返回一组出入点的帧数据信息
-                                    for (int j = 0; j < taskParam.nInOutCount; ++j)
-                                    {
-                                        strTemp = string.Format("s_InFrame{0}", j);
-                                        _inFrameNode = _root.SelectSingleNode(strTemp);
-                                        if (_inFrameNode != null)
-                                        {
-                                            taskParam.dwInFrame[j] = Convert.ToUInt64(_inFrameNode.InnerText);
-                                        }
-
-                                        strTemp = string.Format("s_OutFrame{0}", j);
-                                        _outFrameNode = _root.SelectSingleNode(strTemp);
-                                        if (_outFrameNode != null)
-                                        {
-                                            taskParam.dwOutFrame[j] = Convert.ToUInt64(_outFrameNode.InnerText);
-                                        }
-                                    }
-                                    XmlNode _retrospectNode = _root.SelectSingleNode("s_Retrospect");
-                                    if (_retrospectNode != null)
-                                    {
-                                        taskParam.bRetrospect = Convert.ToBoolean(Convert.ToInt32(_retrospectNode.InnerText));
-
-                                    }
-                                    taskParam.TaskMode = TASK_MODE.TM_MANUAL;
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
+                                    taskParam.ulID = Convert.ToInt64(_taskIdNode.InnerText);
                                 }
-                                else
+                                XmlNode _taskNameNode = _root.SelectSingleNode("s_taskname");
+                                if (_taskNameNode != null)
                                 {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
+                                    taskParam.strName = _taskNameNode.InnerText;
                                 }
+                                XmlNode _taskDescNode = _root.SelectSingleNode("s_taskdesc");
+                                if (_taskDescNode != null)
+                                {
+                                    taskParam.strDesc = _taskDescNode.InnerText;
+                                }
+                                XmlNode _beginNode = _root.SelectSingleNode("s_tmbegin");
+                                if (_beginNode != null)
+                                {
+                                    taskParam.tmBeg = Convert.ToDateTime(_beginNode.InnerText);
+                                }
+                                XmlNode _EndNode = _root.SelectSingleNode("s_tmEnd");
+                                if (_EndNode != null)
+                                {
+                                    taskParam.tmEnd = Convert.ToDateTime(_EndNode.InnerText);
+                                }
+                                XmlNode _bUseTimeNode = _root.SelectSingleNode("s_UseTime");
+                                if (_bUseTimeNode != null)
+                                {
+                                    taskParam.bUseTime = Convert.ToBoolean(Convert.ToInt32(_bUseTimeNode.InnerText));
+                                }
+                                XmlNode _inOutCntNode = _root.SelectSingleNode("s_InOutCount");
+                                if (_inOutCntNode != null)
+                                {
+                                    taskParam.nInOutCount = Convert.ToInt32(_inOutCntNode.InnerText);
+                                }
+                                if (taskParam.nInOutCount > 100)
+                                    taskParam.nInOutCount = 100;
+                                XmlNode _inFrameNode, _outFrameNode;
+                                string strTemp = "";
+                                //返回一组出入点的帧数据信息
+                                for (int j = 0; j < taskParam.nInOutCount; ++j)
+                                {
+                                    strTemp = string.Format("s_InFrame{0}", j);
+                                    _inFrameNode = _root.SelectSingleNode(strTemp);
+                                    if (_inFrameNode != null)
+                                    {
+                                        taskParam.dwInFrame[j] = Convert.ToUInt64(_inFrameNode.InnerText);
+                                    }
+
+                                    strTemp = string.Format("s_OutFrame{0}", j);
+                                    _outFrameNode = _root.SelectSingleNode(strTemp);
+                                    if (_outFrameNode != null)
+                                    {
+                                        taskParam.dwOutFrame[j] = Convert.ToUInt64(_outFrameNode.InnerText);
+                                    }
+                                }
+                                XmlNode _retrospectNode = _root.SelectSingleNode("s_Retrospect");
+                                if (_retrospectNode != null)
+                                {
+                                    taskParam.bRetrospect = Convert.ToBoolean(Convert.ToInt32(_retrospectNode.InnerText));
+
+                                }
+                                taskParam.TaskMode = TASK_MODE.TM_MANUAL;
+                                m_error_desc = "Operation succeed";
+                                return null;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return null;
                             }
                         }
                         else
                         {
-                            return MSV_RET.MSV_XMLERROR;
+                            return null;
                         }
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return null;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVQueryManauTask: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return null;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVQueryManauTask: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return null;
+            }
+            
 
         }
         /************************************************************************/
         /* 暂停MSV采集  要取消暂停状态，请调用MSVPauseCapture                    */
         /************************************************************************/
-        public MSV_RET MSVPauseCapture(long taskID, string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVPauseCaptureAsync(long taskID, string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
         {
-            lock (_msvfunclock)
+            
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><msv_pause_capture><nChannel>{0}</nChannel><taskid>{1}</taskid></msv_pause_capture>\0", nChannel, taskID);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><msv_pause_capture><nChannel>{0}</nChannel><taskid>{1}</taskid></msv_pause_capture>\0", nChannel, taskID);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -1929,58 +1910,57 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVPauseCapture: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVPauseCapture: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
 
         }
         /************************************************************************/
         /* 继续MSV采集， 取消暂停状态                                          */
         /************************************************************************/
-        public MSV_RET MSVContinueCapture(long taskID, string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVContinueCaptureAsync(long taskID, string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
         {
-            lock (_msvfunclock)
+            
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><msv_continue_capture><nChannel>{0}</nChannel><taskid>{1}</taskid></msv_continue_capture>\0",nChannel, taskID);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><msv_continue_capture><nChannel>{0}</nChannel><taskid>{1}</taskid></msv_continue_capture>\0",nChannel, taskID);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -1990,326 +1970,328 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVContinueCapture: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVContinueCapture: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
 
         }
         /**********************************************************************************
             描述: 查询当前运行任务  返回任务的常规参数
         ***********************************************************************************/
-        public MSV_RET MSVQueryRuningTask(string strMsvIp, ref TASK_PARAM taskParam, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<TASK_PARAM> MSVQueryRuningTaskAsync(string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
         {
-            if (taskParam == null)
+            TASK_PARAM taskParam = new TASK_PARAM();
+
+            try
             {
-                return MSV_RET.MSV_FAILED;
-            }
-            lock (_msvfunclock)
-            {
-                try
-                {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><query_runing_task><nChannel>{0}</nChannel></query_runing_task>\0", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><query_runing_task><nChannel>{0}</nChannel></query_runing_task>\0", nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
  
                     
-                    if (!string.IsNullOrEmpty(strRet))
+                if (!string.IsNullOrEmpty(strRet))
+                {
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
+                                XmlNode _taskIdNode = _root.SelectSingleNode("s_taskid");
+                                if (_taskIdNode != null)
                                 {
-                                    XmlNode _taskIdNode = _root.SelectSingleNode("s_taskid");
-                                    if (_taskIdNode != null)
+                                    taskParam.ulID = Convert.ToInt64(_taskIdNode.InnerText);
+                                }
+                                XmlNode _taskNameNode = _root.SelectSingleNode("s_taskname");
+                                if (_taskNameNode != null)
+                                {
+                                    taskParam.strName = _taskNameNode.InnerText;
+                                }
+                                XmlNode _taskDescNode = _root.SelectSingleNode("s_taskdesc");
+                                if (_taskDescNode != null)
+                                {
+                                    taskParam.strDesc = _taskDescNode.InnerText;
+                                }
+                                XmlNode _beginNode = _root.SelectSingleNode("s_tmbegin");
+                                if (_beginNode != null)
+                                {
+                                    taskParam.tmBeg = Convert.ToDateTime(_beginNode.InnerText);
+                                }
+                                XmlNode _EndNode = _root.SelectSingleNode("s_tmEnd");
+                                if (_EndNode != null)
+                                {
+                                    taskParam.tmEnd = Convert.ToDateTime(_EndNode.InnerText);
+                                }
+                                XmlNode _bUseTimeNode = _root.SelectSingleNode("s_UseTime");
+                                if (_bUseTimeNode != null)
+                                {
+                                    taskParam.bUseTime = Convert.ToBoolean(Convert.ToInt32(_bUseTimeNode.InnerText));
+                                }
+                                XmlNode _inOutCntNode = _root.SelectSingleNode("s_InOutCount");
+                                if (_inOutCntNode != null)
+                                {
+                                    taskParam.nInOutCount = Convert.ToInt32(_inOutCntNode.InnerText);
+                                }
+                                if (taskParam.nInOutCount > 100)
+                                    taskParam.nInOutCount = 100;
+                                XmlNode _inFrameNode, _outFrameNode;
+                                string strTemp = "";
+                                //返回一组出入点的帧数据信息
+                                for (int j = 0; j < taskParam.nInOutCount; ++j)
+                                {
+                                    strTemp = string.Format("s_InFrame{0}", j);
+                                    _inFrameNode = _root.SelectSingleNode(strTemp);
+                                    if (_inFrameNode != null)
                                     {
-                                        taskParam.ulID = Convert.ToInt64(_taskIdNode.InnerText);
+                                        taskParam.dwInFrame[j] = Convert.ToUInt64(_inFrameNode.InnerText);
                                     }
-                                    XmlNode _taskNameNode = _root.SelectSingleNode("s_taskname");
-                                    if (_taskNameNode != null)
-                                    {
-                                        taskParam.strName = _taskNameNode.InnerText;
-                                    }
-                                    XmlNode _taskDescNode = _root.SelectSingleNode("s_taskdesc");
-                                    if (_taskDescNode != null)
-                                    {
-                                        taskParam.strDesc = _taskDescNode.InnerText;
-                                    }
-                                    XmlNode _beginNode = _root.SelectSingleNode("s_tmbegin");
-                                    if (_beginNode != null)
-                                    {
-                                        taskParam.tmBeg = Convert.ToDateTime(_beginNode.InnerText);
-                                    }
-                                    XmlNode _EndNode = _root.SelectSingleNode("s_tmEnd");
-                                    if (_EndNode != null)
-                                    {
-                                        taskParam.tmEnd = Convert.ToDateTime(_EndNode.InnerText);
-                                    }
-                                    XmlNode _bUseTimeNode = _root.SelectSingleNode("s_UseTime");
-                                    if (_bUseTimeNode != null)
-                                    {
-                                        taskParam.bUseTime = Convert.ToBoolean(Convert.ToInt32(_bUseTimeNode.InnerText));
-                                    }
-                                    XmlNode _inOutCntNode = _root.SelectSingleNode("s_InOutCount");
-                                    if (_inOutCntNode != null)
-                                    {
-                                        taskParam.nInOutCount = Convert.ToInt32(_inOutCntNode.InnerText);
-                                    }
-                                    if (taskParam.nInOutCount > 100)
-                                        taskParam.nInOutCount = 100;
-                                    XmlNode _inFrameNode, _outFrameNode;
-                                    string strTemp = "";
-                                    //返回一组出入点的帧数据信息
-                                    for (int j = 0; j < taskParam.nInOutCount; ++j)
-                                    {
-                                        strTemp = string.Format("s_InFrame{0}", j);
-                                        _inFrameNode = _root.SelectSingleNode(strTemp);
-                                        if (_inFrameNode != null)
-                                        {
-                                            taskParam.dwInFrame[j] = Convert.ToUInt64(_inFrameNode.InnerText);
-                                        }
 
-                                        strTemp = string.Format("s_OutFrame{0}", j);
-                                        _outFrameNode = _root.SelectSingleNode(strTemp);
-                                        if (_outFrameNode != null)
-                                        {
-                                            taskParam.dwOutFrame[j] = Convert.ToUInt64(_outFrameNode.InnerText);
-                                        }
-                                    }
-                                    XmlNode _retrospectNode = _root.SelectSingleNode("s_Retrospect");
-                                    if (_retrospectNode != null)
+                                    strTemp = string.Format("s_OutFrame{0}", j);
+                                    _outFrameNode = _root.SelectSingleNode(strTemp);
+                                    if (_outFrameNode != null)
                                     {
-                                        taskParam.bRetrospect = Convert.ToBoolean(Convert.ToInt32(_retrospectNode.InnerText));
+                                        taskParam.dwOutFrame[j] = Convert.ToUInt64(_outFrameNode.InnerText);
                                     }
-                                    XmlNode _stateNode = _root.SelectSingleNode("s_TaskState");
-                                    if (_stateNode != null)
-                                    {
-                                        taskParam.TaskState = (TASK_STATE)Convert.ToInt32(_stateNode.InnerText);
-                                    }
-                                    taskParam.TaskMode = TASK_MODE.TM_MANUAL;
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
                                 }
-                                else
+                                XmlNode _retrospectNode = _root.SelectSingleNode("s_Retrospect");
+                                if (_retrospectNode != null)
                                 {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
+                                    taskParam.bRetrospect = Convert.ToBoolean(Convert.ToInt32(_retrospectNode.InnerText));
                                 }
+                                XmlNode _stateNode = _root.SelectSingleNode("s_TaskState");
+                                if (_stateNode != null)
+                                {
+                                    taskParam.TaskState = (TASK_STATE)Convert.ToInt32(_stateNode.InnerText);
+                                }
+                                taskParam.TaskMode = TASK_MODE.TM_MANUAL;
+                                m_error_desc = "Operation succeed";
+                                return taskParam;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return null;
                             }
                         }
                         else
                         {
-                            return MSV_RET.MSV_XMLERROR;
+                            return null;
                         }
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return null;
                     }
-                    
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVQueryRuningTask: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return null;
                 }
+                    
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVQueryRuningTask: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return null;
+            }
+            
            
         }
 
         /************************************************************************/
         /* 查询任务状态                                                         */
         /************************************************************************/
-        public MSV_RET MSVQueryTaskState(string strMsvIp, long taskID, ref TASK_STATE state, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<TASK_STATE> MSVQueryTaskStateAsync(string strMsvIp, long taskID, int nChannel, Sobey.Core.Log.ILogger logger)
         {
-            lock (_msvfunclock)
+           
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><query_task_state><s_taskid>{0}</s_taskid><nChannel>{1}</nChannel></query_task_state>\0", taskID, nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><query_task_state><s_taskid>{0}</s_taskid><nChannel>{1}</nChannel></query_task_state>\0", taskID, nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
+                                XmlNode _stateNode = _root.SelectSingleNode("s_state");
+                                if (_stateNode != null)
                                 {
-                                    XmlNode _stateNode = _root.SelectSingleNode("s_state");
-                                    if (_stateNode != null)
-                                    {
-                                        state = (TASK_STATE)Convert.ToInt32(_stateNode.InnerText);
-                                    }
+                                    var state = (TASK_STATE)Convert.ToInt32(_stateNode.InnerText);
                                     m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
+
+                                    return state;
                                 }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return TASK_STATE.TS_ERROR;
                             }
                         }
                         else
                         {
-                            return MSV_RET.MSV_XMLERROR;
+                            return TASK_STATE.TS_ERROR;
                         }
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return TASK_STATE.TS_ERROR;
                     }
                 }
-                catch (System.Exception ex)
-                {
-                    m_error_desc = "MSVQueryTaskState: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
-                }
+
+                return TASK_STATE.TS_ERROR;
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVQueryTaskState: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return TASK_STATE.TS_ERROR;
+            }
+            
 
         }
-        public MSV_RET MSVQuerySDIFormat(string strMsvIp, ref SDISignalStatus FormatStatus, ref bool bIsBlack, Sobey.Core.Log.ILogger logger,int nChannel = -1)
+        public async Task<SDISignalStatus> MSVQuerySDIFormatAsync(string strMsvIp, Sobey.Core.Log.ILogger logger,int nChannel = -1)
         {
-            lock (_msvfunclock)
+            
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><query_SDI_format><nChannel>{0}</nChannel></query_SDI_format>\0", nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><query_SDI_format><nChannel>{0}</nChannel></query_SDI_format>\0", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    //获取SDI制式
-                                    XmlNode _sdiFormatNode = _root.SelectSingleNode("s_SDIFormat");
-                                    if (_sdiFormatNode != null)
-                                    {
-                                        FormatStatus.VideoFormat = (SignalFormat)(Convert.ToInt32(_sdiFormatNode.InnerText));
-                                    }
-                                    //获取是否是黑场
-                                    XmlNode _isBlackNode = _root.SelectSingleNode("s_IsBlack");
-                                    if (_isBlackNode != null)
-                                    {
-                                        bIsBlack = Convert.ToBoolean(Convert.ToInt32(_isBlackNode.InnerText));
-                                    }
-                                    //获取是否是DropTC
-                                    XmlNode _dropTCNode = _root.SelectSingleNode("s_DropTC");
-                                    if (_dropTCNode != null)
-                                    {
-                                        int iDropTC = Convert.ToInt32(_dropTCNode.InnerText);
-                                        if (iDropTC == 1)
-                                        {
-                                            FormatStatus.TCMode = TimeCodeMode.DF;   //是DropTC
-                                        }
-                                        else if (iDropTC == 0)
-                                        {
-                                            FormatStatus.TCMode = TimeCodeMode.NDF;  //是NoneDropTC
-                                        }
-                                        else if (iDropTC == -1)
-                                        {
-                                            FormatStatus.TCMode = TimeCodeMode.Unknow;
-                                        }
+                                SDISignalStatus FormatStatus = new SDISignalStatus();
 
-                                    }
-                                    //获取宽度
-                                    XmlNode _widthNode = _root.SelectSingleNode("s_Width");
-                                    if (_widthNode != null)
-                                    {
-                                        FormatStatus.nWidth = Convert.ToInt32(_widthNode.InnerText);
-                                    }
-                                    XmlNode _heigthNode = _root.SelectSingleNode("s_Height");
-                                    if (_heigthNode != null)
-                                    {
-                                        FormatStatus.nHeight = Convert.ToInt32(_heigthNode.InnerText);
-                                    }
-                                    XmlNode _frameRateNode = _root.SelectSingleNode("s_FrameRate");
-                                    if (_frameRateNode != null)
-                                    {
-                                        FormatStatus.fFrameRate = float.Parse(_frameRateNode.InnerText);
-                                    }
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
+                                //获取SDI制式
+                                XmlNode _sdiFormatNode = _root.SelectSingleNode("s_SDIFormat");
+                                if (_sdiFormatNode != null)
                                 {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
+                                    FormatStatus.VideoFormat = (SignalFormat)(Convert.ToInt32(_sdiFormatNode.InnerText));
                                 }
+                                //获取是否是黑场
+                                XmlNode _isBlackNode = _root.SelectSingleNode("s_IsBlack");
+                                if (_isBlackNode != null)
+                                {
+                                    FormatStatus.IsBlack = Convert.ToBoolean(Convert.ToInt32(_isBlackNode.InnerText));
+                                }
+                                //获取是否是DropTC
+                                XmlNode _dropTCNode = _root.SelectSingleNode("s_DropTC");
+                                if (_dropTCNode != null)
+                                {
+                                    int iDropTC = Convert.ToInt32(_dropTCNode.InnerText);
+                                    if (iDropTC == 1)
+                                    {
+                                        FormatStatus.TCMode = TimeCodeMode.DF;   //是DropTC
+                                    }
+                                    else if (iDropTC == 0)
+                                    {
+                                        FormatStatus.TCMode = TimeCodeMode.NDF;  //是NoneDropTC
+                                    }
+                                    else if (iDropTC == -1)
+                                    {
+                                        FormatStatus.TCMode = TimeCodeMode.Unknow;
+                                    }
+
+                                }
+                                //获取宽度
+                                XmlNode _widthNode = _root.SelectSingleNode("s_Width");
+                                if (_widthNode != null)
+                                {
+                                    FormatStatus.nWidth = Convert.ToInt32(_widthNode.InnerText);
+                                }
+                                XmlNode _heigthNode = _root.SelectSingleNode("s_Height");
+                                if (_heigthNode != null)
+                                {
+                                    FormatStatus.nHeight = Convert.ToInt32(_heigthNode.InnerText);
+                                }
+                                XmlNode _frameRateNode = _root.SelectSingleNode("s_FrameRate");
+                                if (_frameRateNode != null)
+                                {
+                                    FormatStatus.fFrameRate = float.Parse(_frameRateNode.InnerText);
+                                }
+                                m_error_desc = "Operation succeed";
+                                return FormatStatus;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return null;
                             }
                         }
                         else
                         {
-                            return MSV_RET.MSV_XMLERROR;
+                            return null;
                         }
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return null;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "" + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return null;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "" + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return null;
+            }
+            
 
         }
-        public MSV_RET MSVStartRetrospectTask(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVStartRetrospectTaskAsync(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if(param == null)
             {
@@ -2324,41 +2306,35 @@ namespace IngestTask.Tools.Msv
                 if (logger != null) { logger.Error(strLog); }
                 return MSV_RET.MSV_FAILED;
             }
-            lock (_msvfunclock)
+            
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = FromatParmaToStringNew(param, "start_msv_retrospecttask", nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = FromatParmaToStringNew(param, "start_msv_retrospecttask", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -2368,145 +2344,141 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVStartRetrospectTask: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVStartRetrospectTask: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
 
         }
         //手动打点
-        public MSV_RET SetEssenceMark(string strMSVIP, ref MANUALKEYFRAME KeyFrmParam, Sobey.Core.Log.ILogger logger)
+        public async Task<MANUALKEYFRAME> SetEssenceMarkAsync(string strMSVIP, Sobey.Core.Log.ILogger logger)
         {
-            if (KeyFrmParam == null)
-            {
-                return MSV_RET.MSV_FAILED;
-            }
+            
 
-            lock (_msvfunclock)
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
+                string cmd = "<Set_MSV_EssenceMark></Set_MSV_EssenceMark>\0";
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
-                    string cmd = "<Set_MSV_EssenceMark></Set_MSV_EssenceMark>\0";
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
+                                MANUALKEYFRAME KeyFrmParam = new MANUALKEYFRAME();
+
+                                XmlNode _frameNoNode = _root.SelectSingleNode("TaskFrmNo");
+                                if(_frameNoNode != null)
                                 {
-                                    XmlNode _frameNoNode = _root.SelectSingleNode("TaskFrmNo");
-                                    if(_frameNoNode != null)
-                                    {
-                                        KeyFrmParam.dwTaskFrameNo = Convert.ToInt64(_frameNoNode.InnerText);
-                                    }
-                                    XmlNode _tcNode = _root.SelectSingleNode("TC");
-                                    if(_tcNode != null)
-                                    {
-                                        KeyFrmParam.dwTimeCode = Convert.ToInt64(_tcNode.InnerText);
-                                    }
-                                    XmlNode _widthNode = _root.SelectSingleNode("Width");
-                                    if(_tcNode != null)
-                                    {
-                                        KeyFrmParam.dwWidth = Convert.ToInt64(_widthNode.InnerText);
-                                    }
-                                    XmlNode _heigth = _root.SelectSingleNode("Height");
-                                    if(_heigth != null)
-                                    {
-                                        KeyFrmParam.dwHeight = Convert.ToInt64(_heigth.InnerText);
-                                    }
-                                    XmlNode _bitDepthNode = _root.SelectSingleNode("BitDepth");
-                                    if(_bitDepthNode != null)
-                                    {
-                                        KeyFrmParam.dwBitDepth = Convert.ToInt64(_bitDepthNode.InnerText);
-                                    }
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
+                                    KeyFrmParam.dwTaskFrameNo = Convert.ToInt64(_frameNoNode.InnerText);
                                 }
-                                else
+                                XmlNode _tcNode = _root.SelectSingleNode("TC");
+                                if(_tcNode != null)
                                 {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
+                                    KeyFrmParam.dwTimeCode = Convert.ToInt64(_tcNode.InnerText);
                                 }
+                                XmlNode _widthNode = _root.SelectSingleNode("Width");
+                                if(_tcNode != null)
+                                {
+                                    KeyFrmParam.dwWidth = Convert.ToInt64(_widthNode.InnerText);
+                                }
+                                XmlNode _heigth = _root.SelectSingleNode("Height");
+                                if(_heigth != null)
+                                {
+                                    KeyFrmParam.dwHeight = Convert.ToInt64(_heigth.InnerText);
+                                }
+                                XmlNode _bitDepthNode = _root.SelectSingleNode("BitDepth");
+                                if(_bitDepthNode != null)
+                                {
+                                    KeyFrmParam.dwBitDepth = Convert.ToInt64(_bitDepthNode.InnerText);
+                                }
+                                m_error_desc = "Operation succeed";
+                                return KeyFrmParam;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return null;
                             }
                         }
                         else
                         {
-                            return MSV_RET.MSV_XMLERROR;
+                            return null;
                         }
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return null;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "SetEssenceMark: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return null;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "SetEssenceMark: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return null;
+            }
+            
 
         }
         //发送智能分段命令 by yj
-        public MSV_RET MSVSetExceptCutClip(string strMSVIP, bool bEnable, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVSetExceptCutClipAsync(string strMSVIP, bool bEnable, Sobey.Core.Log.ILogger logger)
         {
-            lock (_msvfunclock)
+            
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><Set_MSV_ExceptCut><bEnable>{0}</bEnable></Set_MSV_ExceptCut>\0", Convert.ToInt32(bEnable));
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><Set_MSV_ExceptCut><bEnable>{0}</bEnable></Set_MSV_ExceptCut>\0", Convert.ToInt32(bEnable));
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -2516,20 +2488,25 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVSetExceptCutClip: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVSetExceptCutClip: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
 
         }
         //查询MSV本地缓存容量
-        //public MSV_RET MsvQueryLocalStorage(string strMsvIP, ref MSV_LocalStorage LocalStorage, int nChannel, Sobey.Core.Log.ILogger logger)
+        //public async Task<MSV_RET> MsvQueryLocalStorage(string strMsvIP, ref MSV_LocalStorage LocalStorage, int nChannel, Sobey.Core.Log.ILogger logger)
         //{
         //    lock (_msvfunclock)
         //    {
@@ -2537,7 +2514,7 @@ namespace IngestTask.Tools.Msv
         //        {
         //            string ip = (strMsvIP != "") ? strMsvIP : m_iCtrlIp;
         //            string cmd = string.Format("<?xml version=\"1.0\"?><msv_query_LocalStorage><nChannel>{0}</nChannel></msv_query_LocalStorage>\0", nChannel);
-        //            string strRet = m_udpMsv.GetMsvUdpData("", nChannel, ip, nChannel, cmd);
+        //            string strRet = m_udpMsv.SendMsvCommandAsync("", nChannel, ip, nChannel, cmd);
         //            if (strRet != "")
         //            {
         //                _xml.LoadXml(strRet);
@@ -2620,140 +2597,132 @@ namespace IngestTask.Tools.Msv
 
         //}
         //根据传入得盘符，获得网络状态
-        public MSV_RET MsvQueryNetDriverStatus(string  strMsvIp, string strDisk, ref bool bStatus, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<bool> MsvQueryNetDriverStatusAsync(string  strMsvIp, string strDisk, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (string.IsNullOrEmpty(strDisk))
             {
-                return MSV_RET.MSV_FAILED;
+                return false;
             }
 
-            lock (_msvfunclock)
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><msv_NetDriver_Status><disk>{0}</disk><nChannel>{1}</nChannel></msv_NetDriver_Status>\0",
+                    strDisk.Substring(0, 1), nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><msv_NetDriver_Status><disk>{0}</disk><nChannel>{1}</nChannel></msv_NetDriver_Status>\0",
-                        strDisk.Substring(0, 1), nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
+                                XmlNode _stateNode = _root.SelectSingleNode("Status");
+                                if(_stateNode != null)
                                 {
-                                    XmlNode _stateNode = _root.SelectSingleNode("Status");
-                                    if(_stateNode != null)
-                                    {
-                                        bStatus = Convert.ToBoolean(Convert.ToInt32(_stateNode.InnerText));
-                                    }
                                     m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
+                                    return Convert.ToBoolean(Convert.ToInt32(_stateNode.InnerText));
                                 }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return false;
                             }
                         }
                         else
                         {
-                            return MSV_RET.MSV_XMLERROR;
+                            return false;
                         }
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return false;
                     }
                 }
-                catch (System.Exception ex)
-                {
-                    m_error_desc = "MsvQueryNetDriverStatus: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
-                }
+                    return false;
+                
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MsvQueryNetDriverStatus: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return false;
+            }
+            
 
         }
-        public MSV_RET MSVQueryDBEChannel(string strMsvIP, ref ulong dwDBEChannel, Sobey.Core.Log.ILogger logger, int nChannel = -1)
+        public async Task<ulong> MSVQueryDBEChannelAsync(string strMsvIP,/* ref ulong dwDBEChannel,*/ Sobey.Core.Log.ILogger logger, int nChannel = -1)
         {
-            lock (_msvfunclock)
+           
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIP)) ? strMsvIP : m_iCtrlIp;
+                string cmd = string.Format("<?xml version=\"1.0\"?><msv_query_DBEChannel><nChannel>{0}</nChannel></msv_query_DBEChannel>\0", nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIP)) ? strMsvIP : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version=\"1.0\"?><msv_query_DBEChannel><nChannel>{0}</nChannel></msv_query_DBEChannel>\0", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
+                                XmlNode DBEChannelNode = _root.SelectSingleNode("DBEChannel");
+                                if(DBEChannelNode != null)
                                 {
-                                    XmlNode DBEChannelNode = _root.SelectSingleNode("DBEChannel");
-                                    if(DBEChannelNode != null)
-                                    {
-                                        dwDBEChannel = Convert.ToUInt64(DBEChannelNode.InnerText);
-                                    }
                                     m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
+                                    return Convert.ToUInt64(DBEChannelNode.InnerText);
                                 }
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return 0;
                             }
                         }
                         else
                         {
-                            return MSV_RET.MSV_XMLERROR;
+                            return 0;
                         }
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return 0;
                     }
                 }
-                catch (System.Exception ex)
-                {
-                    m_error_desc = "MSVQueryDBEChannel: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
-                }
+                    return 0;
+                
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVQueryDBEChannel: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return 0;
+            }
+            
 
         }
         /*
-        public MSV_RET MSV_GetMSV_RestartTime(LPCTSTR strTSIp,const int nTSPort, time_t & dwRestartTickCount, time_t & dwEndRestartTickCount )
+        public async Task<MSV_RET> MSV_GetMSV_RestartTime(LPCTSTR strTSIp,const int nTSPort, time_t & dwRestartTickCount, time_t & dwEndRestartTickCount )
         {
             //IPTS的已经不用该函数，直接返失败。
             return MSV_FAILED;
@@ -2777,137 +2746,128 @@ namespace IngestTask.Tools.Msv
         // // 说明：
         // //     
         // //-----------------------------------------------------------
-        public MSV_RET MSG_NetPreview(string strMSVIP,int nOperaType, ref int nPort, ref int nState, Sobey.Core.Log.ILogger logger)
-        {
-            lock (_msvfunclock)
-            {
-                try
-                {
-                    string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
-                    string cmd = "<?xml version=\"1.0\"?>";
-                    switch (nOperaType)
-                    {
-                        case 0:
-                            {
-                                cmd += "<stop_tcppreview>";
-                                cmd += "</stop_tcppreview>";
+        //public async Task<MSV_RET> MSG_NetPreviewAsync(string strMSVIP,int nOperaType, ref int nPort, ref int nState, Sobey.Core.Log.ILogger logger)
+        //{
+           
+        //    try
+        //    {
+        //        string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
+        //        string cmd = "<?xml version=\"1.0\"?>";
+        //        switch (nOperaType)
+        //        {
+        //            case 0:
+        //                {
+        //                    cmd += "<stop_tcppreview>";
+        //                    cmd += "</stop_tcppreview>";
                               
-                            }
-                            break;
-                        case 1:
-                            {
-                                cmd += "<start_tcppreview>";
-                                cmd += "</start_tcppreview>";
+        //                }
+        //                break;
+        //            case 1:
+        //                {
+        //                    cmd += "<start_tcppreview>";
+        //                    cmd += "</start_tcppreview>";
 
-                            }
-                            break;
-                        case 2:
-                            {
-                                cmd += "<get_tcppreview_info>";
-                                cmd += "</get_tcppreview_info>";
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
-                    {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
-                        {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
-                            {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    XmlNode _portNode = _root.SelectSingleNode("Port");
-                                    if(_portNode != null)
-                                    {
-                                        nPort = Convert.ToInt32(_portNode.InnerText);
-                                    }
-                                    XmlNode _stateNode = _root.SelectSingleNode("State");
-                                    if(_stateNode != null)
-                                    {
-                                        nState = Convert.ToInt32(_stateNode.InnerText);
-                                    }
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
-                            }
-                            else
-                            {
-                                return MSV_RET.MSV_XMLERROR;
-                            }
-                        }
-                        else
-                        {
-                            return MSV_RET.MSV_XMLERROR;
-                        }
-                    }
-                    else
-                    {
-                        return MSV_RET.MSV_NETERROR;
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    m_error_desc = "MSG_NetPreview: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
-                }
-            }
-
-        }
+        //                }
+        //                break;
+        //            case 2:
+        //                {
+        //                    cmd += "<get_tcppreview_info>";
+        //                    cmd += "</get_tcppreview_info>";
+        //                }
+        //                break;
+        //            default:
+        //                break;
+        //        }
+        //        string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+        //        if (!string.IsNullOrEmpty(strRet))
+        //        {
+        //            _xml.LoadXml(strRet);
+        //            XmlElement _root = _xml.DocumentElement;
+        //            if (_root != null && _root.Name == "std_reply")
+        //            {
+        //                XmlNode _retNode = _root.SelectSingleNode("s_result");
+        //                if (_retNode != null)
+        //                {
+        //                    string _result = _retNode.InnerText;
+        //                    if (_result == "succeed")
+        //                    {
+        //                        XmlNode _portNode = _root.SelectSingleNode("Port");
+        //                        if(_portNode != null)
+        //                        {
+        //                            nPort = Convert.ToInt32(_portNode.InnerText);
+        //                        }
+        //                        XmlNode _stateNode = _root.SelectSingleNode("State");
+        //                        if(_stateNode != null)
+        //                        {
+        //                            nState = Convert.ToInt32(_stateNode.InnerText);
+        //                        }
+        //                        m_error_desc = "Operation succeed";
+        //                        return MSV_RET.MSV_SUCCESS;
+        //                    }
+        //                    else
+        //                    {
+        //                        XmlNode nError = _root.SelectSingleNode("s_error_string");
+        //                        if (nError != null)
+        //                        {
+        //                            m_error_desc = nError.InnerText;
+        //                        }
+        //                        return MSV_RET.MSV_FAILED;
+        //                    }
+        //                }
+        //                else
+        //                {
+        //                    return MSV_RET.MSV_XMLERROR;
+        //                }
+        //            }
+        //            else
+        //            {
+        //                return MSV_RET.MSV_XMLERROR;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            return MSV_RET.MSV_NETERROR;
+        //        }
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        m_error_desc = "MSG_NetPreview: " + ex.Message;
+        //        if (logger != null){logger.Error(m_error_desc);}
+        //        return MSV_RET.MSV_FAILED;
+        //    }
+        //}
         
-        public MSV_RET MSV_Relocate(long taskID, string  strMsvIp, string  lpStrTargetIP, int nPort, string  lpStrLocalIP, int bUDP, int nPgmID, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSV_RelocateAsync(long taskID, string  strMsvIp, string  lpStrTargetIP, int nPort, string  lpStrLocalIP, int bUDP, int nPgmID, Sobey.Core.Log.ILogger logger)
         {
-            lock (_msvfunclock)
+           
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version =\"1.0\"?><Relocate><Port>{0}</Port><TargetIP>{1}</TargetIP><LocalIP>{2}</LocalIP><PgmID>{3}</PgmID><bUdp>{4}</bUdp><taskID>{5}</taskID></Relocate>", nPort, lpStrTargetIP, lpStrLocalIP, nPgmID, bUDP, taskID);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version =\"1.0\"?><Relocate><Port>{0}</Port><TargetIP>{1}</TargetIP><LocalIP>{2}</LocalIP><PgmID>{3}</PgmID><bUdp>{4}</bUdp><taskID>{5}</taskID></Relocate>", nPort, lpStrTargetIP, lpStrLocalIP, nPgmID, bUDP, taskID);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -2917,83 +2877,86 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSV_Relocate: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSV_Relocate: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
 
         }
         // //该接口暂时未用
-        public MSV_RET MSV_Relocate(long taskID, string  strTSIp,int nTSPort, string lpStrTargetIP,int nPort, string lpStrLocalIP,ref int nAnalyzeID, Sobey.Core.Log.ILogger logger)
+        public async Task<int> MSV_RelocateAsync(long taskID, string  strTSIp,int nTSPort, string lpStrTargetIP,int nPort, string lpStrLocalIP, int nAnalyzeID, Sobey.Core.Log.ILogger logger)
         {
-            lock (_msvfunclock)
+            
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strTSIp)) ? strTSIp : m_iCtrlIp;
+                string cmd = string.Format("<?xml version =\"1.0\"?><Relocate><Port>{0}</Port><TargetIP>{1}</TargetIP><LocalIP>{2}</LocalIP><PgmID>{3}</PgmID><taskID>{4}</taskID></Relocate>",
+                    nPort, lpStrTargetIP, lpStrLocalIP, nAnalyzeID, taskID);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strTSIp)) ? strTSIp : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version =\"1.0\"?><Relocate><Port>{0}</Port><TargetIP>{1}</TargetIP><LocalIP>{2}</LocalIP><PgmID>{3}</PgmID><taskID>{4}</taskID></Relocate>", nPort, lpStrTargetIP, lpStrLocalIP, nAnalyzeID, taskID);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
+                                XmlNode AnalyzeIDNode = _root.SelectSingleNode("AnalyzeID");
+                                if(AnalyzeIDNode != null)
                                 {
-                                    XmlNode AnalyzeIDNode = _root.SelectSingleNode("AnalyzeID");
-                                    if(AnalyzeIDNode != null)
-                                    {
-                                        nAnalyzeID = Convert.ToInt32(AnalyzeIDNode.InnerText);
-                                    }
                                     m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
+                                    return Convert.ToInt32(AnalyzeIDNode.InnerText);
                                 }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return 0;
                             }
                         }
                         else
                         {
-                            return MSV_RET.MSV_XMLERROR;
+                            return 0;
                         }
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return 0;
                     }
                 }
-                catch (System.Exception ex)
-                {
-                    m_error_desc = "MSV_Relocate: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
-                }
+                    return 0;
+                
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSV_Relocate: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return 0;
+            }
+            
 
         }
-        public MSV_RET MSVStartRetrospectTask(string strMsvIp, TASK_ALL_PARAM param, int nChannel, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVStartRetrospectTaskAsync(string strMsvIp, TASK_ALL_PARAM param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             if (param == null)
             {
@@ -3012,41 +2975,35 @@ namespace IngestTask.Tools.Msv
                 
                 return MSV_RET.MSV_FAILED;
             }
-            lock (_msvfunclock)
+           
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
+                string cmd = FromatParmaToString(param, "start_msv_retrospecttask", nChannel);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
-                    string cmd = FromatParmaToString(param, "start_msv_retrospecttask", nChannel);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", nChannel, ip, nChannel, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -3056,55 +3013,54 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVStartRetrospectTask: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVStartRetrospectTask: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
         }
 
-        public MSV_RET MSVSetMulDestPath(string strMSVIP, string strMulDestPathXML, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVSetMulDestPathAsync(string strMSVIP, string strMulDestPathXML, Sobey.Core.Log.ILogger logger)
         {
-            lock (_msvfunclock)
+           
+            try
             {
-                try
+                string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
+                string cmd = string.Format("<?xml version =\"1.0\"?><set_muldest_path>{0}</set_muldest_path>\0", strMulDestPathXML);
+                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                 {
-                    string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
-                    string cmd = string.Format("<?xml version =\"1.0\"?><set_muldest_path>{0}</set_muldest_path>\0", strMulDestPathXML);
-                    string strRet = m_udpMsv.GetMsvUdpData(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd);
-                    if (!string.IsNullOrEmpty(strRet))
+                    _xml.LoadXml(strRet);
+                    XmlElement _root = _xml.DocumentElement;
+                    if (_root != null && _root.Name == "std_reply")
                     {
-                        _xml.LoadXml(strRet);
-                        XmlElement _root = _xml.DocumentElement;
-                        if (_root != null && _root.Name == "std_reply")
+                        XmlNode _retNode = _root.SelectSingleNode("s_result");
+                        if (_retNode != null)
                         {
-                            XmlNode _retNode = _root.SelectSingleNode("s_result");
-                            if (_retNode != null)
+                            string _result = _retNode.InnerText;
+                            if (_result == "succeed")
                             {
-                                string _result = _retNode.InnerText;
-                                if (_result == "succeed")
-                                {
-                                    m_error_desc = "Operation succeed";
-                                    return MSV_RET.MSV_SUCCESS;
-                                }
-                                else
-                                {
-                                    XmlNode nError = _root.SelectSingleNode("s_error_string");
-                                    if (nError != null)
-                                    {
-                                        m_error_desc = nError.InnerText;
-                                    }
-                                    return MSV_RET.MSV_FAILED;
-                                }
+                                m_error_desc = "Operation succeed";
+                                return MSV_RET.MSV_SUCCESS;
                             }
                             else
                             {
-                                return MSV_RET.MSV_XMLERROR;
+                                XmlNode nError = _root.SelectSingleNode("s_error_string");
+                                if (nError != null)
+                                {
+                                    m_error_desc = nError.InnerText;
+                                }
+                                return MSV_RET.MSV_FAILED;
                             }
                         }
                         else
@@ -3114,16 +3070,21 @@ namespace IngestTask.Tools.Msv
                     }
                     else
                     {
-                        return MSV_RET.MSV_NETERROR;
+                        return MSV_RET.MSV_XMLERROR;
                     }
                 }
-                catch (System.Exception ex)
+                else
                 {
-                    m_error_desc = "MSVSetMulDestPath: " + ex.Message;
-                    if (logger != null){logger.Error(m_error_desc);}
-                    return MSV_RET.MSV_FAILED;
+                    return MSV_RET.MSV_NETERROR;
                 }
             }
+            catch (System.Exception ex)
+            {
+                m_error_desc = "MSVSetMulDestPath: " + ex.Message;
+                if (logger != null){logger.Error(m_error_desc);}
+                return MSV_RET.MSV_FAILED;
+            }
+            
 
         }
         // 

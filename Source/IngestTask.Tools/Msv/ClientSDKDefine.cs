@@ -92,7 +92,8 @@ namespace IngestTask.Tools.Msv
             TS_RUNNING,
             TS_PAUSE,
             TS_STOP,
-            TS_FINISH
+            TS_FINISH,
+            TS_ERROR
         }
 
         /// <summary>
@@ -621,12 +622,14 @@ namespace IngestTask.Tools.Msv
             NDF = 1,
             Unknow = 2
         }
-        public struct SDISignalStatus
+        public class SDISignalStatus
         {
+            public bool IsBlack { get; set; }
             public SignalFormat VideoFormat { get; set; }
             public TimeCodeMode TCMode { get; set; }
             public int nWidth { get; set; }
             public int nHeight { get; set; }
             public float fFrameRate { get; set; }
+            
         }
 }
