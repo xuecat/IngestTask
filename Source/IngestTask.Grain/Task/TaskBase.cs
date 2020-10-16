@@ -48,7 +48,7 @@ namespace IngestTask.Grain
 
         public override Task OnActivateAsync()
         {
-            Logger.Info(" DeviceInspectionGrain active");
+            Logger.Info(" TaskBase active");
             return base.OnActivateAsync();
         }
         public override Task OnDeactivateAsync()

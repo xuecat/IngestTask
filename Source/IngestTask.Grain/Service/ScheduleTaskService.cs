@@ -18,5 +18,10 @@ namespace IngestTask.Grain.Service
             throw new NotImplementedException();
         }
 
+        public Task<int> AddTaskAsync()
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }

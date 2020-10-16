@@ -401,7 +401,7 @@ namespace IngestTask.Tools.Msv
             }
         }
 
-        public bool Trace(int nChPort, string strMsvIP, ref TaskParam pTaskparam, string strTaskName, string pCaptureparam, Sobey.Core.Log.ILogger logger)
+        public async Task<TaskParam> TraceAsync(int nChPort, string strMsvIP, TaskParam pTaskparam, string strTaskName, string pCaptureparam, Sobey.Core.Log.ILogger logger)
         {
             MSV_RET ret;
             try
@@ -413,59 +413,59 @@ namespace IngestTask.Tools.Msv
                 task.taskParam.strName = strTaskName;
                 task.nCutLen = 10;
                 task.captureParam = pCaptureparam;
-                ret = _clientSdk.MSVStartRetrospectTask(strMsvIP, task, nChPort, logger);
+                //ret = _clientSdk.MSVStartRetrospectTask(strMsvIP, task, nChPort, logger);
+                ret = await _clientSdk.MSVStartRetrospectTaskAsync(strMsvIP, task, nChPort, logger).ConfigureAwait(true);
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
                     logger.Error($"MSVStartRetrospectTask falied, error:{_clientSdk.MSVGetLastErrorString()} ");
-                    return false;
+                    return pTaskparam;
                 }
                 logger.Info($"MSVStartRetrospectTask end......MsvUdpClientCtrlSDK Trace");
             }
             catch (Exception e)
             {
                 logger.Error($"MsvUdpClientCtrlSDK::Trace falied, Exception:{e.Message} ");
-                return false;
+                return null;
             }
-            return true;
+            return null;
         }
 
-        public bool QuerySignalStatus(int nChPort, string strMsvIP, out SDISignalDetails _SDISignalDetails, Sobey.Core.Log.ILogger logger)
+        public async Task<SDISignalDetails> QuerySignalStatusAsync(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
         {
-            MSV_RET ret;
-            SDISignalStatus status = new SDISignalStatus();
-            _SDISignalDetails = new SDISignalDetails();
+            SDISignalDetails _SDISignalDetails = new SDISignalDetails();
             bool bIsBlack = false;
             try
             {
-                ret = _clientSdk.MSVQuerySDIFormat(strMsvIP, ref status, ref bIsBlack, logger, nChPort);
+                //ret = _clientSdk.MSVQuerySDIFormat(strMsvIP, ref status, ref bIsBlack, logger, nChPort);
+                var retback = await _clientSdk.MSVQuerySDIFormatAsync(strMsvIP, logger, nChPort).ConfigureAwait(true);
 
-                if (ret != MSV_RET.MSV_SUCCESS)
+                if (retback == null)
                 {
                     logger.Error($"Cast Interface Function QuerySignalStatus Error!(error{_clientSdk.MSVGetLastErrorString()}");
-                    return false;
+                    return null;
                 }
                 //处理数据
-                if (status.VideoFormat != SignalFormat._invalid_vid_format && status.VideoFormat != SignalFormat._unknown_vid_format && status.nWidth > 0)
+                if (retback.VideoFormat != SignalFormat._invalid_vid_format && retback.VideoFormat != SignalFormat._unknown_vid_format && retback.nWidth > 0)
                 {
-                    if (status.nWidth <= 720)
+                    if (retback.nWidth <= 720)
                         _SDISignalDetails.nSDIFormat = 0;
                     else
                         _SDISignalDetails.nSDIFormat = 1;
                 }
 
-                _SDISignalDetails.nWidth = status.nWidth;
-                _SDISignalDetails.nHeight = status.nHeight;
-                _SDISignalDetails.nDFMode = Convert.ToInt32(status.TCMode);
-                _SDISignalDetails.fFrameRate = status.fFrameRate;
+                _SDISignalDetails.nWidth = retback.nWidth;
+                _SDISignalDetails.nHeight = retback.nHeight;
+                _SDISignalDetails.nDFMode = Convert.ToInt32(retback.TCMode);
+                _SDISignalDetails.fFrameRate = retback.fFrameRate;
                 _SDISignalDetails.bIsBlack = Convert.ToBoolean(bIsBlack);
+                return _SDISignalDetails;
             }
             catch (System.Exception e)
             {
                 logger.Error($"MsvUdpClientCtrlSDK::QuerySignalStatus Exception:{e.Message}");
 
-                return false;
+                return null;
             }
-            return true;
         }
     }
 }

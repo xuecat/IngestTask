@@ -89,7 +89,7 @@ namespace IngestTask.Grain
                         {
                             _ = Task.Run(async () =>
                             {
-                                var state = _msvClient.QueryDeviceState(item.ChannelIndex, item.Ip, Logger);
+                                var state = await _msvClient.QueryDeviceStateAsync(item.ChannelIndex, item.Ip, Logger);
 
                                 MSV_Mode msvmode = MSV_Mode.NETWORK;
                                 if (state == Device_State.DISCONNECTTED)
@@ -124,7 +124,7 @@ namespace IngestTask.Grain
                                      && changedstate
                                      && item.NeedStopFlag)
                                 {
-                                    var taskinfo = _msvClient.QueryTaskInfo(item.ChannelIndex, item.Ip, Logger);
+                                    var taskinfo = await _msvClient.QueryTaskInfoAsync(item.ChannelIndex, item.Ip, Logger);
                                     if (taskinfo != null && taskinfo.ulID > 0)
                                     {
                                         var cptaskinfo = await _restClient.GetChannelCapturingTaskInfoAsync(item.ChannelId);

@@ -20,3 +20,5 @@ Source/IngestTask.Server/bin/
 Source/IngestTask.Server/obj/
 Source/IngestTask.Tools/obj/
 Source/IngestTask.Tools/bin/
+Source/IngestTask.Dto/obj/
+Source/IngestTask.Dto/bin/
