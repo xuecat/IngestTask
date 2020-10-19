@@ -4,11 +4,13 @@ using ProtoBuf;
 namespace IngestTask.Grain
 {
     using IngestTask.Abstraction.Grains;
+    using IngestTask.Abstraction.Service;
     using IngestTask.Dto;
     using Orleans;
     using Orleans.Concurrency;
     using Orleans.EventSourcing;
     using Orleans.LogConsistency;
+    using Orleans.Runtime;
     using ProtoBuf;
     using Sobey.Core.Log;
     using System;
@@ -41,9 +43,10 @@ namespace IngestTask.Grain
     public class TaskBase : JournaledGrain<TaskState,TaskEvent>, ITask
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("TaskInfo");
-        
-        public TaskBase()
+        private readonly IScheduleClient _scheduleClient;
+        public TaskBase(IGrainActivationContext grainActivationContext, IScheduleClient dataServiceClient)
         {
+            _scheduleClient = dataServiceClient;
         }
 
         public override Task OnActivateAsync()

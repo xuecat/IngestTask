@@ -25,6 +25,8 @@ namespace IngestTask.Server
     using IngestTask.Tools.Msv;
     using IngestTask.Tool;
     using Orleans.Serialization.ProtobufNet;
+    using IngestTask.Grain.Service;
+    using IngestTask.Abstraction.Service;
 
     public static class Program
     {
@@ -91,11 +93,15 @@ namespace IngestTask.Server
             ISiloBuilder siloBuilder) =>
             siloBuilder
                 .Configure<SerializationProviderOptions>(opt => opt.SerializationProviders.Add(typeof(ProtobufNetSerializer).GetTypeInfo()))
+                .AddGrainService<ScheduleTaskService>()
                 .ConfigureServices(
                     (context, services) =>
                     {
                         services.AddScoped<MsvClientCtrlSDK>();
                         services.AddSingleton<RestClient>();
+                        services.AddSingleton<IScheduleService, ScheduleTaskService>();
+                        services.AddSingleton<IScheduleClient, ScheduleTaskClient>();
+
                         services.Configure<ApplicationOptions>(context.Configuration);
                         services.Configure<ClusterOptions>(context.Configuration.GetSection(nameof(ApplicationOptions.Cluster)));
                         services.Configure<StorageOptions>(context.Configuration.GetSection(nameof(ApplicationOptions.Storage)));

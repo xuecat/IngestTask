@@ -11,7 +11,7 @@ namespace IngestTask.Grain.Service
     using System.Threading.Tasks;
 
     [Reentrant]
-    class ScheduleTaskService : GrainService, IScheduleService
+    public class ScheduleTaskService : GrainService, IScheduleService
     {
         public Task<int> ScheduleTaskAsync()
         {
