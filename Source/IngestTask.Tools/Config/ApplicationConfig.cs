@@ -1,9 +1,14 @@
-﻿using System;
+﻿using ICSharpCode.SharpZipLib.Core;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace IngestTask.Tools
 {
+    public class IngestTaskConfig
+    {
+        //public int Task
+    }
     public class ApplicationConfig
     {
         public string ConnectionString { get; set; }
