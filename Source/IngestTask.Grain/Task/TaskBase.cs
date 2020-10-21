@@ -6,6 +6,8 @@ namespace IngestTask.Grain
     using IngestTask.Abstraction.Grains;
     using IngestTask.Abstraction.Service;
     using IngestTask.Dto;
+    using IngestTask.Tool;
+    using IngestTask.Tools;
     using Orleans;
     using Orleans.Concurrency;
     using Orleans.EventSourcing;
@@ -39,7 +41,6 @@ namespace IngestTask.Grain
     }
     //要不要存数据库呢
     //[StorageProvider(ProviderName="store1")]
-    [Reentrant]
     public class TaskBase : JournaledGrain<TaskState,TaskEvent>, ITask
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("TaskInfo");
@@ -100,12 +101,32 @@ namespace IngestTask.Grain
             throw new NotImplementedException();
         }
 
-        public Task AddTaskAsync(TaskContent task)
+        public Task HandleTaskAsync(TaskContent task)
         {
-            if (true)
-            {
+            throw new NotImplementedException();
+        }
 
+        public async Task AddTaskAsync(TaskContent task)
+        {
+            if (task != null)
+            {
+                if ((DateTimeFormat.DateTimeFromString(task.Begin) - DateTime.Now).TotalSeconds > 
+                    ApplicationContext.Current.TaskPrevious)
+                {
+                    //提交
+                    await _scheduleClient.AddScheduleTaskAsync(task);
+                }
+                else
+                {
+                    //归档
+                    RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskInfo = task});
+                }
             }
+        }
+
+        public bool JudgeTaskPriority(TaskContent taskcurrent, TaskContent taskcompare)
+        {
+            throw new NotImplementedException();
         }
 
         public Task ModifyTaskAsync(TaskContent task)
@@ -117,5 +138,6 @@ namespace IngestTask.Grain
         {
             throw new NotImplementedException();
         }
+
     }
 }

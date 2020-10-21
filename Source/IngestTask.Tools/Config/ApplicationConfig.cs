@@ -7,9 +7,9 @@ namespace IngestTask.Tools
 {
     public class IngestTaskConfig
     {
-        //public int Task
+        public int TaskPrevious { get; set; }
     }
-    public class ApplicationConfig
+    public class ApplicationConfig: IngestTaskConfig
     {
         public string ConnectionString { get; set; }
         public string IngestDBUrl { get; set; }

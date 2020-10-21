@@ -11,8 +11,12 @@ namespace IngestTask.Abstraction.Grains
     public interface ITask : IGrainWithIntegerKey
     {
         Task<TaskContent> GetCurrentTaskAsync();
+
+        Task HandleTaskAsync(TaskContent task);
         Task AddTaskAsync(TaskContent task);
         Task ModifyTaskAsync(TaskContent task);
         Task DeleteTaskAsync(TaskContent task);
+
+        bool JudgeTaskPriority(TaskContent taskcurrent, TaskContent taskcompare);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using IngestTask.Abstraction.Service;
+using IngestTask.Dto;
 using Orleans.Runtime.Services;
 using System;
 using System.Collections.Generic;
@@ -13,9 +14,7 @@ namespace IngestTask.Grain.Service
         {
 
         }
-        public Task AddScheduleTaskAsync()
-        {
-            throw new NotImplementedException();
-        }
+        public Task<int> AddScheduleTaskAsync(TaskContent task) => GrainService.AddTaskAsync(task);
+
     }
 }

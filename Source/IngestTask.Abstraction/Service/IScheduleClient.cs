@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IngestTask.Dto;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,6 +8,6 @@ namespace IngestTask.Abstraction.Service
 {
     public interface IScheduleClient
     {
-        Task AddScheduleTaskAsync();
+        Task<int> AddScheduleTaskAsync(TaskContent task);
     }
 }
