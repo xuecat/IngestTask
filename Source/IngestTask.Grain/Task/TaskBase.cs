@@ -20,26 +20,70 @@ namespace IngestTask.Grain
     using System.Linq;
     using System.Threading.Tasks;
 
+    //[ProtoContract]
+    [Serializable]
+    public class TaskEvent
+    {
+        public TaskInfo TaskInfo { get; set; }
+        public opType OpType { get; set; }
+
+    }
+
+    [Serializable]
+    public class DeviceEvent
+    {
+        public DeviceType DeviceType { get; set; }
+
+    }
+
+
     //这些序列化代表基础结构体都要protoc序列化，太麻烦了，我打算只心跳那里做protoc序列化
     //[ProtoContract]
     [Serializable]
     public class TaskState
     {
+        public TaskState ()
+        {
+            TaskLists = new List<TaskInfo>();
+        }
         //[ProtoMember(1)]
         public int ChannelId { get; set; }
         public long ReminderTimer { get; set; }
-        public List<TaskContent> TaskLists { get; set; }
+        public List<TaskInfo> TaskLists { get; set; }
+
+        //修改状态对象之外，TransitionState方法不应该有任何副作用，并且应该是确定性的
+        public void Apply(TaskEvent @event)
+        {
+            switch (@event.OpType)
+            {
+                case opType.otAdd:
+                    {
+                        if (@event.TaskInfo.Content.State == taskState.tsReady 
+                            && TaskLists.Find(a => a.Content.TaskId == @event.TaskInfo.Content.TaskId) == null)
+                        {
+                            TaskLists.Add(@event.TaskInfo);
+                        }
+                        
+                    }
+                    break;
+                case opType.otDel:
+                    break;
+                case opType.otMove:
+                    break;
+                case opType.otModify:
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public void Apply(DeviceEvent @event)
+        { }
     }
 
-    //[ProtoContract]
-    [Serializable]
-    public class TaskEvent
-    {
-        public TaskContent TaskInfo { get; set; }
-        public opType OpType { get; set; }
 
-    }
     //要不要存数据库呢
+    [Reentrant]
     //[StorageProvider(ProviderName="store1")]
     public class TaskBase : JournaledGrain<TaskState,TaskEvent>, ITask
     {
@@ -58,27 +102,6 @@ namespace IngestTask.Grain
         public override Task OnDeactivateAsync()
         {
             return base.OnDeactivateAsync();
-        }
-
-        protected override void TransitionState(TaskState state, TaskEvent @event)
-        {
-            //修改状态对象之外，TransitionState方法不应该有任何副作用，并且应该是确定性的
-            switch (@event.OpType)
-            {
-                case opType.otAdd:
-                    {
-                        //state.TaskStatus = taskState.tsExecuting;
-                    }
-                    break;
-                case opType.otDel:
-                    break;
-                case opType.otMove:
-                    break;
-                case opType.otModify:
-                    break;
-                default:
-                    break;
-            }
         }
 
         protected override void OnConnectionIssue(ConnectionIssue issue)
@@ -101,9 +124,15 @@ namespace IngestTask.Grain
             throw new NotImplementedException();
         }
 
-        public Task HandleTaskAsync(TaskContent task)
+        public Task HandleTaskAsync(TaskInfo task)
         {
-            throw new NotImplementedException();
+            if (task.StartOrStop)
+            {
+                //如果判断到是周期任务，那么需要对它做分任务的处理
+                //这个步骤挪到后台server去做
+
+
+            }
         }
 
         public async Task AddTaskAsync(TaskContent task)
@@ -119,7 +148,7 @@ namespace IngestTask.Grain
                 else
                 {
                     //归档
-                    RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskInfo = task});
+                    RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskInfo = new TaskInfo() { Content = task, StartOrStop = true} });
                 }
             }
         }

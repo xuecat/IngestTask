@@ -5,6 +5,10 @@ using System.Text;
 
 namespace IngestTask.Tools
 {
+    abstract class MathConstants//继承
+    {
+        public const double Pi = 3.14;
+    }
     public class IngestTaskConfig
     {
         public int TaskPrevious { get; set; }

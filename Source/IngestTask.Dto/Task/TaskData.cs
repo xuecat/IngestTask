@@ -5,6 +5,13 @@ using System.Text;
 namespace IngestTask.Dto
 {
     [Serializable]
+    public class TaskInfo
+    {
+        public bool StartOrStop { get; set; }
+        public TaskContent Content { get; set; }
+    }
+
+    [Serializable]
     public class TaskContent
     {
         /// <summary>任务id</summary>
@@ -218,7 +225,7 @@ namespace IngestTask.Dto
         public string PlanningXml { get; set; }
     }
 
-    public class TaskInfo
+    public class TaskFullInfo
     {
         /// <summary>是否备份任务</summary>
         /// <example>false</example>
