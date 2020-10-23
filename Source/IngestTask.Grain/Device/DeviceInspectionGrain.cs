@@ -27,6 +27,8 @@ namespace IngestTask.Grain
         
     }
 
+    
+    [Reentrant]
     [StatelessWorker(1)]
     class DeviceInspectionGrain : Grain<DeviceState>, IDeviceInspections
     {

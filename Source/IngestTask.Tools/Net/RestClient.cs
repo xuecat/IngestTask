@@ -15,10 +15,11 @@ namespace IngestTask.Tool
 {
     public class RestClient
     {
-        ILogger Logger = LoggerManager.GetLogger("ApiClient");
+        private readonly ILogger Logger = LoggerManager.GetLogger("ApiClient");
 
         private static HttpClient _httpClient = null;
         const string TASKAPI20 = "api/v2/task";
+        const string USERAPI20 = "api/v2/user";
         const string DEVICEAPI21 = "api/v2.1/device";
         const string DEVICEAPI20 = "api/v2/device";
 
@@ -148,6 +149,53 @@ namespace IngestTask.Tool
                 //Logger.Error("请求异常：\r\n{0}", e.ToString());
             }
             return response;
+        }
+
+        public async Task<TResponse> PutAsync<TResponse>(string url, object body, Dictionary<string, string> header, string method = null, NameValueCollection queryString = null)
+        {
+            TResponse response = default(TResponse);
+            try
+            {
+                string json = JsonHelper.ToJson(body);
+                HttpClient client = _httpClient;
+                if (queryString == null)
+                {
+                    queryString = new NameValueCollection();
+                }
+
+                url = CreateUrl(url, queryString);
+                if (String.IsNullOrEmpty(method))
+                {
+                    method = "POST";
+                }
+                //Logger.Debug("请求：{0} {1}", method, url);
+                byte[] strData = Encoding.UTF8.GetBytes(json);
+                MemoryStream ms = new MemoryStream(strData);
+                using (StreamContent sc = new StreamContent(ms))
+                {
+                    sc.Headers.ContentType = new MediaTypeWithQualityHeaderValue("application/json");
+                    if (header != null)
+                    {
+                        foreach (var item in header)
+                        {
+                            sc.Headers.Add(item.Key, item.Value);
+                        }
+                    }
+
+                    var res = await client.PutAsync(url, sc).ConfigureAwait(true);
+                    byte[] rData = await res.Content.ReadAsByteArrayAsync().ConfigureAwait(true);
+                    string rJson = Encoding.UTF8.GetString(rData);
+                    //Logger.Debug("应答：\r\n{0}", rJson);
+                    response = JsonHelper.ToObject<TResponse>(rJson);
+                    return response;
+                }
+
+            }
+            catch (System.Exception)
+            {
+                //Logger.Error("请求异常：\r\n{0}", e.ToString());
+                throw;
+            }
         }
 
         public async Task<TResponse> GetAsync<TResponse>(string url, NameValueCollection queryString, Dictionary<string, string> header)
@@ -416,6 +464,24 @@ namespace IngestTask.Tool
 
         }
 
+        #region Global
+        public async Task<List<UserLoginInfo>> GetAllUserLoginInfosAsync()
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<List<UserLoginInfo>>>(() =>
+            {
+                return GetAsync<ResponseMessage<List<UserLoginInfo>>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{USERAPI20}/userlogininfo/all", null, GetIngestHeader()
+                    );
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
+        #endregion
+
         #region Task
 
         public async Task<TaskContent> GetChannelCapturingTaskInfoAsync(int channelid)
@@ -531,6 +597,38 @@ namespace IngestTask.Tool
                 return back.Ext;
             }
             return null;
+        }
+
+        public async Task<TaskSource> GetTaskSourceByTaskIdAsync(int taskid)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<TaskSource>>(() =>
+            {
+                return GetAsync<ResponseMessage<TaskSource>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/tasksource/{taskid}",
+                    null, GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return TaskSource.emUnknowTask;
+        }
+
+        public async Task<bool> CompleteSynTasks(int taskid)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage>(() =>
+            {
+                return PutAsync<ResponseMessage>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/tasksource/{taskid}",
+                    null, GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return Task;
         }
         #endregion
 

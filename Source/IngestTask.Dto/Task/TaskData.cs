@@ -8,6 +8,7 @@ namespace IngestTask.Dto
     public class TaskInfo
     {
         public bool StartOrStop { get; set; }
+        public TaskSource Source { get; set; } = TaskSource.emUnknowTask;
         public TaskContent Content { get; set; }
     }
 
