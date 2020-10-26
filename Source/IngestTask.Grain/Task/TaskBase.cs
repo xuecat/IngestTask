@@ -154,7 +154,11 @@ namespace IngestTask.Grain
 
                 if (task.StartOrStop)
                 {
+                    if (task.Content.TaskType == TaskType.TT_MANUTASK 
+                        && task.)
+                    {
 
+                    }
                 }
 
             }
@@ -177,6 +181,27 @@ namespace IngestTask.Grain
                     RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskInfo = new TaskInfo() { Content = task, StartOrStop = true} });
                 }
             }
+        }
+
+        public virtual async Task<bool> UnlockTaskAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
+        {
+            if (await _restClient.CompleteSynTasksAsync(taskid, tkstate, dpstate, systate))
+            {
+                Logger.Info($"taskbase UnlockTaskAsync success {taskid} {tkstate} {dpstate} {systate}");
+            }
+            else
+            {
+                Logger.Info($"taskbase UnlockTaskAsync failed {taskid} {tkstate} {dpstate} {systate}");
+            }
+
+            if (dpstate == dispatchState.dpsRedispatch
+                || dpstate == dispatchState.dpsDispatchFailed)
+            {
+                //同步planing的状态为 PlanState.emPlanFailed
+                //但是现在代码没有可以先不用写
+            }
+
+            return false;
         }
 
         public bool JudgeTaskPriority(TaskContent taskcurrent, TaskContent taskcompare)

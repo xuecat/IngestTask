@@ -151,7 +151,7 @@ namespace IngestTask.Tool
             return response;
         }
 
-        public async Task<TResponse> PutAsync<TResponse>(string url, object body, Dictionary<string, string> header, string method = null, NameValueCollection queryString = null)
+        public async Task<TResponse> PutAsync<TResponse>(string url, object body, Dictionary<string, string> header, NameValueCollection queryString = null)
         {
             TResponse response = default(TResponse);
             try
@@ -164,10 +164,6 @@ namespace IngestTask.Tool
                 }
 
                 url = CreateUrl(url, queryString);
-                if (String.IsNullOrEmpty(method))
-                {
-                    method = "POST";
-                }
                 //Logger.Debug("请求：{0} {1}", method, url);
                 byte[] strData = Encoding.UTF8.GetBytes(json);
                 MemoryStream ms = new MemoryStream(strData);
@@ -615,20 +611,35 @@ namespace IngestTask.Tool
             return TaskSource.emUnknowTask;
         }
 
-        public async Task<bool> CompleteSynTasks(int taskid)
+        public async Task<bool> FullTaskExtendInfo(TaskInfo info)
+        {
+            
+        }
+
+        public async Task<bool> CompleteSynTasksAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
         {
             var back = await AutoRetry.RunAsync<ResponseMessage>(() =>
             {
+                CompleteSyncTask task = new CompleteSyncTask()
+                {
+                    DispatchState = (int)dpstate,
+                    IsFinish = false,
+                    Perodic2Next = false,
+                    SynState = (int)systate,
+                    TaskID = taskid,
+                    TaskState = (int)tkstate
+                };
+
                 return PutAsync<ResponseMessage>(
-                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/tasksource/{taskid}",
-                    null, GetIngestHeader());
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/completesync",
+                    task, GetIngestHeader());
             }).ConfigureAwait(true);
 
-            if (back != null)
+            if (back != null && back.IsSuccess())
             {
-                return back.Ext;
+                return true;
             }
-            return Task;
+            return false;
         }
         #endregion
 
