@@ -19,6 +19,7 @@ namespace IngestTask.Tool
             //Converters = new List<JsonConverter> { new DecimalConverter() }
         };
 
+        
         static JsonHelper()
         {
             setting.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());

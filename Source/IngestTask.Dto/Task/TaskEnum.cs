@@ -80,6 +80,7 @@ namespace IngestTask.Dto
     }
     public enum taskState
     {
+        tsNo = -1,
         /// 就绪 = 0
 		tsReady = 0,
         /// 正在执行任务 = 1
@@ -112,6 +113,7 @@ namespace IngestTask.Dto
     /// </summary>
     public enum dispatchState
     {
+        tsNo = -1,
         /// <summary>
         /// 未调度 = 0
         /// </summary>

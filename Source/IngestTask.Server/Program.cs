@@ -27,6 +27,8 @@ namespace IngestTask.Server
     using Orleans.Serialization.ProtobufNet;
     using IngestTask.Grain.Service;
     using IngestTask.Abstraction.Service;
+    using IngestTask.Server.Dispatcher;
+    using IngestTask.Abstraction.Grains;
 
     public static class Program
     {
@@ -101,6 +103,8 @@ namespace IngestTask.Server
                         services.AddSingleton<RestClient>();
                         services.AddSingleton<IScheduleService, ScheduleTaskService>();
                         services.AddSingleton<IScheduleClient, ScheduleTaskClient>();
+
+                        services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
 
                         services.Configure<ApplicationOptions>(context.Configuration);
                         services.Configure<ClusterOptions>(context.Configuration.GetSection(nameof(ApplicationOptions.Cluster)));

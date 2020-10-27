@@ -19,6 +19,7 @@ namespace IngestTask.Tool
 
         private static HttpClient _httpClient = null;
         const string TASKAPI20 = "api/v2/task";
+        const string TASKAPI21 = "api/v2.1/task";
         const string USERAPI20 = "api/v2/user";
         const string DEVICEAPI21 = "api/v2.1/device";
         const string DEVICEAPI20 = "api/v2/device";
@@ -98,10 +99,10 @@ namespace IngestTask.Tool
                 }
                    
             }
-            catch (System.Exception )
+            catch (System.Exception e)
             {
                 TResponse r = new TResponse();
-                //Logger.Error("请求异常：\r\n{0}", e.ToString());
+                Logger.Error("请求异常：\r\n{0} {1}", e.ToString(), url);
                 throw;
             }
         }
@@ -143,10 +144,10 @@ namespace IngestTask.Tool
                 }
                     
             }
-            catch (System.Exception )
+            catch (System.Exception e)
             {
                 response = "ERROR";
-                //Logger.Error("请求异常：\r\n{0}", e.ToString());
+                Logger.Error("请求异常：\r\n{0} {1}", e.ToString(), url);
             }
             return response;
         }
@@ -187,11 +188,51 @@ namespace IngestTask.Tool
                 }
 
             }
-            catch (System.Exception)
+            catch (System.Exception e)
             {
-                //Logger.Error("请求异常：\r\n{0}", e.ToString());
+                Logger.Error("请求异常：\r\n{0} {1}", e.ToString(), url);
                 throw;
             }
+        }
+
+        public async Task<TResponse> DeleteAsync<TResponse>(string url, Dictionary<string, string> header, NameValueCollection queryString = null)
+            where TResponse : class, new()
+        {
+            TResponse response = default(TResponse);
+            try
+            {
+                HttpClient client = _httpClient;
+                if (queryString == null)
+                {
+                    queryString = new NameValueCollection();
+                }
+
+                url = CreateUrl(url, queryString);
+                //Logger.Debug("请求：{0} {1}", method, url);
+
+                using (var requestMessage = new HttpRequestMessage(HttpMethod.Delete, url))
+                {
+                    if (header != null)
+                    {
+                        foreach (var item in header)
+                        {
+                            requestMessage.Headers.Add(item.Key, item.Value);
+                        }
+                    }
+                    var backinfo = await client.SendAsync(requestMessage).ConfigureAwait(true);
+                    var rJson = await backinfo.Content.ReadAsStringAsync().ConfigureAwait(true);
+                    Logger.Info("url response：\r\n{0} {1}", url, rJson);
+                    response = JsonHelper.ToObject<TResponse>(rJson);
+                }
+
+            }
+            catch (System.Exception e)
+            {
+                TResponse r = new TResponse();
+                Logger.Error("请求异常：\r\n{0}", e.ToString(), url);
+                return r;
+            }
+            return response;
         }
 
         public async Task<TResponse> GetAsync<TResponse>(string url, NameValueCollection queryString, Dictionary<string, string> header)
@@ -223,10 +264,10 @@ namespace IngestTask.Tool
                 }
                 
             }
-            catch (System.Exception)
+            catch (System.Exception e)
             {
                 TResponse r = new TResponse();
-                //Logger.Error("请求异常：\r\n{0}", e.ToString());
+                Logger.Error("请求异常：\r\n{0} {1}", e.ToString(), url);
                 return r;
             }
             return response;
@@ -497,10 +538,84 @@ namespace IngestTask.Tool
             }
             return null;
         }
+
+        public async Task<TaskSource> GetTaskSourceByTaskIdAsync(int taskid)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<TaskSource>>(() =>
+            {
+                return GetAsync<ResponseMessage<TaskSource>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/tasksource/{taskid}",
+                    null, GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return TaskSource.emUnknowTask;
+        }
+
+        public async Task<TaskFullInfo> GetTaskFullInfoAsync(int taskid)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<TaskFullInfo>>(() =>
+            {
+                return GetAsync<ResponseMessage<TaskFullInfo>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI21}/taskinfo/{taskid}/full",
+                    null, GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
+
+        public async Task<bool> CompleteSynTasksAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage>(() =>
+            {
+                CompleteSyncTask task = new CompleteSyncTask()
+                {
+                    DispatchState = (int)dpstate,
+                    IsFinish = false,
+                    Perodic2Next = false,
+                    SynState = (int)systate,
+                    TaskID = taskid,
+                    TaskState = (int)tkstate
+                };
+
+                return PutAsync<ResponseMessage>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/completesync",
+                    task, GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null && back.IsSuccess())
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<int> DeleteTaskAsync(int taskid)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage>(() =>
+            {
+                return DeleteAsync<ResponseMessage>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/delete/{taskid}",
+                    GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null && back.IsSuccess())
+            {
+                return taskid;
+            }
+            return 0;
+        }
         #endregion
 
         #region Device
-       
+
         public async Task<List<CaptureChannelInfo>> GetAllCaptureChannelAsync()
         {
             var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureChannelInfo>>>(() =>
@@ -595,52 +710,7 @@ namespace IngestTask.Tool
             return null;
         }
 
-        public async Task<TaskSource> GetTaskSourceByTaskIdAsync(int taskid)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<TaskSource>>(() =>
-            {
-                return GetAsync<ResponseMessage<TaskSource>>(
-                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/tasksource/{taskid}",
-                    null, GetIngestHeader());
-            }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return TaskSource.emUnknowTask;
-        }
-
-        public async Task<bool> FullTaskExtendInfo(TaskInfo info)
-        {
-            
-        }
-
-        public async Task<bool> CompleteSynTasksAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage>(() =>
-            {
-                CompleteSyncTask task = new CompleteSyncTask()
-                {
-                    DispatchState = (int)dpstate,
-                    IsFinish = false,
-                    Perodic2Next = false,
-                    SynState = (int)systate,
-                    TaskID = taskid,
-                    TaskState = (int)tkstate
-                };
-
-                return PutAsync<ResponseMessage>(
-                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/completesync",
-                    task, GetIngestHeader());
-            }).ConfigureAwait(true);
-
-            if (back != null && back.IsSuccess())
-            {
-                return true;
-            }
-            return false;
-        }
+        
         #endregion
 
         #region cmapi接口统一管理，方便后面修改

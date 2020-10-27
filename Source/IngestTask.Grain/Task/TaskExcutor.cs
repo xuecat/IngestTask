@@ -3,6 +3,7 @@ using ProtoBuf;
 
 namespace IngestTask.Grain
 {
+    using AutoMapper;
     using IngestTask.Abstraction.Grains;
     using IngestTask.Abstraction.Service;
     using IngestTask.Dto;
@@ -18,6 +19,7 @@ namespace IngestTask.Grain
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -25,7 +27,7 @@ namespace IngestTask.Grain
     [Serializable]
     public class TaskEvent
     {
-        public TaskInfo TaskInfo { get; set; }
+        public TaskContent TaskContentInfo { get; set; }
         public opType OpType { get; set; }
 
     }
@@ -37,7 +39,6 @@ namespace IngestTask.Grain
 
     }
 
-
     //这些序列化代表基础结构体都要protoc序列化，太麻烦了，我打算只心跳那里做protoc序列化
     //[ProtoContract]
     [Serializable]
@@ -45,12 +46,12 @@ namespace IngestTask.Grain
     {
         public TaskState ()
         {
-            TaskLists = new List<TaskInfo>();
+            TaskLists = new List<TaskFullInfo>();
         }
         //[ProtoMember(1)]
         public long ChannelId { get; set; }
         //public long ReminderTimer { get; set; }
-        public List<TaskInfo> TaskLists { get; set; }
+        public List<TaskFullInfo> TaskLists { get; set; }
 
         //修改状态对象之外，TransitionState方法不应该有任何副作用，并且应该是确定性的
         public void Apply(TaskEvent @event)
@@ -59,10 +60,10 @@ namespace IngestTask.Grain
             {
                 case opType.otAdd:
                     {
-                        if (@event.TaskInfo.Content.State == taskState.tsReady 
-                            && TaskLists.Find(a => a.Content.TaskId == @event.TaskInfo.Content.TaskId) == null)
+                        if (@event.TaskContentInfo.State == taskState.tsReady 
+                            && TaskLists.Find(a => a.TaskContent.TaskId == @event.TaskContentInfo.TaskId) == null)
                         {
-                            TaskLists.Add(@event.TaskInfo);
+                            TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = true});
                         }
                         
                     }
@@ -86,15 +87,23 @@ namespace IngestTask.Grain
     //要不要存数据库呢
     //[LogConsistencyProvider(ProviderName = "CustomStorage")]
     //[StorageProvider(ProviderName="store1")]
-    public class TaskBase : JournaledGrain<TaskState,TaskEvent>, ITask
+    public class TaskExcutor : JournaledGrain<TaskState,TaskEvent>, ITask
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("TaskInfo");
         private readonly IScheduleClient _scheduleClient;
         private readonly RestClient _restClient;
-        public TaskBase(IGrainActivationContext grainActivationContext, IScheduleClient dataServiceClient, RestClient rest)
+        private readonly ITaskHandlerFactory _handlerFactory;
+        private readonly IMapper Mapper;
+        public TaskExcutor(IGrainActivationContext grainActivationContext,
+            IScheduleClient dataServiceClient,
+            RestClient rest,
+            IMapper mapper,
+            ITaskHandlerFactory handlerfac)
         {
+            Mapper = mapper;
             _scheduleClient = dataServiceClient;
             _restClient = rest;
+            _handlerFactory = handlerfac;
         }
 
         public override Task OnActivateAsync()
@@ -136,33 +145,25 @@ namespace IngestTask.Grain
             }
         }
 
-        public async Task<int> HandleTaskAsync(TaskInfo task)
+        public async Task<int> HandleTaskAsync(TaskFullInfo task)
         {
-            Logger.Info($"HandleTaskAsync {task.Content.TaskId}");
+            Logger.Info($"HandleTaskAsync {task.TaskContent.TaskId}");
 
-            if (task.StartOrStop)
+            //如果判断到是周期任务，那么需要对它做分任务的处理
+            //这个步骤挪到后台server去做
+            if (task.TaskSource == TaskSource.emUnknowTask || task.ContentMeta != null)
             {
-                //如果判断到是周期任务，那么需要对它做分任务的处理
-                //这个步骤挪到后台server去做
-                if (task.Source == TaskSource.emUnknowTask)
+                if (_restClient != null)
                 {
-                    if (_restClient != null)
-                    {
-                        task.Source = await _restClient.GetTaskSourceByTaskIdAsync(task.Content.TaskId);
-                    }
+                    ObjectTool.CopyObjectData(await _restClient.GetTaskFullInfoAsync(task.TaskContent.TaskId),
+                        task, string.Empty, BindingFlags.Public | BindingFlags.Instance);
+
+                    Logger.Info($"HandleTaskAsync get {JsonHelper.ToJson(task)}");
                 }
-
-                if (task.StartOrStop)
-                {
-                    if (task.Content.TaskType == TaskType.TT_MANUTASK 
-                        && task.)
-                    {
-
-                    }
-                }
-
             }
-            return 0;
+
+            return await _handlerFactory.CreateInstance(task).HandleTaskAsync(task);
+
         }
 
         public async Task AddTaskAsync(TaskContent task)
@@ -178,31 +179,12 @@ namespace IngestTask.Grain
                 else
                 {
                     //归档
-                    RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskInfo = new TaskInfo() { Content = task, StartOrStop = true} });
+                    RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskContentInfo = task });
                 }
             }
         }
 
-        public virtual async Task<bool> UnlockTaskAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
-        {
-            if (await _restClient.CompleteSynTasksAsync(taskid, tkstate, dpstate, systate))
-            {
-                Logger.Info($"taskbase UnlockTaskAsync success {taskid} {tkstate} {dpstate} {systate}");
-            }
-            else
-            {
-                Logger.Info($"taskbase UnlockTaskAsync failed {taskid} {tkstate} {dpstate} {systate}");
-            }
-
-            if (dpstate == dispatchState.dpsRedispatch
-                || dpstate == dispatchState.dpsDispatchFailed)
-            {
-                //同步planing的状态为 PlanState.emPlanFailed
-                //但是现在代码没有可以先不用写
-            }
-
-            return false;
-        }
+        
 
         public bool JudgeTaskPriority(TaskContent taskcurrent, TaskContent taskcompare)
         {
