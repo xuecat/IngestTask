@@ -5,31 +5,44 @@ namespace IngestTask.Grain
     using IngestTask.Abstraction.Grains;
     using IngestTask.Dto;
     using IngestTask.Tool;
+    using IngestTask.Tools.Msv;
     using Sobey.Core.Log;
     using System;
     using System.Collections.Generic;
     using System.Text;
     using System.Threading.Tasks;
 
-    class TaskHandlerBase : ITaskHandler
+    public class TaskHandlerBase : ITaskHandler
     {
         protected ILogger Logger { get; set; }
-        protected RestClient RestClient { get; set; }
+        protected RestClient RestClientApi { get; set; }
 
-        public TaskHandlerBase(RestClient rest)
+        protected MsvClientCtrlSDK MsvSdk { get; set; }
+        public TaskHandlerBase(RestClient rest, MsvClientCtrlSDK msv)
         {
-            Logger = LoggerManager.GetLogger("TaskInfo");
-            RestClient = rest;
+            Logger = LoggerManager.GetLogger("TaskHandlerBase");
+            RestClientApi = rest;
+            MsvSdk = msv;
         }
 
-        public Task<int> HandleTaskAsync(TaskFullInfo task)
+        public virtual Task<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual Task<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual Task<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
             throw new NotImplementedException();
         }
 
         public virtual async Task<bool> UnlockTaskAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
         {
-            if (await RestClient.CompleteSynTasksAsync(taskid, tkstate, dpstate, systate))
+            if (await RestClientApi.CompleteSynTasksAsync(taskid, tkstate, dpstate, systate))
             {
                 Logger.Info($"taskbase UnlockTaskAsync success {taskid} {tkstate} {dpstate} {systate}");
             }
@@ -52,10 +65,10 @@ namespace IngestTask.Grain
         public virtual async Task<bool> HandleTieupTaskAsync(TaskContent info)
         {
             await UnlockTaskAsync(info.TaskId, taskState.tsNo, dispatchState.tsNo, syncState.ssSync);
-            var lsttask = await RestClient.GetChannelCapturingTaskInfoAsync(info.ChannelId);
+            var lsttask = await RestClientApi.GetChannelCapturingTaskInfoAsync(info.ChannelId);
             if (lsttask != null && lsttask.TaskType == TaskType.TT_MANUTASK)
             {
-                await RestClient.DeleteTaskAsync(info.TaskId).ConfigureAwait(true);
+                await RestClientApi.DeleteTaskAsync(info.TaskId).ConfigureAwait(true);
 
                 //同步planing的状态为 PlanState.emPlanDeleted
                 //但是现在代码没有可以先不用写

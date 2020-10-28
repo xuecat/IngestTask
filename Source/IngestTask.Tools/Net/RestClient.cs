@@ -20,6 +20,7 @@ namespace IngestTask.Tool
         private static HttpClient _httpClient = null;
         const string TASKAPI20 = "api/v2/task";
         const string TASKAPI21 = "api/v2.1/task";
+        const string MATRIXAPI20 = "api/v2/matrix"
         const string USERAPI20 = "api/v2/user";
         const string DEVICEAPI21 = "api/v2.1/device";
         const string DEVICEAPI20 = "api/v2/device";
@@ -611,6 +612,90 @@ namespace IngestTask.Tool
                 return taskid;
             }
             return 0;
+        }
+        #endregion
+
+        #region Matrix
+        public async Task<bool> SwitchMatrixAsync(int inport, int outport)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+            {
+                var query = new NameValueCollection();
+                query.Add("inport", inport.ToString());
+                query.Add("outport", outport.ToString());
+                return GetAsync<ResponseMessage<bool>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{MATRIXAPI20}/switch/",
+                    query,
+                    GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null && back.IsSuccess())
+            {
+                return back.Ext;
+            }
+            return false;
+        }
+
+        public async Task<bool> SwitchMatrixSignalChannelAsync(int signalid, int channelid)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+            {
+                var query = new NameValueCollection();
+                query.Add("signal", signalid.ToString());
+                query.Add("channel", channelid.ToString());
+                return GetAsync<ResponseMessage<bool>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{MATRIXAPI20}/switchsignalchannel/",
+                    query,
+                    GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null && back.IsSuccess())
+            {
+                return back.Ext;
+            }
+            return false;
+        }
+
+        public async Task<bool> SwitchMatrixChannelRtmpAsync(int channelid, string url)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+            {
+                var query = new NameValueCollection();
+
+                query.Add("channelid", channelid.ToString());
+                query.Add("url", url);
+                return GetAsync<ResponseMessage<bool>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{MATRIXAPI20}/switchchannelrtmpurl/",
+                    query,
+                    GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null && back.IsSuccess())
+            {
+                return back.Ext;
+            }
+            return false;
+        }
+
+        public async Task<bool> SwitchMatrixRtmpAsync(int outport, string url)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+            {
+                var query = new NameValueCollection();
+                
+                query.Add("outport", outport.ToString());
+                query.Add("url", url);
+                return GetAsync<ResponseMessage<bool>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{MATRIXAPI20}/switchrtmpurl/",
+                    query,
+                    GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null && back.IsSuccess())
+            {
+                return back.Ext;
+            }
+            return false;
         }
         #endregion
 

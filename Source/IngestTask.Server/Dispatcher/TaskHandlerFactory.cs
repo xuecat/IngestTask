@@ -12,7 +12,7 @@ namespace IngestTask.Server.Dispatcher
     {
         public TaskHandlerFactory()
         {
-            RegisterHandler<SDITaskHandler>();
+            RegisterHandler<NormalTaskHandler>();
             RegisterHandler<VtrBatchTaskHandler>();
         }
 

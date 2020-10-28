@@ -89,7 +89,7 @@ namespace IngestTask.Grain
     //[StorageProvider(ProviderName="store1")]
     public class TaskExcutor : JournaledGrain<TaskState,TaskEvent>, ITask
     {
-        private readonly ILogger Logger = LoggerManager.GetLogger("TaskInfo");
+        private readonly ILogger Logger = LoggerManager.GetLogger("TaskExcutor");
         private readonly IScheduleClient _scheduleClient;
         private readonly RestClient _restClient;
         private readonly ITaskHandlerFactory _handlerFactory;
@@ -147,22 +147,44 @@ namespace IngestTask.Grain
 
         public async Task<int> HandleTaskAsync(TaskFullInfo task)
         {
-            Logger.Info($"HandleTaskAsync {task.TaskContent.TaskId}");
+            Logger.Info($"TaskExcutor HandleTaskAsync {task.TaskContent.TaskId}");
 
-            //如果判断到是周期任务，那么需要对它做分任务的处理
-            //这个步骤挪到后台server去做
-            if (task.TaskSource == TaskSource.emUnknowTask || task.ContentMeta != null)
+            try
             {
-                if (_restClient != null)
+                //如果判断到是周期任务，那么需要对它做分任务的处理
+                //这个步骤挪到后台server去做
+                if (task.TaskSource == TaskSource.emUnknowTask || task.ContentMeta != null)
                 {
-                    ObjectTool.CopyObjectData(await _restClient.GetTaskFullInfoAsync(task.TaskContent.TaskId),
-                        task, string.Empty, BindingFlags.Public | BindingFlags.Instance);
+                    if (_restClient != null)
+                    {
+                        ObjectTool.CopyObjectData(await _restClient.GetTaskFullInfoAsync(task.TaskContent.TaskId),
+                            task, string.Empty, BindingFlags.Public | BindingFlags.Instance);
 
-                    Logger.Info($"HandleTaskAsync get {JsonHelper.ToJson(task)}");
+                        Logger.Info($"TaskExcutor HandleTaskAsync get {JsonHelper.ToJson(task)}");
+                    }
                 }
+
+                /*
+                * flag katamaki任务检测
+                */
+
+                var devicegrain = GrainFactory.GetGrain<IDeviceInspections>(0);
+                if (devicegrain != null)
+                {
+                    return await _handlerFactory.CreateInstance(task)?.HandleTaskAsync(task,
+                        await devicegrain.GetChannelInfoAsync(task.TaskContent.ChannelId));
+
+                }
+
+                return 0;
+            }
+            catch (Exception e)
+            {
+
+                Logger.Error($"TaskExcutor HandleTaskAsync error {e.Message}");
             }
 
-            return await _handlerFactory.CreateInstance(task).HandleTaskAsync(task);
+            return 0;
 
         }
 

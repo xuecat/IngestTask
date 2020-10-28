@@ -38,7 +38,6 @@ namespace IngestTask.Dto
         public Device_State CurrentDevState { get; set; } = Device_State.DISCONNECTTED;
         public Device_State LastDevState { get; set; } = Device_State.DISCONNECTTED;
 
-       
         /// <summary>MSV模式</summary>
         public MSV_Mode LastMsvMode { get; set; } = MSV_Mode.LOCAL;
         /// <summary>vtrId</summary>

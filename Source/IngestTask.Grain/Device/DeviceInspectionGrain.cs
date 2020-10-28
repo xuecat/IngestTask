@@ -172,6 +172,30 @@ namespace IngestTask.Grain
             return Task.FromResult(0);
         }
 
+        public Task<bool> IsChannelInvalidAsync(int channelid)
+        {
+            foreach (var item in State.ChannelInfos)
+            {
+                if (item.ChannelId == channelid &&item.CurrentDevState == Device_State.CONNECTED)
+                {
+                    return Task.FromResult(false);
+                }
+            }
+            return Task.FromResult(true);
+        }
+
+        public Task<ChannelInfo> GetChannelInfoAsync(int channelid)
+        {
+            foreach (var item in State.ChannelInfos)
+            {
+                if (item.ChannelId == channelid)
+                {
+                    return Task.FromResult(item);
+                }
+            }
+            return null;
+        }
+
         public Task<int> CheckChannelSatetAsync() 
         {
             throw new NotImplementedException();

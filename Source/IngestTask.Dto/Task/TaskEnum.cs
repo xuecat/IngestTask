@@ -228,6 +228,8 @@ namespace IngestTask.Dto
         /// 流媒体 = 4
         /// </summary>
         emStreamMediaUploadTask = 4,
+        
+        emRtmpSwitchTask = 5,
         /// <summary>
         /// UnknowTask = -1
         /// </summary>

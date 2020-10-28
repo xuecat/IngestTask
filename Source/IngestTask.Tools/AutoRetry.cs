@@ -82,7 +82,7 @@ namespace IngestTask.Tools
             return r;
         }
 
-        public async static Task<bool> RunAsync(Func<Task<bool>> proc, int retryCount = 5, int delay = 5000)
+        public async static Task<bool> BoolRunAsync(Func<Task<bool>> proc, int retryCount = 5, int delay = 5000)
         {
             bool r = false;
             for (int i = 1; i <= retryCount; i++)
