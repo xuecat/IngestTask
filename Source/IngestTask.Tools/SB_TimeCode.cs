@@ -50,6 +50,7 @@ namespace IngestTask.Tool
             return ui;
         }
 
+
         //public string ToTCString()
         //{
         //    return string.Format("{0:d2}:{1:d2}:{2:d2}:{3:d2}", this.Hour, this.Minute, this.Second, this.Frame);

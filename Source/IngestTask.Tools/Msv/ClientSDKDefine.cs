@@ -630,6 +630,6 @@ namespace IngestTask.Tools.Msv
             public int nWidth { get; set; }
             public int nHeight { get; set; }
             public float fFrameRate { get; set; }
-            
+            public int SignalType { get; set; }
         }
 }

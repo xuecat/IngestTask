@@ -177,7 +177,11 @@ namespace IngestTask.Dto
         /// <summary>
         /// 修改 = 3
         /// </summary>
-		otModify
+		otModify,
+
+        ///我自己定义的，task才会用到
+        otStop,
+        otReDispatch
     };
     public enum VTRUPLOADTASKSTATE
     {

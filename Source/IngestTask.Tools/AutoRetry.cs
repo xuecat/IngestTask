@@ -163,6 +163,45 @@ namespace IngestTask.Tools
             }
         }
 
+        public static async Task<TResult> RunSyncAsync<TResult>(Func<Task<TResult>> proc, Func<TResult,bool> judge, int retryCount = 3, int delay = 1000, bool throwError = true)
+        {
+            TResult r = default(TResult);
+            for (int i = 0; i < retryCount; i++)
+            {
+                bool isOk = true;
+                try
+                {
+                    r = await proc().ConfigureAwait(true);
+                    isOk = judge(r);
+                    break;
+                }
+                catch (System.Exception)
+                {
+                    isOk = false;
+                    //Logger.Error("execute proc error....\r\n{0}", e.ToString());
+                    if (i == retryCount)
+                    {
+                        if (throwError)
+                            throw;
+                        else
+                            break;
+                    }
+                }
+
+                if (!isOk)
+                {
+                    if (delay > 0)
+                    {
+                        await Task.Delay((int)delay).ConfigureAwait(true);
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return r;
+        }
 
         public static TResult RunSync<TResult>(Func<TResult> proc, int retryCount = 3, int delay = 1000, bool throwError = true)
         {

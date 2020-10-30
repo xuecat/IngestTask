@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace IngestTask.Grain
 {
@@ -19,6 +20,9 @@ namespace IngestTask.Grain
             : base(rest, msv)
         { }
 
+        /*
+         * 判断是否执行这个handle每个继承都必须要写这个
+         */
         static public bool IsHandler(TaskFullInfo task)
         {
             if (task.TaskContent.CooperantType == CooperantType.emPureTask)
@@ -30,11 +34,12 @@ namespace IngestTask.Grain
 
         public override async Task<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
-            Logger.Info("NormalTaskHandler HandleTaskAsync");
+            Logger.Info($"NormalTaskHandler HandleTaskAsync retrytimes {task.RetryTimes}");
 
+            int taskid = task.TaskContent.TaskId;
             if (task.ContentMeta == null || string.IsNullOrEmpty(task.CaptureMeta))
             {
-                await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
+                await UnlockTaskAsync(taskid, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
                 return 0;
             }
 
@@ -46,26 +51,60 @@ namespace IngestTask.Grain
 
                     if (task.TaskContent.TaskType == TaskType.TT_MANUTASK)
                     {
-                        await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
-                        return task.TaskContent.TaskId;
+                        await UnlockTaskAsync(taskid, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
+                        return taskid;
                     }
                     else if (task.TaskContent.TaskType == TaskType.TT_TIEUP)
                     {
                         await HandleTieupTaskAsync(task.TaskContent);
-                        return task.TaskContent.TaskId;
+                        return taskid;
                     }
 
                     if (task.OpType == opType.otAdd)
                     {
                         if (channel.CurrentDevState != Device_State.CONNECTED)
                         {
-                            return await UnlockTaskAsync(task.TaskContent.TaskId,
+                            return await UnlockTaskAsync(taskid,
                                 taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync) ? 1 : 0;
                         }
 
-                        return await StartTaskAsync(task, channel);
+                        if (await StartTaskAsync(task, channel) > 0)
+                        {
+                            //成功
+                            await UnlockTaskAsync(taskid, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
+                            return taskid;
+                        }
+                        else
+                        {
+                            //使用备份信号
+                            //我擦，居然可以不用写，stop才有
+                            Logger.Info("start error. begin to use backupsignal");
+
+
+                            if (task.TaskContent.TaskType == TaskType.TT_OPENEND ||
+                                task.TaskContent.TaskType == TaskType.TT_OPENENDEX)
+                            {
+                                await UnlockTaskAsync(taskid, taskState.tsInvaild, dispatchState.dpsDispatched, syncState.ssSync);
+                            }
+                            else
+                            {
+                                await UnlockTaskAsync(taskid, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
+                            }
+
+                            //重调度还失败，要看看是否超过了，超过就从列表去了
+                            if (task.RetryTimes > 0)
+                            {
+                                return await IsNeedRedispatchaskAsync(task);
+                            }
+
+                            return 0;
+                        }
                     }
                 }
+            }
+            else
+            {
+
             }
             return 0;
         }
@@ -142,6 +181,55 @@ namespace IngestTask.Grain
                     default:
                         break;
                 }
+
+
+                string capparam = await GetCaptureParmAsync(task, channel);
+
+                DateTime dtcurrent;
+                DateTime dtbegin = task.RetryTimes > 0?task.NewBeginTime :
+                    DateTimeFormat.DateTimeFromString(task.TaskContent.Begin).AddSeconds(-1* ApplicationContext.Current.TaskStartPrevious);
+                while(true)
+                {
+                    dtcurrent = DateTime.Now;
+                    if (dtcurrent >= dtbegin)
+                    {
+                        MsvSdk.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", task.CaptureMeta, Logger);
+
+                        bool backrecord = await AutoRetry.BoolRunAsync( async () => {
+                            if (await MsvSdk.RecordAsync(channel.ChannelIndex, channel.Ip, Logger))
+                            {
+                                return true;
+                            }
+                            return false;
+                        }, 3, 200);
+
+
+                        if (backrecord)
+                        {
+                            backrecord = await AutoRetry.BoolRunAsync(async () => {
+                                if ( await MsvSdk.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger) 
+                                            == Device_State.WORKING)
+                                {
+                                    return true;
+                                }
+                                return false;
+                            });
+
+                            if (backrecord)
+                            {
+                                return task.TaskContent.TaskId;
+                            }
+                            else
+                                Logger.Error($"start task error {task.TaskContent.TaskId}");
+                        }
+                        return 0;
+                    }
+                    else
+                    {
+                        await Task.Delay(dtbegin - dtcurrent);
+                    }
+                }
+                
             }
             else
                 Logger.Error($"StartTaskAsync QueryTaskInfoAsync error back 0");

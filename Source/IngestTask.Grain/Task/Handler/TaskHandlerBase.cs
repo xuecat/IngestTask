@@ -5,12 +5,16 @@ namespace IngestTask.Grain
     using IngestTask.Abstraction.Grains;
     using IngestTask.Dto;
     using IngestTask.Tool;
+    using IngestTask.Tools;
     using IngestTask.Tools.Msv;
     using Sobey.Core.Log;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Net.NetworkInformation;
     using System.Text;
     using System.Threading.Tasks;
+    using System.Xml.Linq;
 
     public class TaskHandlerBase : ITaskHandler
     {
@@ -24,6 +28,11 @@ namespace IngestTask.Grain
             RestClientApi = rest;
             MsvSdk = msv;
         }
+
+        /*
+         * 判断是否执行这个handle每个继承都必须要写这个
+         */
+        //static public bool IsHandler(TaskFullInfo task)
 
         public virtual Task<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
@@ -75,6 +84,189 @@ namespace IngestTask.Grain
                 //SetPlanSourceListState(PluginsMgr.PlanState.emPlanDeleted)
             }
             return false;
+        }
+
+        public string FormatCaptureParamPath(string strPath)
+        {
+            strPath = strPath.Trim();
+
+            String strTime = DateTime.Now.ToString("YY-mm-dd");
+            strPath = strPath.Replace("%YY-MM-DD%", strTime);
+
+            //将非法字符替换为下划线
+            strPath = strPath.Replace("\\\\", "\\_");
+            strPath = strPath.Replace("*", "_");
+            strPath = strPath.Replace("\"", "_");
+            strPath = strPath.Replace("/", "_");
+            strPath = strPath.Replace("<", "_");
+            strPath = strPath.Replace(">", "_");
+            strPath = strPath.Replace("|", "_");
+            strPath = strPath.Replace("?", "_");
+
+
+            //最后处理冒号
+            int len = strPath.Length;
+            
+            for (int i = 2; i < len; i++)
+            {
+                if (strPath[i] == ':')
+                    strPath = strPath.Replace(strPath[i], '_');
+            }
+            return strPath;
+        }
+
+        public TaskParam CreateTaskParam(TaskContent contentinfo)
+        {
+            var param = new TaskParam();
+            param.taskID = contentinfo.TaskId;
+            param.taskName = contentinfo.TaskName;
+            param.tmBeg = DateTimeFormat.DateTimeFromString(contentinfo.Begin);
+            return param;
+        }
+
+        public virtual Task<int> IsNeedRedispatchaskAsync(TaskFullInfo taskinfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual async Task<string> GetCaptureParmAsync(TaskFullInfo taskinfo, ChannelInfo channel)
+        {
+            string captureparam = taskinfo.CaptureMeta;
+            var typeinfo = await AutoRetry.RunSyncAsync(async () =>
+            {
+                return await MsvSdk.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
+            },
+                (e) =>
+                {
+                    if (e!= null && e.SignalType != 255)
+                    {
+                        return true;
+                    }
+                    return false;
+                },
+                5, 300);
+
+            if (typeinfo != null && typeinfo.SignalType < 254)
+            {
+                captureparam = captureparam.Replace("&amp;", "&");
+                captureparam = captureparam.Replace("&lt;", "<");
+                captureparam = captureparam.Replace("&gt;", ">");
+
+                XElement capturenode = null;
+                var root = XDocument.Parse(captureparam);
+                if (root != null)
+                {
+                    var capturemeta = root.Element("CaptureMetaAll");
+                    switch (typeinfo.SignalType)
+                    {
+                        case 0:
+                            {
+                                var node = capturemeta.Element("SDCaptureMeta");
+                                if (node != null)
+                                {
+                                    capturenode = node.FirstNode as XElement;
+                                }
+                            }
+                            break;
+                        case 1:
+                            {
+                                var node = capturemeta.Element("HDCaptureMeta");
+                                if (node != null)
+                                {
+                                    capturenode = node.FirstNode as XElement;
+                                }
+                            }
+                            break;
+                        case 2:
+                            {
+                                var node = capturemeta.Element("UHDCaptureMeta");
+                                if (node != null)
+                                {
+                                    capturenode = node.FirstNode as XElement;
+                                }
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if (capturenode != null)
+                    {
+                        CTimeCode timecode = new CTimeCode();
+                        timecode.setDBFrameRate(typeinfo.fFrameRate);
+                        timecode.SetDFMode(typeinfo.TCMode == TimeCodeMode.DF ? 1 : 0);
+                        timecode.SetVS(timecode.Rate2VideoStandard(typeinfo.fFrameRate));
+
+                        long bmpframe = timecode.GetFrameByTimeCode(taskinfo.ContentMeta.PresetStamp);
+
+                        Logger.Info($"GetCaptureParm {bmpframe}");
+                        var pic = capturenode.Element("FirPicNum");
+                        if (pic != null)
+                        {
+                            pic.Value = bmpframe.ToString();
+                        }
+                        else
+                        {
+                            capturenode.Add(new XElement("FirPicNum", bmpframe.ToString()));
+                        }
+
+                        //第三码路径没说过要用，暂时算了
+                        var pathfile = capturenode.Element("path1FileName");
+                        if (pathfile != null)
+                        {
+                            pathfile.Value = FormatCaptureParamPath(pathfile.Value);
+                        }
+                        pathfile = capturenode.Element("path0FileName");
+                        if (pathfile != null)
+                        {
+                            pathfile.Value = FormatCaptureParamPath(pathfile.Value);
+                        }
+
+                        //if (m_bReplaceHighCaptureParams && (nTaskType == 7))
+                        //{
+                        //    XmlNode bPath0 = CAPTUREPARAM.SelectSingleNode("bPath0");
+                        //    if (bPath0 != null)
+                        //    {
+                        //        bPath0.InnerText = "0";
+                        //    }
+                        //}
+
+                        if (taskinfo.ContentMeta.AudioChannels >= 0)
+                        {
+                            pic = capturenode.Element("iPureAudioValue");
+                            if (pic != null)
+                            {
+                                pic.Value = taskinfo.ContentMeta.AudioChannels.ToString();
+                            }
+                        }
+                        if (taskinfo.ContentMeta.AudioChannelAttribute > 0)
+                        {
+                            pic = capturenode.Element("nAudioChannelAttribute");
+                            if (pic != null)
+                            {
+                                pic.Value = taskinfo.ContentMeta.AudioChannelAttribute.ToString();
+                            }
+                        }
+
+                        if (taskinfo.ContentMeta.ASRmask >= 0)
+                        {
+                            pic = capturenode.Element("ASR_mask");
+                            if (pic != null)
+                            {
+                                pic.Value = taskinfo.ContentMeta.ASRmask.ToString();
+                            }
+                        }
+
+                        return capturenode.ToString();
+                    }
+                    else
+                        Logger.Error($"load captureparam error {captureparam} {typeinfo.SignalType}");
+                }
+
+            }
+            else
+                Logger.Error($"StartTaskAsync QuerySDIFormatAsync error {typeinfo?.SignalType}");
+            return string.Empty;
         }
     }
 }

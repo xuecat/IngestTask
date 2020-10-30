@@ -69,10 +69,26 @@ namespace IngestTask.Grain
                     }
                     break;
                 case opType.otDel:
+                    {
+                        TaskLists.RemoveAll(a => a.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
+                    }
                     break;
                 case opType.otMove:
                     break;
                 case opType.otModify:
+                    break;
+                case opType.otStop:
+                    break;
+                case opType.otReDispatch:
+                    {
+                        var taskitem = TaskLists.Find(a => a.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
+                        if (taskitem != null)
+                        {
+                            taskitem.RetryTimes++;
+                            //重调度任务把开始时间滞后看看
+                            taskitem.NewBeginTime = DateTime.Now.AddSeconds(-1*ApplicationContext.Current.TaskRedispatchSpan);
+                        }
+                    }
                     break;
                 default:
                     break;
@@ -87,14 +103,14 @@ namespace IngestTask.Grain
     //要不要存数据库呢
     //[LogConsistencyProvider(ProviderName = "CustomStorage")]
     //[StorageProvider(ProviderName="store1")]
-    public class TaskExcutor : JournaledGrain<TaskState,TaskEvent>, ITask
+    public class TaskExcutorGrain : JournaledGrain<TaskState,TaskEvent>, ITask
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("TaskExcutor");
         private readonly IScheduleClient _scheduleClient;
         private readonly RestClient _restClient;
         private readonly ITaskHandlerFactory _handlerFactory;
         private readonly IMapper Mapper;
-        public TaskExcutor(IGrainActivationContext grainActivationContext,
+        public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
             IScheduleClient dataServiceClient,
             RestClient rest,
             IMapper mapper,
@@ -135,13 +151,18 @@ namespace IngestTask.Grain
         protected override void OnStateChanged()
         {
             // read state and/or event log and take appropriate action
-            var orleansts = TaskScheduler.Current;
-            foreach (var item in State.TaskLists)
+            
+
+            if (State.TaskLists.Count > 0)
             {
-                _ = Task.Factory.StartNew(async () =>
+                var orleansts = TaskScheduler.Current;
+                foreach (var item in State.TaskLists)
                 {
-                    return await HandleTaskAsync(item);
-                }, CancellationToken.None, TaskCreationOptions.None, scheduler: orleansts);
+                    _ = Task.Factory.StartNew(async () =>
+                    {
+                        return await HandleTaskAsync(item);
+                    }, CancellationToken.None, TaskCreationOptions.None, scheduler: orleansts);
+                }
             }
         }
 
@@ -157,9 +178,10 @@ namespace IngestTask.Grain
                 {
                     if (_restClient != null)
                     {
-                        ObjectTool.CopyObjectData(await _restClient.GetTaskFullInfoAsync(task.TaskContent.TaskId),
-                            task, string.Empty, BindingFlags.Public | BindingFlags.Instance);
+                        var fullinfo = await _restClient.GetTaskFullInfoAsync(task.TaskContent.TaskId);
 
+                        ObjectTool.CopyObjectData(fullinfo, task, "StartOrStop,RetryTimes,NewBeginTime,NewEndTime", BindingFlags.Public|BindingFlags.Instance);
+                        
                         Logger.Info($"TaskExcutor HandleTaskAsync get {JsonHelper.ToJson(task)}");
                     }
                 }
@@ -171,8 +193,23 @@ namespace IngestTask.Grain
                 var devicegrain = GrainFactory.GetGrain<IDeviceInspections>(0);
                 if (devicegrain != null)
                 {
-                    return await _handlerFactory.CreateInstance(task)?.HandleTaskAsync(task,
-                        await devicegrain.GetChannelInfoAsync(task.TaskContent.ChannelId));
+                    var chinfo = await devicegrain.GetChannelInfoAsync(task.TaskContent.ChannelId);
+                    if (chinfo != null)
+                    {
+                        var taskid = await _handlerFactory.CreateInstance(task)?.HandleTaskAsync(task, chinfo);
+                        if (taskid > 0)
+                        {
+                            RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
+                        }
+                        else
+                        {
+                            RaiseEvent(new TaskEvent() { OpType = opType.otReDispatch, TaskContentInfo = task.TaskContent });
+                        }
+                    }
+                    else
+                    {
+                        Logger.Error($"getgrain channelinfo error {task.TaskContent.ChannelId}");
+                    }
 
                 }
 

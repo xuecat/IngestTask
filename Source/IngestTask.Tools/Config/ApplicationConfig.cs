@@ -12,6 +12,8 @@ namespace IngestTask.Tools
     public class IngestTaskConfig
     {
         public int TaskPrevious { get; set; }
+        public int TaskStartPrevious { get; set; }
+        public int TaskRedispatchSpan { get; set; }
     }
     public class ApplicationConfig: IngestTaskConfig
     {

@@ -8,6 +8,8 @@ namespace IngestTask.Dto
     public class TaskFullInfo : TaskAllInfo
     {
         public bool StartOrStop { get; set; }
+        public int RetryTimes { get; set; }
+
         public int OldChannelId { get; set; }
 
         public dispatchState DispatchState { get; set; }
@@ -16,9 +18,9 @@ namespace IngestTask.Dto
 
         public opType OpType { get; set; }
 
-        public string NewBeginTime { get; set; }
+        public DateTime NewBeginTime { get; set; }
 
-        public string NewEndTime { get; set; }
+        public DateTime NewEndTime { get; set; }
     }
 
     [Serializable]
@@ -180,6 +182,10 @@ namespace IngestTask.Dto
         /// <summary>暂时无</summary>
         /// <example>0</example>
         public int TransState { get; set; }
+        public int AudioChannels { get; set; } = -1;
+        public int AudioChannelAttribute { get; set; }
+        public int ASRmask { get; set; } = -1;
+
         public string SignalRtmpUrl { get; set; }
 
     }

@@ -94,9 +94,9 @@ namespace IngestTask.Tools.Msv
             tmptaskparam.isPlanMode = true;
             tmptaskparam.tmBeg = pTaskparam.tmBeg;
         }
-        public async Task<int> QuerySDIFormatAsync(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
+        public async Task<SDISignalStatus> QuerySDIFormatAsync(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
         {
-            
+           
             try
             {
                 //ret = _clientSdk.MSVQuerySDIFormat(strMsvIP, ref singleType, ref bIsBack, logger, nChPort);
@@ -104,7 +104,7 @@ namespace IngestTask.Tools.Msv
                 if (ret == null)
                 {
                     logger.Error($"Cast Interface Function MSVQuerySDIFormat Error!(error {_clientSdk.MSVGetLastErrorString()})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
-                    return 0;
+                    return null;
                 }
                 
                 logger.Info($"Cast Interface Function QuerySDIFormat!(vedioformat ={ret.VideoFormat} :width :{ret.nWidth})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
@@ -134,6 +134,8 @@ namespace IngestTask.Tools.Msv
                     {
                         pnSingleType = 0;
                     }
+                    else if (ret.nWidth >= 3840)
+                        pnSingleType = 2;
                     else if (ret.nWidth > 720)
                     {
                         pnSingleType = 1;
@@ -143,20 +145,21 @@ namespace IngestTask.Tools.Msv
                         pnSingleType = 254;
                         bValidVideo = false;
                     }
-                        
 
+                    ret.SignalType = pnSingleType;
+                    return ret;
                 }
-                return pnSingleType;
+                return null;
             }
             catch (System.Exception e)
             {
                 logger.Error($"Cast Interface Function MSVQuerySDIFormat Exception! {e.Message})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
                
-                return 255;
+                return null;
             }
         }
 
-        public async Task<int> RecordAsync(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
+        public async Task<bool> RecordAsync(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
         {
             MSV_RET ret;
             string strMutPath = "";
@@ -189,23 +192,23 @@ namespace IngestTask.Tools.Msv
                 if (ret == MSV_RET.MSV_NETERROR)
                 {
                     logger.Error("MsvSDK Record Failed(MSV_NETERROR)!...........MsvUdpClientCtrlSDK::Record");
-                    return 0;
+                    return false;
                 }
                 if (ret != MSV_RET.MSV_SUCCESS)
                 {
                     logger.Error($"MsvSDK Record Failed {ret} {_clientSdk.MSVGetLastErrorString()}");
-                    return 0;
+                    return false;
                 }
-                return nMsvRet;
+                return true;
             }
             catch (Exception e)
             {
                 logger.Error($"MsvUdpClientCtrlSDK::Record, Exception:{e.Message}");
-                return 0;
+                return false;
             }
         }
 
-        public bool RecordReady(int nChPort, string strMsvIP, ref TaskParam pTaskparam, string strTaskName, string pCaptureparam, Sobey.Core.Log.ILogger logger)
+        public bool RecordReady(int nChPort, string strMsvIP, TaskParam pTaskparam, string strTaskName, string pCaptureparam, Sobey.Core.Log.ILogger logger)
         {
             if (pTaskparam == null)
             {
@@ -340,7 +343,9 @@ namespace IngestTask.Tools.Msv
                 return null;
             }
         }
-        public async Task<Device_State> QueryDeviceStateAsync(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
+
+        //capture 刚发采集命令发完要完全确认状态
+        public async Task<Device_State> QueryDeviceStateAsync(int nChPort, string strMsvIP, bool capture, Sobey.Core.Log.ILogger logger)
         {
             try
             {
@@ -353,10 +358,24 @@ namespace IngestTask.Tools.Msv
                 }
                
                 logger.Info($"MSVQueryState End, state:{state.msv_capture_state}......");
-                if (state.msv_capture_state == CAPTURE_STATE.CS_PAUSE || state.msv_capture_state == CAPTURE_STATE.CS_CAPTURE)
-                    return Device_State.WORKING;
+
+                if (capture)
+                {
+                    if (state.msv_capture_state == CAPTURE_STATE.CS_CAPTURE || state.msv_capture_state == CAPTURE_STATE.CS_CAPTURE_ACTIVE)
+                    {
+                        return Device_State.WORKING;
+                    }
+                    else
+                        return Device_State.CONNECTED;
+                }
                 else
-                    return Device_State.CONNECTED;
+                {
+                    if (state.msv_capture_state == CAPTURE_STATE.CS_PAUSE || state.msv_capture_state == CAPTURE_STATE.CS_CAPTURE)
+                        return Device_State.WORKING;
+                    else
+                        return Device_State.CONNECTED;
+                }
+                
                 
             }
             catch (Exception e)
