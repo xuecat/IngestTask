@@ -124,9 +124,9 @@ namespace IngestTask.Grain
             return param;
         }
 
-        public virtual Task<int> IsNeedRedispatchaskAsync(TaskFullInfo taskinfo)
+        public virtual int IsNeedRedispatchask(TaskFullInfo taskinfo)
         {
-            throw new NotImplementedException();
+            return 0;
         }
 
         public virtual async Task<string> GetCaptureParmAsync(TaskFullInfo taskinfo, ChannelInfo channel)

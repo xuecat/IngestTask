@@ -32,6 +32,30 @@ namespace IngestTask.Grain
             return false;
         }
 
+        public override int IsNeedRedispatchask(TaskFullInfo taskinfo)
+        {
+            if (taskinfo.StartOrStop)
+            {
+                if (DateTime.Now.AddSeconds(2) <=
+                DateTimeFormat.DateTimeFromString(taskinfo.TaskContent.End))
+                {
+                    Logger.Error($"IsNeedRedispatchaskAsync start over {taskinfo.TaskContent.TaskId}");
+                    return 0;
+                }
+                return taskinfo.TaskContent.TaskId;
+            }
+            else
+            {
+                if (DateTime.Now <=
+                DateTimeFormat.DateTimeFromString(taskinfo.TaskContent.End).AddSeconds(2))
+                {
+                    Logger.Error($"IsNeedRedispatchaskAsync stop over {taskinfo.TaskContent.TaskId}");
+                    return 0;
+                }
+                return taskinfo.TaskContent.TaskId;
+            }
+        }
+
         public override async Task<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
             Logger.Info($"NormalTaskHandler HandleTaskAsync retrytimes {task.RetryTimes}");
@@ -43,68 +67,79 @@ namespace IngestTask.Grain
                 return 0;
             }
 
-            if (task.StartOrStop)
+            if (task.StartOrStop && task.OpType != opType.otDel)
             {
-
-                if (task.OpType != opType.otDel)
+                if (task.TaskContent.TaskType == TaskType.TT_MANUTASK)
                 {
+                    await UnlockTaskAsync(taskid, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
+                    return taskid;
+                }
+                else if (task.TaskContent.TaskType == TaskType.TT_TIEUP)
+                {
+                    await HandleTieupTaskAsync(task.TaskContent);
+                    return taskid;
+                }
 
-                    if (task.TaskContent.TaskType == TaskType.TT_MANUTASK)
+                if (task.OpType == opType.otAdd)
+                {
+                    if (channel.CurrentDevState != Device_State.CONNECTED)
                     {
+                        return await UnlockTaskAsync(taskid,
+                            taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync) ? 1 : 0;
+                    }
+
+                    if (await StartTaskAsync(task, channel) > 0)
+                    {
+                        //成功
                         await UnlockTaskAsync(taskid, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
                         return taskid;
                     }
-                    else if (task.TaskContent.TaskType == TaskType.TT_TIEUP)
+                    else
                     {
-                        await HandleTieupTaskAsync(task.TaskContent);
-                        return taskid;
-                    }
+                        //使用备份信号
+                        //我擦，居然可以不用写，stop才有
+                        Logger.Info("start error. begin to use backupsignal");
 
-                    if (task.OpType == opType.otAdd)
-                    {
-                        if (channel.CurrentDevState != Device_State.CONNECTED)
-                        {
-                            return await UnlockTaskAsync(taskid,
-                                taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync) ? 1 : 0;
-                        }
 
-                        if (await StartTaskAsync(task, channel) > 0)
+                        if (task.TaskContent.TaskType == TaskType.TT_OPENEND ||
+                            task.TaskContent.TaskType == TaskType.TT_OPENENDEX)
                         {
-                            //成功
-                            await UnlockTaskAsync(taskid, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
-                            return taskid;
+                            await UnlockTaskAsync(taskid, taskState.tsInvaild, dispatchState.dpsDispatched, syncState.ssSync);
                         }
                         else
                         {
-                            //使用备份信号
-                            //我擦，居然可以不用写，stop才有
-                            Logger.Info("start error. begin to use backupsignal");
-
-
-                            if (task.TaskContent.TaskType == TaskType.TT_OPENEND ||
-                                task.TaskContent.TaskType == TaskType.TT_OPENENDEX)
-                            {
-                                await UnlockTaskAsync(taskid, taskState.tsInvaild, dispatchState.dpsDispatched, syncState.ssSync);
-                            }
-                            else
-                            {
-                                await UnlockTaskAsync(taskid, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
-                            }
-
-                            //重调度还失败，要看看是否超过了，超过就从列表去了
-                            if (task.RetryTimes > 0)
-                            {
-                                return await IsNeedRedispatchaskAsync(task);
-                            }
-
-                            return 0;
+                            await UnlockTaskAsync(taskid, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
                         }
+
+                        //重调度还失败，要看看是否超过了，超过就从列表去了
+                        if (task.RetryTimes > 0)
+                        {
+                            return IsNeedRedispatchask(task);
+                        }
+
+                        return 0;
                     }
                 }
+                
             }
             else
             {
+                Logger.Info($"task stop timespan {(DateTimeFormat.DateTimeFromString(task.TaskContent.End) - DateTime.Now).TotalSeconds}");
+                task.TaskContent.End = DateTimeFormat.DateTimeToString(DateTime.Now);
 
+
+                //所有的删除都让入库去做,这里不删除
+                //开始删除素材
+                //if (this.Info.FullInfo.emOpType == opType.otDel)
+                //{
+                //    this.UnlockTask((int)taskState.tsComplete, (int)dispatchState.dpsInvalid, (int)syncState.ssSync);
+                //    //DeleteClip();
+                //}
+                if (task.TaskContent.TaskType != TaskType.TT_MANUTASK || 
+                    (task.TaskContent.TaskType == TaskType.TT_MANUTASK && task.OpType == opType.otDel))
+                {
+                    await StopTaskAsync(task, channel);
+                }
             }
             return 0;
         }
@@ -237,9 +272,78 @@ namespace IngestTask.Grain
             return 0;
         }
 
-        public override Task<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public override async Task<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
-            throw new NotImplementedException();
+            DateTime end = DateTimeFormat.DateTimeFromString(task.TaskContent.End).AddSeconds(ApplicationContext.Current.TaskStopBehind);
+            while (true)
+            {
+                if (DateTime.Now >= end)
+                {
+                    var msvtaskinfo = await AutoRetry.RunSyncAsync(async () =>
+                    {
+                        return await MsvSdk.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
+                    },
+                    (e) =>
+                    {
+                        if (e != null)
+                        {
+                            return true;
+                        }
+                        return false;
+                    },
+                    5, 300);
+
+                    if (msvtaskinfo != null)
+                    {
+                        if (msvtaskinfo.ulID == task.TaskContent.TaskId)
+                        {
+                            var stopback = await AutoRetry.BoolRunAsync(async () =>
+                            {
+                                var backlong = await MsvSdk.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
+                                if (backlong > 0)
+                                {
+                                    return true;
+                                }
+                                return false;
+                            });
+
+                            if (stopback)
+                            {
+                                await RestClientApi.SetTaskStateAsync(task.TaskContent.TaskId, taskState.tsComplete);
+                                await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsNo, dispatchState.dpsDispatched, syncState.ssSync);
+                                return task.TaskContent.TaskId;
+                            }
+                            else
+                            {
+                                return IsNeedRedispatchask(task);
+                            }
+                        }
+                        else
+                        {
+                            // 查询接口失败，视为MSV已经没有采集任务，正处于空闲状态
+                            // 需要将该任务标记为无效任务
+                            await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsInvaild,
+                                dispatchState.dpsDispatched, syncState.ssSync);
+                            Logger.Error($"stop task not same {msvtaskinfo.ulID} {task.TaskContent.TaskId}");
+                            return task.TaskContent.TaskId;
+                        }
+                            
+                    }
+                    else
+                    {
+                        // 停止的任务不是MSV当前正在采集的任务
+                        // 需要将该任务标记为无效任务
+                        await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsInvaild,
+                                dispatchState.dpsDispatched, syncState.ssSync);
+                        Logger.Error($"stop task not find running task");
+                        return task.TaskContent.TaskId;
+                    }
+                        
+
+                }
+                else
+                    await Task.Delay(end - DateTime.Now);
+            }
         }
 
         public Task<int> ForceStopTaskAsync(TaskFullInfo task, ChannelInfo channel)

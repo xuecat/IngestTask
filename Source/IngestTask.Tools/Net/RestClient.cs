@@ -613,6 +613,25 @@ namespace IngestTask.Tool
             }
             return 0;
         }
+
+        public async Task<int> SetTaskStateAsync(int taskid, taskState tkstate)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<int>>(() =>
+            {
+                NameValueCollection v = new NameValueCollection();
+                v.Add("state", ((int)tkstate).ToString());
+
+                return PutAsync<ResponseMessage<int>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/state/{taskid}",null,
+                    GetIngestHeader(), v);
+            }).ConfigureAwait(true);
+
+            if (back != null && back.IsSuccess())
+            {
+                return taskid;
+            }
+            return 0;
+        }
         #endregion
 
         #region Matrix
