@@ -128,17 +128,20 @@ namespace IngestTask.Grain
                 task.TaskContent.End = DateTimeFormat.DateTimeToString(DateTime.Now);
 
 
-                //所有的删除都让入库去做,这里不删除
-                //开始删除素材
-                //if (this.Info.FullInfo.emOpType == opType.otDel)
-                //{
-                //    this.UnlockTask((int)taskState.tsComplete, (int)dispatchState.dpsInvalid, (int)syncState.ssSync);
-                //    //DeleteClip();
-                //}
+                
                 if (task.TaskContent.TaskType != TaskType.TT_MANUTASK || 
                     (task.TaskContent.TaskType == TaskType.TT_MANUTASK && task.OpType == opType.otDel))
                 {
-                    await StopTaskAsync(task, channel);
+                    var backinfo = await StopTaskAsync(task, channel);
+
+                    //所有的删除都让入库去做,这里不删除
+                    //开始删除素材
+                    if (task.OpType == opType.otDel)
+                    {
+                        await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsComplete, dispatchState.dpsInvalid, syncState.ssSync);
+                        //DeleteClip();
+                    }
+                    return backinfo;
                 }
             }
             return 0;
@@ -320,7 +323,7 @@ namespace IngestTask.Grain
                         }
                         else
                         {
-                            // 查询接口失败，视为MSV已经没有采集任务，正处于空闲状态
+                            // 停止的任务不是MSV当前正在采集的任务
                             // 需要将该任务标记为无效任务
                             await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsInvaild,
                                 dispatchState.dpsDispatched, syncState.ssSync);
@@ -331,12 +334,7 @@ namespace IngestTask.Grain
                     }
                     else
                     {
-                        // 停止的任务不是MSV当前正在采集的任务
-                        // 需要将该任务标记为无效任务
-                        await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsInvaild,
-                                dispatchState.dpsDispatched, syncState.ssSync);
-                        Logger.Error($"stop task not find running task");
-                        return task.TaskContent.TaskId;
+                        return IsNeedRedispatchask(task);
                     }
                         
 
