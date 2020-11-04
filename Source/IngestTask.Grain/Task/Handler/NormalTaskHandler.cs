@@ -29,6 +29,10 @@ namespace IngestTask.Grain
             {
                 return true;
             }
+            else if (task.TaskContent.CooperantType == CooperantType.emVTRBackupFailed && !task.StartOrStop)
+            {
+                return true;
+            }
             return false;
         }
 
@@ -224,8 +228,9 @@ namespace IngestTask.Grain
                 string capparam = await GetCaptureParmAsync(task, channel);
 
                 DateTime dtcurrent;
-                DateTime dtbegin = task.RetryTimes > 0?task.NewBeginTime :
+                DateTime dtbegin = (task.RetryTimes > 0 && task.NewBeginTime != DateTime.MinValue)?task.NewBeginTime :
                     DateTimeFormat.DateTimeFromString(task.TaskContent.Begin).AddSeconds(-1* ApplicationContext.Current.TaskStartPrevious);
+
                 while(true)
                 {
                     dtcurrent = DateTime.Now;
@@ -277,7 +282,9 @@ namespace IngestTask.Grain
 
         public override async Task<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
-            DateTime end = DateTimeFormat.DateTimeFromString(task.TaskContent.End).AddSeconds(ApplicationContext.Current.TaskStopBehind);
+            DateTime end = (task.RetryTimes > 0 && task.NewEndTime != DateTime.MinValue) ? task.NewEndTime
+                : DateTimeFormat.DateTimeFromString(task.TaskContent.End).AddSeconds(ApplicationContext.Current.TaskStopBehind);
+
             while (true)
             {
                 if (DateTime.Now >= end)
@@ -330,13 +337,12 @@ namespace IngestTask.Grain
                             Logger.Error($"stop task not same {msvtaskinfo.ulID} {task.TaskContent.TaskId}");
                             return task.TaskContent.TaskId;
                         }
-                            
+
                     }
                     else
                     {
                         return IsNeedRedispatchask(task);
                     }
-                        
 
                 }
                 else

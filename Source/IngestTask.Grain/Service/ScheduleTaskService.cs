@@ -4,7 +4,9 @@ namespace IngestTask.Grain.Service
 {
     using IngestTask.Abstraction.Service;
     using IngestTask.Dto;
+    using Orleans;
     using Orleans.Concurrency;
+    using Orleans.Core;
     using Orleans.Runtime;
     using System;
     using System.Collections.Generic;
@@ -14,6 +16,12 @@ namespace IngestTask.Grain.Service
     [Reentrant]
     public class ScheduleTaskService : GrainService, IScheduleService
     {
+        readonly IGrainFactory GrainFactory;
+        public ScheduleTaskService(IGrainIdentity id, Silo silo, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory, IGrainFactory grainFactory)
+            : base(id, silo, loggerFactory)
+        {
+            GrainFactory = grainFactory;
+        }
         public Task<int> ScheduleTaskAsync()
         {
             throw new NotImplementedException();
@@ -26,6 +34,20 @@ namespace IngestTask.Grain.Service
         public Task<int> AddTaskAsync(TaskContent task)
         {
             throw new NotImplementedException();
+        }
+        public override Task Init(IServiceProvider serviceProvider)
+        {
+            return base.Init(serviceProvider);
+        }
+
+        public override async Task Start()
+        {
+            await base.Start();
+        }
+
+        public override Task Stop()
+        {
+            return base.Stop();
         }
 
     }

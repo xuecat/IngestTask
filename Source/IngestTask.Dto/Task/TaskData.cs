@@ -18,9 +18,9 @@ namespace IngestTask.Dto
 
         public opType OpType { get; set; }
 
-        public DateTime NewBeginTime { get; set; }
+        public DateTime NewBeginTime { get; set; } = DateTime.MinValue;
 
-        public DateTime NewEndTime { get; set; }
+        public DateTime NewEndTime { get; set; } = DateTime.MinValue;
     }
 
     [Serializable]

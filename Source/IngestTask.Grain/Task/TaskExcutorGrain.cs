@@ -86,7 +86,13 @@ namespace IngestTask.Grain
                         {
                             taskitem.RetryTimes++;
                             //重调度任务把开始时间滞后看看
-                            taskitem.NewBeginTime = DateTime.Now.AddSeconds(-1*ApplicationContext.Current.TaskRedispatchSpan);
+                            taskitem.NewBeginTime = DateTime.Now.AddSeconds(ApplicationContext.Current.TaskRedispatchSpan);
+
+                            DateTime dt = DateTime.Now;
+                            if (dt >= DateTimeFormat.DateTimeFromString(taskitem.TaskContent.End))
+                            {
+                                taskitem.NewEndTime = dt.AddSeconds(ApplicationContext.Current.TaskRedispatchSpan);
+                            }
                         }
                     }
                     break;
@@ -168,7 +174,7 @@ namespace IngestTask.Grain
 
         public async Task<int> HandleTaskAsync(TaskFullInfo task)
         {
-            Logger.Info($"TaskExcutor HandleTaskAsync {task.TaskContent.TaskId}");
+            Logger.Info($"TaskExcutor HandleTaskAsync {task.TaskContent.TaskId} {task.StartOrStop}");
 
             try
             {
@@ -189,7 +195,6 @@ namespace IngestTask.Grain
                 /*
                 * flag katamaki任务检测
                 */
-
                 var devicegrain = GrainFactory.GetGrain<IDeviceInspections>(0);
                 if (devicegrain != null)
                 {
@@ -211,6 +216,10 @@ namespace IngestTask.Grain
                         Logger.Error($"getgrain channelinfo error {task.TaskContent.ChannelId}");
                     }
 
+                }
+                else
+                {
+                    Logger.Error("not find device grain");
                 }
 
                 return 0;
