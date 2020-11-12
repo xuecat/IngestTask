@@ -35,6 +35,7 @@ namespace IngestTask.Grain.Service
         {
             throw new NotImplementedException();
         }
+
         public override Task Init(IServiceProvider serviceProvider)
         {
             return base.Init(serviceProvider);
