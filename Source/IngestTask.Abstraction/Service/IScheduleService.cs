@@ -7,7 +7,6 @@ namespace IngestTask.Abstraction.Service
     using System.Threading.Tasks;
     public interface IScheduleService : IGrainService
     {
-        Task<int> ScheduleTaskAsync();
         Task<int> AddTaskAsync(TaskContent task);
     }
 }

@@ -5,7 +5,6 @@ namespace IngestTask.Grain
 {
     using AutoMapper;
     using IngestTask.Abstraction.Grains;
-    using IngestTask.Abstraction.Service;
     using IngestTask.Dto;
     using IngestTask.Tool;
     using IngestTask.Tools;
@@ -112,18 +111,18 @@ namespace IngestTask.Grain
     public class TaskExcutorGrain : JournaledGrain<TaskState,TaskEvent>, ITask
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("TaskExcutor");
-        private readonly IScheduleClient _scheduleClient;
+        
         private readonly RestClient _restClient;
         private readonly ITaskHandlerFactory _handlerFactory;
         private readonly IMapper Mapper;
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
-            IScheduleClient dataServiceClient,
+           
             RestClient rest,
             IMapper mapper,
             ITaskHandlerFactory handlerfac)
         {
             Mapper = mapper;
-            _scheduleClient = dataServiceClient;
+            
             _restClient = rest;
             _handlerFactory = handlerfac;
         }
@@ -234,22 +233,15 @@ namespace IngestTask.Grain
 
         }
 
-        public async Task AddTaskAsync(TaskContent task)
+        public Task AddTaskAsync(TaskContent task)
         {
             if (task != null)
             {
-                if ((DateTimeFormat.DateTimeFromString(task.Begin) - DateTime.Now).TotalSeconds > 
-                    ApplicationContext.Current.TaskPrevious)
-                {
-                    //提交
-                    await _scheduleClient.AddScheduleTaskAsync(task);
-                }
-                else
-                {
-                    //归档
-                    RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskContentInfo = task });
-                }
+                //归档
+                RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskContentInfo = task });
+                
             }
+            return Task.CompletedTask;
         }
 
         
