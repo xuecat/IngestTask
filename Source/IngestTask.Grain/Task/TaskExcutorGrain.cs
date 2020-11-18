@@ -3,7 +3,6 @@ using ProtoBuf;
 
 namespace IngestTask.Grain
 {
-    using AutoMapper;
     using IngestTask.Abstraction.Grains;
     using IngestTask.Dto;
     using IngestTask.Tool;
@@ -114,14 +113,11 @@ namespace IngestTask.Grain
         
         private readonly RestClient _restClient;
         private readonly ITaskHandlerFactory _handlerFactory;
-        private readonly IMapper Mapper;
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
            
             RestClient rest,
-            IMapper mapper,
             ITaskHandlerFactory handlerfac)
         {
-            Mapper = mapper;
             
             _restClient = rest;
             _handlerFactory = handlerfac;
@@ -233,15 +229,16 @@ namespace IngestTask.Grain
 
         }
 
-        public Task AddTaskAsync(TaskContent task)
+        public Task<bool> AddTaskAsync(TaskContent task)
         {
             if (task != null)
             {
                 //归档
                 RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskContentInfo = task });
                 
+                return Task.FromResult(true);
             }
-            return Task.CompletedTask;
+            return Task.FromResult(false);
         }
 
         

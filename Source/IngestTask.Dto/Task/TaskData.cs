@@ -23,6 +23,43 @@ namespace IngestTask.Dto
         public DateTime NewEndTime { get; set; } = DateTime.MinValue;
     }
 
+  
+    /*
+     * 服务和分发在用，其它都用taskcontent. 为啥通知出来是这个结构体呢，主要兼容v1 v2不同的添加信息，而且还需要oldchannel等信息，所以就使用俩个结构体
+     * 就当成分发层结构体多些，执行层少些
+     */
+    [Serializable]
+    public partial class DispatchTask
+    {
+        public int StartOrStop { get; set; }
+        public int Taskid { get; set; }
+        public string Taskname { get; set; }
+        public int? Recunitid { get; set; }
+        public string Usercode { get; set; }
+        public int? Signalid { get; set; }
+        public int? Channelid { get; set; }
+        public int? OldChannelid { get; set; }
+        public int? State { get; set; }
+        public DateTime Starttime { get; set; }
+        public DateTime Endtime { get; set; }
+        public DateTime NewBegintime { get; set; }
+        public DateTime NewEndtime { get; set; }
+        public string Category { get; set; }
+        public string Description { get; set; }
+        public int? Tasktype { get; set; }
+        public int? Backtype { get; set; }
+        public int? DispatchState { get; set; }
+        public int? SyncState { get; set; }
+        public int? OpType { get; set; }
+        public string Tasklock { get; set; }
+        public string Taskguid { get; set; }
+        public int? Backupvtrid { get; set; }
+        public int? Taskpriority { get; set; }
+        public int? Stamptitleindex { get; set; }
+        public int? Stampimagetype { get; set; }
+        public int? Sgroupcolor { get; set; }
+    }
+
     [Serializable]
     public class TaskContent
     {

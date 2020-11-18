@@ -9,6 +9,6 @@ namespace IngestTask.Abstraction.Grains
     public interface IDispatcherGrain : IGrain
     {
         Task SendAsync(Tuple<int, string>[] messages);
-        Task AddTaskAsync(TaskContent task);
+        Task AddTaskAsync(DispatchTask task);
     }
 }

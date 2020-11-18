@@ -13,7 +13,7 @@ namespace IngestTask.Abstraction.Grains
         Task<TaskContent> GetCurrentTaskAsync();
 
         
-        Task AddTaskAsync(TaskContent task);
+        Task<bool> AddTaskAsync(TaskContent task);
         Task ModifyTaskAsync(TaskContent task);
         Task DeleteTaskAsync(TaskContent task);
 

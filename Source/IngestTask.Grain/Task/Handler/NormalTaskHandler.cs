@@ -154,44 +154,45 @@ namespace IngestTask.Grain
         public override async Task<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
 
-            var backinfo = await AutoRetry.BoolRunAsync(async () =>
+            var backinfo = await AutoRetry.RunSyncAsync(async () =>
             {
-                var msvtaskinfo = await MsvSdk.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
-
-                if (msvtaskinfo != null)
+               return await MsvSdk.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
+            },
+            (e) => {
+                if (e != null)
                 {
-                    if (msvtaskinfo.ulID >0)//存在执行任务
-                    {
-                        if (msvtaskinfo.ulID == task.TaskContent.TaskId)
-                        {
-                            return true;
-                        }
-                        else if (msvtaskinfo.ulID < task.TaskContent.TaskId)
-                        {
-                            Logger.Info($"start msv in stop else {msvtaskinfo.ulID}");
-                            await ForceStopTaskAsync(task, channel);
-                            return false;//放过本轮，继续下轮
-                        }
-
-                        if (task.TaskSource == TaskSource.emStreamMediaUploadTask)
-                        {
-                            return false;
-                        }
-
-                        //前一个任务是手动任务，特别处理无缝任务 bIsStopLastTask
-                    }
                     return true;
                 }
                 else
                 {
                     Logger.Error("QueryTaskInfoAsync no task running");
                 }
-
                 return false;
-            }, 5, 500);
+            },
+            5, 500);
 
-            if (backinfo)
+
+            if (backinfo != null)
             {
+                if (backinfo.ulID > 0)//存在执行任务
+                {
+                    if (backinfo.ulID == task.TaskContent.TaskId)
+                    {
+                        return task.TaskContent.TaskId;
+                    }
+                    else if (backinfo.ulID < task.TaskContent.TaskId)
+                    {
+                        Logger.Info($"start msv in stop else {backinfo.ulID}");
+                        await ForceStopTaskAsync(task, channel);
+                    }
+
+                    if (task.TaskSource == TaskSource.emStreamMediaUploadTask)
+                    {
+                        return 0;
+                    }
+                    //前一个任务是手动任务，特别处理无缝任务 bIsStopLastTask
+                }
+
                 switch (task.TaskSource)
                 {
                     case TaskSource.emMSVUploadTask:

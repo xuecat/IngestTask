@@ -25,12 +25,12 @@ namespace IngestTask.Grain
             return Task.CompletedTask;
         }
 
-        public async Task AddTaskAsync(TaskContent task)
+        public async Task AddTaskAsync(DispatchTask task)
         {
             if (task != null)
             {
-                if ((DateTimeFormat.DateTimeFromString(task.Begin) - DateTime.Now).TotalSeconds >
-                   ApplicationContext.Current.TaskPrevious)
+                if ((task.Starttime - DateTime.Now).TotalSeconds >
+                   ApplicationContext.Current.TaskSchedulePrevious)
                 {
                     //提交
                     await _scheduleClient.AddScheduleTaskAsync(task);

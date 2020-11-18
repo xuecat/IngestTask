@@ -632,6 +632,23 @@ namespace IngestTask.Tool
             }
             return 0;
         }
+
+        public async Task<TaskContent> CreatePeriodcTaskAsync(int taskid)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() =>
+            {
+               
+                return PostAsync<ResponseMessage<TaskContent>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/periodic/createtask/{taskid}", null,
+                    GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null && back.IsSuccess())
+            {
+                return back.Ext;
+            }
+            return null;
+        }
         #endregion
 
         #region Matrix
