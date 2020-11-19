@@ -76,7 +76,7 @@ namespace IngestTask.Grain.Service
             var _lstRemoveTask = new List<DispatchTask>();
             foreach (var task in _lstScheduleTask)
             {
-                if (task.StartOrStop >= 0)
+                if (task.StartOrStop <= 0)
                 {
                     if (task.Tasktype == (int)TaskType.TT_PERIODIC 
                         && task.State == (int)taskState.tsReady
@@ -87,7 +87,13 @@ namespace IngestTask.Grain.Service
                         if ((task.Starttime - DateTime.Now).TotalSeconds <=
                             ApplicationContext.Current.TaskSchedulePrevious)
                         {
-                            await _restClient.CreatePeriodcTaskAsync(task.Taskid);
+                            var info = await _restClient.CreatePeriodcTaskAsync(task.Taskid);
+
+                            if (info != null)
+                            {
+                                task.StartOrStop++;
+                                _lstRemoveTask.Add(task);
+                            }
                         }
                     }
                     else

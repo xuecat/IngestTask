@@ -34,7 +34,7 @@ namespace IngestTask.Server
 
             CreateMap<DeviceInfo, ChannelInfo>().ReverseMap();
             CreateMap<MsvChannelState, ChannelInfo>().ReverseMap();
-            CreateMap<TaskContent, DbpTask>()
+            CreateMap<TaskContent, DispatchTask>()
                 .ForMember(a => a.Recunitid, (map) => map.MapFrom(b => b.Unit))
                 .ForMember(a => a.Category, (map) => map.MapFrom(b => b.Classify))
                 .ForMember(a => a.Description, (map) => map.MapFrom(b => b.TaskDesc))
