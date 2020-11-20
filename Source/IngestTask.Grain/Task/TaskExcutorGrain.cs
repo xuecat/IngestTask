@@ -241,7 +241,17 @@ namespace IngestTask.Grain
             return Task.FromResult(false);
         }
 
-        
+        public Task<bool> StopTaskAsync(TaskContent task)
+        {
+            if (task != null)
+            {
+                //归档
+                RaiseEvent(new TaskEvent() { OpType = opType.otStop, TaskContentInfo = task });
+
+                return Task.FromResult(true);
+            }
+            return Task.FromResult(false);
+        }
 
         public bool JudgeTaskPriority(TaskContent taskcurrent, TaskContent taskcompare)
         {

@@ -14,10 +14,11 @@ namespace IngestTask.Grain.Service
     using Orleans.Runtime;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading.Tasks;
-
+   
     [Reentrant]
     public class ScheduleTaskService : GrainService, IScheduleService
     {
@@ -37,12 +38,53 @@ namespace IngestTask.Grain.Service
             _mapper = mapper;
             _restClient = restClient;
         }
-      
+       
         public Task<int> AddTaskAsync(DispatchTask task)
+        {
+            if (task != null && _lstScheduleTask.Find(x => x.Taskid == task.Taskid) == null)
+            {
+                lock (_lstScheduleTask)
+                {
+                    _lstScheduleTask.Add(task);
+                    _lstScheduleTask = _lstScheduleTask.OrderBy(x => x.Starttime).ToList();
+                    return Task.FromResult(1);
+                }
+            }
+
+            return Task.FromResult(0);
+        }
+
+        public Task<int> UpdateTaskAsync(DispatchTask task)
+        {
+            if (task != null)
+            {
+                var item = _lstScheduleTask.Find(x => x.Taskid == task.Taskid);
+                if (item == null)
+                {
+                    lock (_lstScheduleTask)
+                    {
+                        _lstScheduleTask.Add(task);
+                        _lstScheduleTask = _lstScheduleTask.OrderBy(x => x.Starttime).ToList();
+                        return Task.FromResult(1);
+                    }
+                }
+                else
+                {
+                    lock (_lstScheduleTask)
+                    {
+                        _lstScheduleTask = _lstScheduleTask.OrderBy(x => x.Starttime).ToList();
+                        return Task.FromResult(1);
+                    }
+                }
+            }
+
+            return Task.FromResult(0);
+        }
+
+        public Task<int> CheckTaskListAsync(List<DispatchTask> task)
         {
             throw new NotImplementedException();
         }
-
         public override Task Init(IServiceProvider serviceProvider)
         {
             return base.Init(serviceProvider);
@@ -99,7 +141,7 @@ namespace IngestTask.Grain.Service
                     else
                     {
                         if ((task.Starttime - DateTime.Now).TotalSeconds <=
-                            ApplicationContext.Current.TaskSchedulePrevious)
+                            ApplicationContext.Current.TaskSchedulePrevious && task.Endtime > DateTime.Now)
                         {
                             if (await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task)))
                             {
@@ -110,9 +152,28 @@ namespace IngestTask.Grain.Service
                 }
                 else
                 {
-
+                    var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
+                    if ( spansecond > 0 && spansecond < ApplicationContext.Current.TaskSchedulePrevious)
+                    {
+                        if (await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.StopTaskAsync(_mapper.Map<TaskContent>(task)))
+                        {
+                            task.StartOrStop++;
+                            _lstRemoveTask.Add(task);
+                        }
+                    }
                 }
                 
+            }
+
+            if (_lstRemoveTask.Count > 0)
+            {
+                lock (_lstScheduleTask)
+                {
+                    foreach (var item in _lstScheduleTask)
+                    {
+                        _lstScheduleTask.Remove(item);
+                    }
+                }
             }
 
         }
