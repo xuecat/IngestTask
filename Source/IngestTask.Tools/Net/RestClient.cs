@@ -20,7 +20,7 @@ namespace IngestTask.Tool
         private static HttpClient _httpClient = null;
         const string TASKAPI20 = "api/v2/task";
         const string TASKAPI21 = "api/v2.1/task";
-        const string MATRIXAPI20 = "api/v2/matrix"
+        const string MATRIXAPI20 = "api/v2/matrix";
         const string USERAPI20 = "api/v2/user";
         const string DEVICEAPI21 = "api/v2.1/device";
         const string DEVICEAPI20 = "api/v2/device";
@@ -521,6 +521,21 @@ namespace IngestTask.Tool
         #endregion
 
         #region Task
+
+        public async Task<List<TaskContent>> GetNeedSyncTaskListAsync()
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<List<TaskContent>>>(() => {
+                return GetAsync<ResponseMessage<List<TaskContent>>>(
+                    $"{ApplicationContext.Current.IngestDBUrl}/{TASKAPI20}/needsync", null, GetIngestHeader()
+                    );
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
 
         public async Task<TaskContent> GetChannelCapturingTaskInfoAsync(int channelid)
         {

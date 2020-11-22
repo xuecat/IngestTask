@@ -13,7 +13,5 @@ namespace IngestTask.Abstraction.Service
         Task<int> CheckTaskListAsync(List<DispatchTask> task);
     }
 
-    public interface ICheckScheduleService : IGrainService
-    {
-    }
+   
 }

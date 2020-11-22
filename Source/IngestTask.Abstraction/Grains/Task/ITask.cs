@@ -20,4 +20,9 @@ namespace IngestTask.Abstraction.Grains
 
         bool JudgeTaskPriority(TaskContent taskcurrent, TaskContent taskcompare);
     }
+
+    public interface ICheckSchedule : IGrainWithIntegerKey
+    {
+        Task<bool> CheckSyncAsync();
+    }
 }

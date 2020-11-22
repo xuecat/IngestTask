@@ -118,7 +118,7 @@ namespace IngestTask.Grain.Service
             var _lstRemoveTask = new List<DispatchTask>();
             foreach (var task in _lstScheduleTask)
             {
-                if (task.StartOrStop <= 0)
+                if (task.StartOrStop <= 0 && task.SyncState == (int)syncState.ssNot )
                 {
                     if (task.Tasktype == (int)TaskType.TT_PERIODIC 
                         && task.State == (int)taskState.tsReady
@@ -150,7 +150,7 @@ namespace IngestTask.Grain.Service
                         }
                     }
                 }
-                else
+                else if (task.SyncState == (int)syncState.ssSync)
                 {
                     var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
                     if ( spansecond > 0 && spansecond < ApplicationContext.Current.TaskSchedulePrevious)
