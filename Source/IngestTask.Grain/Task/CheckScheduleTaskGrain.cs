@@ -10,25 +10,37 @@ namespace IngestTask.Grain
     using System.Text;
     using System.Threading.Tasks;
     using Orleans;
+    using IngestTask.Dto;
 
     [Reentrant]
-    class CheckScheduleTaskGrain : Grain, ICheckSchedule
+    class CheckScheduleTaskGrain : Grain<List<Tuple<int, TaskContent>>>, ICheckSchedule
     {
         private IDisposable _dispoScheduleTimer;
         private readonly RestClient _restClient;
+        readonly IGrainFactory _grainFactory;
 
-        private readonly IMapper _mapper;
-        public CheckScheduleTaskGrain(RestClient client, IMapper mapper)
+        public CheckScheduleTaskGrain(RestClient client, IGrainFactory grainFactory /*IMapper mapper*/)
         {
-            _mapper = mapper;
+            _grainFactory = grainFactory;
             _restClient = client;
         }
-        public Task<bool> CheckSyncAsync()
+        public Task<bool> StartCheckSyncAsync()
         {
             _dispoScheduleTimer = RegisterTimer(this.OnCheckTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
+            return Task.FromResult(true);
         }
 
+        /*
+         * 如果俩次同步检测到，都还没变化状态，说明调度模式肯定延时或者丢失数据了，因为第一次检测到需要同步就应该被执行器修改状态的
+         * 它应该直接向执行器请求。
+         */
         private async Task OnCheckTaskAsync(object type)
-        { }
+        {
+            var lsttask = await _restClient.GetNeedSyncTaskListAsync();
+            if (lsttask != null && lsttask.Count > 0)
+            {
+                
+            }
+        }
     }
 }

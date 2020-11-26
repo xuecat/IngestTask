@@ -37,7 +37,6 @@ namespace IngestTask.Grain
                 }
                 else
                 {
-
                 }
                 //归档
                 //RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskContentInfo = task });

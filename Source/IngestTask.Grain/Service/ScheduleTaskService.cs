@@ -120,7 +120,7 @@ namespace IngestTask.Grain.Service
             {
                 if (task.StartOrStop <= 0 && task.SyncState == (int)syncState.ssNot )
                 {
-                    if (task.Tasktype == (int)TaskType.TT_PERIODIC 
+                    if (task.Tasktype == (int)TaskType.TT_PERIODIC
                         && task.State == (int)taskState.tsReady
                         && task.OldChannelid == 0)
                     {

@@ -23,6 +23,6 @@ namespace IngestTask.Abstraction.Grains
 
     public interface ICheckSchedule : IGrainWithIntegerKey
     {
-        Task<bool> CheckSyncAsync();
+        Task<bool> StartCheckSyncAsync();
     }
 }
