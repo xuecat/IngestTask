@@ -11,9 +11,16 @@ namespace IngestTask.Grain
     using System.Threading.Tasks;
     using Orleans;
     using IngestTask.Dto;
+    using System.Linq;
+
+    [Serializable]
+    public class CheckTaskContent : TaskContent
+    {
+        public int SyncTimes { get; set; }
+    }
 
     [Reentrant]
-    class CheckScheduleTaskGrain : Grain<List<Tuple<int, TaskContent>>>, ICheckSchedule
+    class CheckScheduleTaskGrain : Grain<List<CheckTaskContent>>, ICheckSchedule
     {
         private IDisposable _dispoScheduleTimer;
         private readonly RestClient _restClient;
@@ -39,7 +46,12 @@ namespace IngestTask.Grain
             var lsttask = await _restClient.GetNeedSyncTaskListAsync();
             if (lsttask != null && lsttask.Count > 0)
             {
+                var lst = lsttask.Select(x => x.TaskId).ToList();
                 
+                var findlst = State.FindAll(a => lst.Contains(a.TaskId));
+                findlst.ForEach(x => x.SyncTimes++);
+
+
             }
         }
     }
