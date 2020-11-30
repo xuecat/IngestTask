@@ -113,21 +113,30 @@ namespace IngestTask.Grain
         
         private readonly RestClient _restClient;
         private readonly ITaskHandlerFactory _handlerFactory;
+
+        readonly IGrainFactory _grainFactory;
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
-           
+           IGrainFactory grainFactory,
             RestClient rest,
             ITaskHandlerFactory handlerfac)
         {
-            
+            _grainFactory = grainFactory;
             _restClient = rest;
             _handlerFactory = handlerfac;
         }
 
-        public override Task OnActivateAsync()
+        public override async Task OnActivateAsync()
         {
             State.ChannelId = this.GetPrimaryKeyLong();
+
+            var devicegrain = _grainFactory.GetGrain<IDeviceInspections>(0);
+            var streamid = await devicegrain.JoinAsync((int)State.ChannelId);
+            var streamProvider = GetStreamProvider(Abstraction.Constants.StreamProviderName.Default)
+                                    .GetStream<ChannelInfo>(streamid, Abstraction.Constants.StreamName.DeviceReminder);
+            await streamProvider.SubscribeAsync();
+
             Logger.Info($" TaskBase active {State.ChannelId}");
-            return base.OnActivateAsync();
+            await base.OnActivateAsync();
         }
         public override Task OnDeactivateAsync()
         {
@@ -190,7 +199,7 @@ namespace IngestTask.Grain
                 /*
                 * flag katamaki任务检测
                 */
-                var devicegrain = GrainFactory.GetGrain<IDeviceInspections>(0);
+                var devicegrain = _grainFactory.GetGrain<IDeviceInspections>(0);
                 if (devicegrain != null)
                 {
                     var chinfo = await devicegrain.GetChannelInfoAsync(task.TaskContent.ChannelId);
