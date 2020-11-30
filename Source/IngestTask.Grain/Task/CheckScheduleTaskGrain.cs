@@ -13,11 +13,7 @@ namespace IngestTask.Grain
     using IngestTask.Dto;
     using System.Linq;
 
-    [Serializable]
-    public class CheckTaskContent : TaskContent
-    {
-        public int SyncTimes { get; set; }
-    }
+    
 
     [Reentrant]
     class CheckScheduleTaskGrain : Grain<List<CheckTaskContent>>, ICheckSchedule
@@ -25,11 +21,13 @@ namespace IngestTask.Grain
         private IDisposable _dispoScheduleTimer;
         private readonly RestClient _restClient;
         readonly IGrainFactory _grainFactory;
+        private IMapper _mapper;
 
-        public CheckScheduleTaskGrain(RestClient client, IGrainFactory grainFactory /*IMapper mapper*/)
+        public CheckScheduleTaskGrain(RestClient client, IGrainFactory grainFactory ,IMapper mapper)
         {
             _grainFactory = grainFactory;
             _restClient = client;
+            _mapper = mapper;
         }
         public Task<bool> StartCheckSyncAsync()
         {
@@ -46,12 +44,27 @@ namespace IngestTask.Grain
             var lsttask = await _restClient.GetNeedSyncTaskListAsync();
             if (lsttask != null && lsttask.Count > 0)
             {
-                var lst = lsttask.Select(x => x.TaskId).ToList();
-                
-                var findlst = State.FindAll(a => lst.Contains(a.TaskId));
-                findlst.ForEach(x => x.SyncTimes++);
+                List<TaskContent> needsynctasklst = new List<TaskContent>();
+                lsttask.ForEach(x => {
+                    var findstatetask = State.Find(y => y.TaskId == x.TaskId);
+                    if (findstatetask != null)
+                    {
+                        findstatetask.SyncTimes++;
+                        if (findstatetask.SyncTimes>=2)
+                        {
+                            needsynctasklst.Add(findstatetask);
+                        }
+                    } 
+                    else
+                    {
+                        State.Add(_mapper.Map<TaskContent,CheckTaskContent>(x, opt => opt.AfterMap((src, dst) => { dst.SyncTimes = 0; })));
+                    }
+                });
 
+                if (needsynctasklst.Count > 0)
+                {
 
+                }
             }
         }
     }

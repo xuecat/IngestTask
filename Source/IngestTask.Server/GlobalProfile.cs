@@ -44,6 +44,8 @@ namespace IngestTask.Server
                 .ForMember(a => a.Stampimagetype, (map) => map.MapFrom(b => b.StampImageType))
                 .ForMember(a => a.Taskpriority, (map) => map.MapFrom(b => b.Priority))
                 .ForMember(a => a.Backtype, (map) => map.MapFrom(b => b.CooperantType)).ReverseMap();
+
+            CreateMap<CheckTaskContent, TaskContent>().ReverseMap();
         }
     }
 }
