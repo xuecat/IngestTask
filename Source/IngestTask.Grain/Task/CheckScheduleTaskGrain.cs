@@ -63,7 +63,10 @@ namespace IngestTask.Grain
 
                 if (needsynctasklst.Count > 0)
                 {
-
+                    foreach (var item in needsynctasklst)
+                    {
+                        await _grainFactory.GetGrain<ITask>(item.ChannelId).AddTaskAsync(item);
+                    }
                 }
             }
         }

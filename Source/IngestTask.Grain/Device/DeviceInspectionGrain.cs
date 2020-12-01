@@ -15,6 +15,7 @@ namespace IngestTask.Grain
     using IngestTask.Tool;
     using AutoMapper;
     using ProtoBuf;
+    using Orleans.Streams;
 
     //[ProtoContract]
     [Serializable]
@@ -32,23 +33,29 @@ namespace IngestTask.Grain
     class DeviceInspectionGrain : Grain<DeviceState>, IDeviceInspections
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("DeviceInfo");
-        private readonly GrainObserverManager<IDeviceChange> _observerManager = new GrainObserverManager<IDeviceChange>();
         private readonly MsvClientCtrlSDK _msvClient;
         private readonly RestClient _restClient;
 
         private readonly IMapper Mapper;
+        private IAsyncStream<ChannelInfo> _stream;
+
+        private readonly List<int> _onlineMembers;
 
         DeviceInspectionGrain(MsvClientCtrlSDK msv, RestClient client, IMapper mapper)
         {
             Mapper = mapper;
             _restClient = client;
             _msvClient = msv;
+            _onlineMembers = new List<int>();
         }
 
         public override Task OnActivateAsync()
         {
             RegisterTimer(this.OnCheckAllChannelsAsync, State.ActionType, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
             Logger.Info(" DeviceInspectionGrain active");
+
+            var streamProvider = GetStreamProvider(Abstraction.Constants.StreamProviderName.Default);
+            _stream = streamProvider.GetStream<ChannelInfo>(Guid.NewGuid(), Abstraction.Constants.StreamName.DeviceReminder);
             return base.OnActivateAsync();
         }
         public override Task OnDeactivateAsync()
@@ -160,15 +167,29 @@ namespace IngestTask.Grain
 
             return Task.CompletedTask;
         }
+        public Task<Guid> JoinAsync(int nickname)
+        {
+            _onlineMembers.Add(nickname);
 
-        public Task<int> OnDeviceChangeAsync(int type, string message)
+           
+            return Task.FromResult(_stream.Guid);
+        }
+
+        public Task<Guid> LeaveAsync(int nickname)
+        {
+            _onlineMembers.Remove(nickname);
+
+            return Task.FromResult(_stream.Guid);
+        }
+
+        public async Task<int> OnDeviceChangeAsync(ChannelInfo info)
         {
             /*
              * flag 重新更新内存数据并通知外面
              */
+            await _stream.OnNextAsync( info);
 
-            _observerManager.Notify(s => s.ReceiveDeveiceChange(type, message));
-            return Task.FromResult(0);
+            return 0;
         }
 
         public Task<bool> IsChannelInvalidAsync(int channelid)
@@ -200,16 +221,6 @@ namespace IngestTask.Grain
             throw new NotImplementedException();
         }
 
-        public Task SubscribeAsync(IDeviceChange observer)
-        {
-            _observerManager.Subscribe(observer);
-            return Task.CompletedTask;
-        }
-
-        public Task UnSubscribeAsync(IDeviceChange observer)
-        {
-            _observerManager.Unsubscribe(observer);
-            return Task.CompletedTask;
-        }
+       
     }
 }
