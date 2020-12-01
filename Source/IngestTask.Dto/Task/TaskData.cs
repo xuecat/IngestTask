@@ -23,7 +23,12 @@ namespace IngestTask.Dto
         public DateTime NewEndTime { get; set; } = DateTime.MinValue;
     }
 
-  
+    [Serializable]
+    public class CheckTaskContent : TaskContent
+    {
+        public int SyncTimes { get; set; }
+    }
+
     /*
      * 服务和分发在用，其它都用taskcontent. 为啥通知出来是这个结构体呢，主要兼容v1 v2不同的添加信息，而且还需要oldchannel等信息，所以就使用俩个结构体
      * 就当成分发层结构体多些，执行层少些
