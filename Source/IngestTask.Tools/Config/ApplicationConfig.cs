@@ -9,14 +9,8 @@ namespace IngestTask.Tools
     {
         public const double Pi = 3.14;
     }
-    public class IngestTaskConfig
-    {
-        public int TaskSchedulePrevious { get; set; }
-        public int TaskStartPrevious { get; set; }
-        public int TaskStopBehind { get; set; }
-        public int TaskRedispatchSpan { get; set; }
-    }
-    public class ApplicationConfig: IngestTaskConfig
+    
+    public class ApplicationConfig
     {
         public string ConnectionString { get; set; }
         public string IngestDBUrl { get; set; }

@@ -12,6 +12,7 @@ namespace IngestTask.Grain
     using Orleans.EventSourcing;
     using Orleans.LogConsistency;
     using Orleans.Runtime;
+    using Orleans.Streams;
     using ProtoBuf;
     using Sobey.Core.Log;
     using System;
@@ -20,7 +21,7 @@ namespace IngestTask.Grain
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-
+    //using Orleans.Streams;
     //[ProtoContract]
     [Serializable]
     public class TaskEvent
@@ -84,12 +85,12 @@ namespace IngestTask.Grain
                         {
                             taskitem.RetryTimes++;
                             //重调度任务把开始时间滞后看看
-                            taskitem.NewBeginTime = DateTime.Now.AddSeconds(ApplicationContext.Current.TaskRedispatchSpan);
+                            taskitem.NewBeginTime = DateTime.Now.AddSeconds(2);
 
                             DateTime dt = DateTime.Now;
                             if (dt >= DateTimeFormat.DateTimeFromString(taskitem.TaskContent.End))
                             {
-                                taskitem.NewEndTime = dt.AddSeconds(ApplicationContext.Current.TaskRedispatchSpan);
+                                taskitem.NewEndTime = dt.AddSeconds(2);
                             }
                         }
                     }
@@ -107,12 +108,16 @@ namespace IngestTask.Grain
     //要不要存数据库呢
     //[LogConsistencyProvider(ProviderName = "CustomStorage")]
     //[StorageProvider(ProviderName="store1")]
+
+    [ImplicitStreamSubscription(Abstraction.Constants.StreamName.DeviceReminder)]
     public class TaskExcutorGrain : JournaledGrain<TaskState,TaskEvent>, ITask
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("TaskExcutor");
         
         private readonly RestClient _restClient;
         private readonly ITaskHandlerFactory _handlerFactory;
+
+        private StreamSubscriptionHandle<ChannelInfo> _streamHandle;
 
         readonly IGrainFactory _grainFactory;
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
@@ -133,14 +138,19 @@ namespace IngestTask.Grain
             var streamid = await devicegrain.JoinAsync((int)State.ChannelId);
             var streamProvider = GetStreamProvider(Abstraction.Constants.StreamProviderName.Default)
                                     .GetStream<ChannelInfo>(streamid, Abstraction.Constants.StreamName.DeviceReminder);
-            await streamProvider.SubscribeAsync();
-
+            _streamHandle = await streamProvider.SubscribeAsync(new StreamObserver(Logger, OnNextStream)).ConfigureAwait(true);
+             
             Logger.Info($" TaskBase active {State.ChannelId}");
             await base.OnActivateAsync();
         }
-        public override Task OnDeactivateAsync()
+        public override async Task OnDeactivateAsync()
         {
-            return base.OnDeactivateAsync();
+            if (_streamHandle != null)
+            {
+                await _streamHandle.UnsubscribeAsync();
+            }
+
+            await base.OnDeactivateAsync();
         }
 
         protected override void OnConnectionIssue(ConnectionIssue issue)
@@ -151,6 +161,11 @@ namespace IngestTask.Grain
         {
             /// handle the resolution of a previously reported issue             
             Logger.Error($"OnConnectionIssueResolved {issue.ToString()}");
+        }
+
+        public bool OnNextStream(ChannelInfo info)
+        {
+            return true;
         }
 
         public Task<TaskContent> GetCurrentTaskAsync()

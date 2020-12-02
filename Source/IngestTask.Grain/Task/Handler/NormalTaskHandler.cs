@@ -5,6 +5,7 @@ using IngestTask.Dto;
 using IngestTask.Tool;
 using IngestTask.Tools;
 using IngestTask.Tools.Msv;
+
 using Orleans.Runtime;
 using System;
 using System.Collections.Generic;
@@ -14,11 +15,15 @@ using System.Xml.Linq;
 
 namespace IngestTask.Grain
 {
+    using Microsoft.Extensions.Configuration;
     public class NormalTaskHandler : TaskHandlerBase
     {
-        public NormalTaskHandler(RestClient rest, MsvClientCtrlSDK msv)
+        public IConfiguration Configuration { get; }
+        public NormalTaskHandler(RestClient rest, MsvClientCtrlSDK msv, IConfiguration configuration)
             : base(rest, msv)
-        { }
+        {
+            Configuration = configuration;
+        }
 
         /*
          * 判断是否执行这个handle每个继承都必须要写这个
@@ -228,9 +233,11 @@ namespace IngestTask.Grain
 
                 string capparam = await GetCaptureParmAsync(task, channel);
 
+                int test = Configuration.GetSection("Task:TaskStartPrevious").Get<int>();
+
                 DateTime dtcurrent;
                 DateTime dtbegin = (task.RetryTimes > 0 && task.NewBeginTime != DateTime.MinValue)?task.NewBeginTime :
-                    DateTimeFormat.DateTimeFromString(task.TaskContent.Begin).AddSeconds(-1* ApplicationContext.Current.TaskStartPrevious);
+                    DateTimeFormat.DateTimeFromString(task.TaskContent.Begin).AddSeconds(-1* test);
 
                 while(true)
                 {
@@ -283,8 +290,10 @@ namespace IngestTask.Grain
 
         public override async Task<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
+            int test = Configuration.GetSection("Task:TaskStopBehind").Get<int>();
+
             DateTime end = (task.RetryTimes > 0 && task.NewEndTime != DateTime.MinValue) ? task.NewEndTime
-                : DateTimeFormat.DateTimeFromString(task.TaskContent.End).AddSeconds(ApplicationContext.Current.TaskStopBehind);
+                : DateTimeFormat.DateTimeFromString(task.TaskContent.End).AddSeconds(test);
 
             while (true)
             {

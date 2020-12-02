@@ -187,7 +187,7 @@ namespace IngestTask.Tool
 
                SetCode2(hour, min, second, frame);
 
-                return timeCode.GetRealFrames();
+                return GetRealFrames();
             }
 
             return 0;

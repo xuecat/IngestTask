@@ -8,6 +8,7 @@ namespace IngestTask.Grain.Service
     using IngestTask.Dto;
     using IngestTask.Tool;
     using IngestTask.Tools;
+    using Microsoft.Extensions.Configuration;
     using Orleans;
     using Orleans.Concurrency;
     using Orleans.Core;
@@ -27,9 +28,11 @@ namespace IngestTask.Grain.Service
         private IDisposable _dispoScheduleTimer;
         private IMapper _mapper;
         private readonly RestClient _restClient;
+        public IConfiguration Configuration { get; }
+
         public ScheduleTaskService(IGrainIdentity id, Silo silo,
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory,
-            IGrainFactory grainFactory, IMapper mapper, RestClient restClient)
+            IGrainFactory grainFactory, IMapper mapper, RestClient restClient, IConfiguration configuration)
             : base(id, silo, loggerFactory)
         {
             _dispoScheduleTimer = null;
@@ -37,6 +40,7 @@ namespace IngestTask.Grain.Service
             _lstScheduleTask = new List<DispatchTask>();
             _mapper = mapper;
             _restClient = restClient;
+            Configuration = configuration;
         }
        
         public Task<int> AddTaskAsync(DispatchTask task)
@@ -115,6 +119,7 @@ namespace IngestTask.Grain.Service
 
             //任务分发的时候要向请求通道是否存在，不存在提交一个自检请求
 
+            int test = Configuration.GetSection("Task:TaskSchedulePrevious").Get<int>();
             var _lstRemoveTask = new List<DispatchTask>();
             foreach (var task in _lstScheduleTask)
             {
@@ -127,7 +132,7 @@ namespace IngestTask.Grain.Service
                         var nowdate = DateTime.Now;
                         DateTime date = new DateTime(nowdate.Year, nowdate.Month, nowdate.Day, task.Starttime.Hour, task.Starttime.Minute, task.Starttime.Second);
                         if ((task.Starttime - DateTime.Now).TotalSeconds <=
-                            ApplicationContext.Current.TaskSchedulePrevious)
+                            test)
                         {
                             var info = await _restClient.CreatePeriodcTaskAsync(task.Taskid);
 
@@ -141,7 +146,7 @@ namespace IngestTask.Grain.Service
                     else
                     {
                         if ((task.Starttime - DateTime.Now).TotalSeconds <=
-                            ApplicationContext.Current.TaskSchedulePrevious && task.Endtime > DateTime.Now)
+                            test && task.Endtime > DateTime.Now)
                         {
                             if (await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task)))
                             {
@@ -153,7 +158,7 @@ namespace IngestTask.Grain.Service
                 else if (task.SyncState == (int)syncState.ssSync)
                 {
                     var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
-                    if ( spansecond > 0 && spansecond < ApplicationContext.Current.TaskSchedulePrevious)
+                    if ( spansecond > 0 && spansecond < test)
                     {
                         if (await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.StopTaskAsync(_mapper.Map<TaskContent>(task)))
                         {
