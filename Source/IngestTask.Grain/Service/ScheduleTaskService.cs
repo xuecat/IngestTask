@@ -35,6 +35,7 @@ namespace IngestTask.Grain.Service
             IGrainFactory grainFactory, IMapper mapper, RestClient restClient, IConfiguration configuration)
             : base(id, silo, loggerFactory)
         {
+            
             _dispoScheduleTimer = null;
             _grainFactory = grainFactory;
             _lstScheduleTask = new List<DispatchTask>();

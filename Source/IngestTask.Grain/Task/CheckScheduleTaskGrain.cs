@@ -22,12 +22,14 @@ namespace IngestTask.Grain
         private readonly RestClient _restClient;
         readonly IGrainFactory _grainFactory;
         private IMapper _mapper;
+        private int _resetTimes;
 
         public CheckScheduleTaskGrain(RestClient client, IGrainFactory grainFactory ,IMapper mapper)
         {
             _grainFactory = grainFactory;
             _restClient = client;
             _mapper = mapper;
+            _resetTimes = 0;
         }
         public Task<bool> StartCheckSyncAsync()
         {
@@ -44,6 +46,8 @@ namespace IngestTask.Grain
             var lsttask = await _restClient.GetNeedSyncTaskListAsync();
             if (lsttask != null && lsttask.Count > 0)
             {
+                _resetTimes = 0;
+
                 List<TaskContent> needsynctasklst = new List<TaskContent>();
                 lsttask.ForEach(x => {
                     var findstatetask = State.Find(y => y.TaskId == x.TaskId);
@@ -68,6 +72,15 @@ namespace IngestTask.Grain
                         await _grainFactory.GetGrain<ITask>(item.ChannelId).AddTaskAsync(item);
                     }
                 }
+            }
+            else
+            {
+                if (_resetTimes > 10 && State.Count > 0)
+                {
+                    State.Clear();
+                    _resetTimes = 0;
+                }
+                _resetTimes++;
             }
         }
     }
