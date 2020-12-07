@@ -37,19 +37,10 @@ namespace IngestTask.Tool
             _httpClient.DefaultRequestHeaders.Add("sobeyhive-http-system", "INGESTSERVER");
             _httpClient.DefaultRequestHeaders.Add("sobeyhive-http-site", "S1");
             _httpClient.DefaultRequestHeaders.Add("sobeyhive-http-tool", "INGESTSERVER");
-            _ingestDbUrl = CreateConfigURI(dburl);
-            _cmServerUrl = CreateConfigURI(cmurl);
+            _ingestDbUrl = dburl;
+            _cmServerUrl = cmurl;
         }
-        private string CreateConfigURI(string str)
-        {
-            if (str.IndexOf("http:") >= 0 || str.IndexOf("https:") >= 0)
-            {
-                return str;
-            }
-            else
-                return "http://" + str;
-            
-        }
+        
         public Dictionary<string, string> GetTokenHeader(string usertoken)
         {
             return new Dictionary<string, string>() { 

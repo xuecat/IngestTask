@@ -30,7 +30,7 @@ namespace IngestTask.Grain.Service
         private readonly RestClient _restClient;
         public IConfiguration Configuration { get; }
 
-        public ScheduleTaskService(IGrainIdentity id, Silo silo,
+        public ScheduleTaskService(IServiceProvider services, IGrainIdentity id, Silo silo,
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory,
             IGrainFactory grainFactory, IMapper mapper, RestClient restClient, IConfiguration configuration)
             : base(id, silo, loggerFactory)
@@ -98,13 +98,16 @@ namespace IngestTask.Grain.Service
         protected override Task StartInBackground()
         {
             _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-            
+
+            _grainFactory.GetGrain<IDeviceInspections>(0);
+
             return Task.CompletedTask;
         }
 
         public override async Task Start()
         {
             await base.Start();
+
         }
 
         public override Task Stop()

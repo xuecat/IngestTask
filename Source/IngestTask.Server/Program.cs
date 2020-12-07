@@ -18,7 +18,7 @@ namespace IngestTask.Server
     using Orleans.Statistics;
     using IngestTask.Abstraction.Constants;
     using IngestTask.Server.Options;
-
+    
     using Sobey.Core.Log;
     using System.Globalization;
     using IngestTask.Grain;
@@ -29,6 +29,8 @@ namespace IngestTask.Server
     using IngestTask.Abstraction.Service;
     using IngestTask.Server.Dispatcher;
     using IngestTask.Abstraction.Grains;
+    using System.Collections.Generic;
+    using System.Xml.Linq;
 
     public static class Program
     {
@@ -141,13 +143,12 @@ namespace IngestTask.Server
             ISiloBuilder siloBuilder) =>
             siloBuilder
                 .Configure<SerializationProviderOptions>(opt => opt.SerializationProviders.Add(typeof(ProtobufNetSerializer).GetTypeInfo()))
-                .AddGrainService<ScheduleTaskService>()
                 .ConfigureServices(
                     (context, services) =>
                     {
                         services.AddScoped<MsvClientCtrlSDK>();
                         services.AddSingleton<RestClient>(new RestClient(context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value));
-                        services.AddSingleton<IScheduleService, ScheduleTaskService>();
+                        //services.AddSingleton<IScheduleService, ScheduleTaskService>();
                         services.AddSingleton<IScheduleClient, ScheduleTaskClient>();
 
                         services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
@@ -160,7 +161,7 @@ namespace IngestTask.Server
                 .UseAdoNetClustering(
                     options => {
                         options.Invariant = "MySql.Data.MySqlClient";
-                        options.ConnectionString = GetConnectOptions(context.Configuration);
+                        options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                     })
                 
                 .ConfigureEndpoints(
@@ -172,7 +173,7 @@ namespace IngestTask.Server
                     options =>
                     {
                         options.Invariant = "MySql.Data.MySqlClient";
-                        options.ConnectionString = GetConnectOptions(context.Configuration);
+                        options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                         options.ConfigureJsonSerializerSettings = ConfigureJsonSerializerSettings;
                         options.UseJsonFormat = true;
                     }
@@ -181,7 +182,7 @@ namespace IngestTask.Server
                 .UseAdoNetReminderService(
                       options => {
                           options.Invariant = "MySql.Data.MySqlClient";
-                          options.ConnectionString = GetConnectOptions(context.Configuration);
+                          options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                       })
                 
                 .AddSimpleMessageStreamProvider(StreamProviderName.Default)
@@ -191,10 +192,11 @@ namespace IngestTask.Server
                     options =>
                     {
                         options.Invariant = "MySql.Data.MySqlClient";
-                        options.ConnectionString = GetConnectOptions(context.Configuration);
+                        options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                         options.ConfigureJsonSerializerSettings = ConfigureJsonSerializerSettings;
                         options.UseJsonFormat = true;
                     })
+                .AddGrainService<ScheduleTaskService>()
                 .UseIf(
                     RuntimeInformation.IsOSPlatform(OSPlatform.Linux),
                     x => x.UseLinuxEnvironmentStatistics())
@@ -223,8 +225,8 @@ namespace IngestTask.Server
                 .AddJsonFile($"appsettings.{hostEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: false)
                 // Add configuration from files in the specified directory. The name of the file is the key and the
                 // contents the value.
-                .AddXmlFile("publicsetting.xml")
-                
+                //.AddXmlFile("publicsetting.xml",optional: false)
+                .AddInMemoryCollection(GetMemoryOptions())
                 .AddKeyPerFile(Path.Combine(Directory.GetCurrentDirectory(), "configuration"), optional: true)
                 // This reads the configuration keys from the secret store. This allows you to store connection strings
                 // and other sensitive settings, so you don't have to check them into your source control provider.
@@ -281,25 +283,69 @@ namespace IngestTask.Server
             jsonSerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             jsonSerializerSettings.DateParseHandling = DateParseHandling.DateTimeOffset;
         }
-
-        private static string GetConnectOptions(IConfiguration configuration)
+        private static string CreateConfigURI(string str)
         {
-            var dbinfo = configuration.GetSection("PublicSetting:DBConfig");
-
-            if (dbinfo.GetChildren() != null)
+            if (str.IndexOf("http:") >= 0 || str.IndexOf("https:") >= 0)
             {
-                foreach (var item in dbinfo.GetChildren())
-                {
-                    if (item.GetSection("Instance").Value == "ingestdb")
-                    {
-                        var connectinfo = string.Format($"Server={configuration.GetSection("PublicSetting:System:Sys_VIP")};" +
-                            $"Port={item.GetSection("Port").Value};Database={item.GetSection("Instance").Value};" +
-                            $"Uid={item.GetSection("Username").Value};Pwd={Base64SQL.Base64_Decode(item.GetSection("Password").Value)};" +
-                            $"Pooling=true;minpoolsize=0;maxpoolsize=40;SslMode=none;" +
-                            $"ConnectionReset=True;ConnectionLifeTime=120");
+                return str;
+            }
+            else
+                return "http://" + str;
+        }
 
-                        return connectinfo;
-                    }
+        private static Dictionary<string, string> GetMemoryOptions()
+        {
+            var dic = new Dictionary<string, string>();
+            string fileName = "publicsetting.xml";
+            string path = string.Empty;
+            if ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX))
+            {
+                //str = string.Format(@"{0}/{1}", System.AppDomain.CurrentDomain.SetupInformation.ApplicationBase, fileName);
+                path = '/' + fileName;
+            }
+            else
+            {
+                path = AppDomain.CurrentDomain.BaseDirectory.Replace("\\", "/") + "/" + fileName;
+            }
+
+            if (File.Exists(path))
+            {
+                try
+                {
+                    XDocument xd = new XDocument();
+                    xd = XDocument.Load(path);
+                    XElement ps = xd.Element("PublicSetting");
+                    XElement sys = ps.Element("System");
+
+                    string vip = sys.Element("Sys_VIP").Value;
+                    dic.Add("VIP", vip);
+                    dic.Add("IngestDBSvr", CreateConfigURI(sys.Element("IngestDBSvr").Value));
+                    dic.Add("IngestDEVCTL", CreateConfigURI(sys.Element("IngestDEVCTL").Value));
+                    dic.Add("CMWindows", CreateConfigURI(sys.Element("CMserver_windows").Value));
+                    dic.Add("CMServer", CreateConfigURI(sys.Element("CMServer").Value));
+                    dic.Add("ConnectDB", GetConnectOptions(ps, vip));
+                    return dic;
+                }
+                catch (Exception)
+                {
+                }
+
+            }
+            return null;
+        }
+        private static string GetConnectOptions(XElement config, string vip)
+        {
+            var dblist = config.Element("DBConfig");
+            foreach (var item in dblist.Elements())
+            {
+                if (item.Attribute("module").Value.CompareTo("INGESTDB") == 0)
+                {
+                    return string.Format(
+                "Server={0};Port={4};Database={1};Uid={2};Pwd={3};Pooling=true;minpoolsize=0;maxpoolsize=40;SslMode=none;ConnectionReset=True;ConnectionLifeTime=120",
+                vip, item.Element("Instance").Value,
+                item.Element("Username").Value,
+                Base64SQL.Base64_Decode(item.Element("Password").Value),
+                item.Element("Port").Value);
                 }
             }
             return string.Empty;

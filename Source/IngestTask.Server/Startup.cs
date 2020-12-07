@@ -5,7 +5,8 @@ namespace IngestTask.Server
     using Microsoft.Extensions.DependencyInjection;
     using IngestTask.Server.HealthChecks;
     using Microsoft.Extensions.Logging;
-
+    using AutoMapper;
+    using System.Reflection;
 #pragma warning disable CA1724 // The type name conflicts with the namespace name 'Orleans.Runtime.Startup'
     public class Startup
 #pragma warning restore CA1724 // The type name conflicts with the namespace name 'Orleans.Runtime.Startup'
@@ -22,6 +23,7 @@ namespace IngestTask.Server
         public virtual void Configure(IApplicationBuilder application,
                       ILoggerFactory loggerFactory)
         {
+            
             if (loggerFactory != null)
             {
                 application.UseCustomSerilogRequestLogging(loggerFactory);

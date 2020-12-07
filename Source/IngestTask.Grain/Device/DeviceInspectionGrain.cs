@@ -49,14 +49,17 @@ namespace IngestTask.Grain
             _onlineMembers = new List<int>();
         }
 
-        public override Task OnActivateAsync()
+        public override async Task OnActivateAsync()
         {
             RegisterTimer(this.OnCheckAllChannelsAsync, State.ActionType, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
             Logger.Info(" DeviceInspectionGrain active");
 
             var streamProvider = GetStreamProvider(Abstraction.Constants.StreamProviderName.Default);
             _stream = streamProvider.GetStream<ChannelInfo>(Guid.NewGuid(), Abstraction.Constants.StreamName.DeviceReminder);
-            return base.OnActivateAsync();
+
+            await InitLoadAsync();
+
+            await base.OnActivateAsync();
         }
         public override Task OnDeactivateAsync()
         {
