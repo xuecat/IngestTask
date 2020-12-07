@@ -6,13 +6,13 @@ namespace IngestTask.Server
     using IngestTask.Server.HealthChecks;
     using Microsoft.Extensions.Logging;
     using AutoMapper;
-    using System.Reflection;
 #pragma warning disable CA1724 // The type name conflicts with the namespace name 'Orleans.Runtime.Startup'
     public class Startup
 #pragma warning restore CA1724 // The type name conflicts with the namespace name 'Orleans.Runtime.Startup'
     {
         public virtual void ConfigureServices(IServiceCollection services) =>
             services
+                .AddAutoMapper(typeof(Startup))
                 .AddRouting()
                 .AddHealthChecks()
                 .AddCheck<ClusterHealthCheck>(nameof(ClusterHealthCheck))
