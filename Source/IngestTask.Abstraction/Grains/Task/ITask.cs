@@ -18,7 +18,7 @@ namespace IngestTask.Abstraction.Grains
         Task ModifyTaskAsync(TaskContent task);
         Task DeleteTaskAsync(TaskContent task);
 
-        bool JudgeTaskPriority(TaskContent taskcurrent, TaskContent taskcompare);
+        Task<bool> JudgeTaskPriorityAsync(TaskContent taskcurrent, TaskContent taskcompare);
     }
 
     public interface ICheckSchedule : IGrainWithIntegerKey

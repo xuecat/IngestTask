@@ -277,7 +277,7 @@ namespace IngestTask.Grain
             return Task.FromResult(false);
         }
 
-        public bool JudgeTaskPriority(TaskContent taskcurrent, TaskContent taskcompare)
+        public Task<bool> JudgeTaskPriorityAsync(TaskContent taskcurrent, TaskContent taskcompare)
         {
             throw new NotImplementedException();
         }

@@ -18,6 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.CodeGenerator.MSBuild" Version="3.2.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Orleans.EventSourcing" Version="3.2.0" />
     <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="3.2.0" />
     <PackageReference Include="Microsoft.Orleans.ProtobufNet" Version="3.2.0" />

@@ -99,7 +99,7 @@ namespace IngestTask.Grain.Service
         {
             _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
 
-            _grainFactory.GetGrain<IDeviceInspections>(0);
+            var device = _grainFactory.GetGrain<IDeviceInspections>(0);
 
             return Task.CompletedTask;
         }
