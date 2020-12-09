@@ -161,7 +161,7 @@ namespace IngestTask.Grain
 
             var backinfo = await AutoRetry.RunSyncAsync(async () =>
             {
-               return await MsvSdk.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
+               return await _msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
             },
             (e) => {
                 if (e != null)
@@ -244,10 +244,10 @@ namespace IngestTask.Grain
                     dtcurrent = DateTime.Now;
                     if (dtcurrent >= dtbegin)
                     {
-                        MsvSdk.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", task.CaptureMeta, Logger);
+                        _msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", task.CaptureMeta, Logger);
 
                         bool backrecord = await AutoRetry.BoolRunAsync( async () => {
-                            if (await MsvSdk.RecordAsync(channel.ChannelIndex, channel.Ip, Logger))
+                            if (await _msvClient.RecordAsync(channel.ChannelIndex, channel.Ip, Logger))
                             {
                                 return true;
                             }
@@ -258,7 +258,7 @@ namespace IngestTask.Grain
                         if (backrecord)
                         {
                             backrecord = await AutoRetry.BoolRunAsync(async () => {
-                                if ( await MsvSdk.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger) 
+                                if ( await _msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger) 
                                             == Device_State.WORKING)
                                 {
                                     return true;
@@ -301,7 +301,7 @@ namespace IngestTask.Grain
                 {
                     var msvtaskinfo = await AutoRetry.RunSyncAsync(async () =>
                     {
-                        return await MsvSdk.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
+                        return await _msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
                     },
                     (e) =>
                     {
@@ -319,7 +319,7 @@ namespace IngestTask.Grain
                         {
                             var stopback = await AutoRetry.BoolRunAsync(async () =>
                             {
-                                var backlong = await MsvSdk.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
+                                var backlong = await _msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
                                 if (backlong > 0)
                                 {
                                     return true;

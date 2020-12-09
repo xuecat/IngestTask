@@ -16,6 +16,7 @@ namespace IngestTask.Grain
     using AutoMapper;
     using ProtoBuf;
     using Orleans.Streams;
+    using IngestTask.Tools;
 
     //[ProtoContract]
     [Serializable]
@@ -40,9 +41,11 @@ namespace IngestTask.Grain
         private IAsyncStream<ChannelInfo> _stream;
 
         private readonly List<int> _onlineMembers;
+        private IDisposable _timer;
 
         DeviceInspectionGrain(MsvClientCtrlSDK msv, RestClient client, IMapper mapper)
         {
+            _timer = null;
             Mapper = mapper;
             _restClient = client;
             _msvClient = msv;
@@ -51,7 +54,7 @@ namespace IngestTask.Grain
 
         public override async Task OnActivateAsync()
         {
-            RegisterTimer(this.OnCheckAllChannelsAsync, State.ActionType, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            _timer = RegisterTimer(this.OnCheckAllChannelsAsync, State.ActionType, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
             Logger.Info(" DeviceInspectionGrain active");
 
             var streamProvider = GetStreamProvider(Abstraction.Constants.StreamProviderName.Default);
@@ -63,6 +66,12 @@ namespace IngestTask.Grain
         }
         public override Task OnDeactivateAsync()
         {
+            if (_timer != null)
+            {
+                _timer.Dispose();
+                _timer = null;
+            }
+            
             return base.OnDeactivateAsync();
         }
 
@@ -218,8 +227,35 @@ namespace IngestTask.Grain
             }
             return null;
         }
+        public async Task<int> QueryRunningTaskInChannelAsync(string ip, int index)
+        {
+            //通道状态校验，
+            var backinfo = await AutoRetry.RunSyncAsync(async () =>
+            {
+                return await _msvClient.QueryTaskInfoAsync(index, ip, Logger);
+            },
+               (e) =>
+               {
+                   if (e != null)
+                   {
+                       return true;
+                   }
+                   else
+                   {
+                       Logger.Error("QueryTaskInfoAsync no task running");
+                   }
+                   return false;
+               },
+               5, 500);
+            if (backinfo != null)
+            {
+                return (int)backinfo.ulID;
+            }
 
-        public Task<int> CheckChannelSatetAsync() 
+            return 0;
+        }
+
+        public Task<int> CheckChannelSatetAsync()
         {
             throw new NotImplementedException();
         }

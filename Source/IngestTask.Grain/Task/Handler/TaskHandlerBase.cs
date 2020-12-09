@@ -21,12 +21,12 @@ namespace IngestTask.Grain
         protected ILogger Logger { get; set; }
         protected RestClient RestClientApi { get; set; }
 
-        protected MsvClientCtrlSDK MsvSdk { get; set; }
+        protected MsvClientCtrlSDK _msvClient { get; set; }
         public TaskHandlerBase(RestClient rest, MsvClientCtrlSDK msv)
         {
             Logger = LoggerManager.GetLogger("TaskHandlerBase");
             RestClientApi = rest;
-            MsvSdk = msv;
+            _msvClient = msv;
         }
 
         /*
@@ -134,7 +134,7 @@ namespace IngestTask.Grain
             string captureparam = taskinfo.CaptureMeta;
             var typeinfo = await AutoRetry.RunSyncAsync(async () =>
             {
-                return await MsvSdk.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
+                return await _msvClient.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
             },
                 (e) =>
                 {
@@ -148,9 +148,13 @@ namespace IngestTask.Grain
 
             if (typeinfo != null && typeinfo.SignalType < 254)
             {
-                captureparam = captureparam.Replace("&amp;", "&");
-                captureparam = captureparam.Replace("&lt;", "<");
-                captureparam = captureparam.Replace("&gt;", ">");
+                /*oss路径过滤*/
+                if (captureparam.IndexOf("&amp;") > 0 && captureparam.IndexOf("&lt;") > 0)
+                {
+                    captureparam = captureparam.Replace("&amp;", "&");
+                    captureparam = captureparam.Replace("&lt;", "<");
+                    captureparam = captureparam.Replace("&gt;", ">");
+                }
 
                 XElement capturenode = null;
                 var root = XDocument.Parse(captureparam);

@@ -118,13 +118,14 @@ namespace IngestTask.Grain
         private readonly ITaskHandlerFactory _handlerFactory;
 
         private StreamSubscriptionHandle<ChannelInfo> _streamHandle;
-
+        private IDisposable _timer;
         readonly IGrainFactory _grainFactory;
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
            IGrainFactory grainFactory,
             RestClient rest,
             ITaskHandlerFactory handlerfac)
         {
+            _timer = null;
             _grainFactory = grainFactory;
             _restClient = rest;
             _handlerFactory = handlerfac;
@@ -150,6 +151,12 @@ namespace IngestTask.Grain
                 await _streamHandle.UnsubscribeAsync();
             }
 
+            if (_timer != null)
+            {
+                _timer.Dispose();
+                _timer = null;
+
+            }
             await base.OnDeactivateAsync();
         }
 
@@ -163,10 +170,7 @@ namespace IngestTask.Grain
             Logger.Error($"OnConnectionIssueResolved {issue.ToString()}");
         }
 
-        public bool OnNextStream(ChannelInfo info)
-        {
-            return true;
-        }
+        
 
         public Task<TaskContent> GetCurrentTaskAsync()
         {
@@ -224,6 +228,18 @@ namespace IngestTask.Grain
                         if (taskid > 0)
                         {
                             RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
+                            if (task.StartOrStop)
+                            {
+                                _timer = RegisterTimer(this.OnRunningTaskMonitorAsync, new Tuple<int, int, string, int, int, string>(taskid, (int)task.TaskContent.TaskType, task.TaskContent.Begin, chinfo.ChannelId, chinfo.ChannelIndex, chinfo.Ip), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
+                            }
+                            else
+                            {
+                                if (_timer != null)
+                                {
+                                    _timer.Dispose();
+                                    _timer = null;
+                                }
+                            }
                         }
                         else
                         {
@@ -282,10 +298,73 @@ namespace IngestTask.Grain
             throw new NotImplementedException();
         }
 
-        public Task ModifyTaskAsync(TaskContent task)
+        public bool OnNextStream(ChannelInfo info)
         {
-            throw new NotImplementedException();
+            //start成功，stop失败，去timer
+            return true;
         }
+
+        /*
+         * 开始成功就应该监听
+         */
+        private async Task OnRunningTaskMonitorAsync(object type)
+        {
+            Tuple<int, int, string, int, int, string> param = (Tuple<int, int, string, int, int, string>)type;
+
+            var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync(param.Item4);
+
+            if (taskinfolst != null)
+            {
+                var devicegrain = _grainFactory.GetGrain<IDeviceInspections>(0);
+                if (devicegrain != null)
+                {
+                    int msvtaskid = await devicegrain.QueryRunningTaskInChannelAsync(param.Item6, param.Item5);
+                    if (msvtaskid != param.Item1)
+                    {
+                        Logger.Info("OnRunningTaskMonitorAsync task need to check");
+
+                        if (param.Item2 == (int)TaskType.TT_VTRUPLOAD)
+                        {
+
+                        }
+                        else
+                        {
+                            bool needCreateNewTask = false;
+                            if (param.Item2 == (int)TaskType.TT_MANUTASK || param.Item2 == (int)TaskType.TT_OPENEND ||
+                                param.Item2 == (int)TaskType.TT_OPENENDEX)
+                            {
+                                needCreateNewTask = true;
+                            }
+                            else
+                            {
+                                // 其它类型的任务，需要检查任务结束时间
+                                // 时间都过去了的任务，就不用再创建了
+                                if (DateTimeFormat.DateTimeFromString(param.Item3) < DateTime.Now.AddSeconds(5))
+                                {
+                                    needCreateNewTask = true;
+                                }
+                                else
+                                {
+                                    // 其它类型的任务，需要检查是否过时，如果已经过时，则需处理该任务
+                                    // 已经过时，则需将任务置为无效状态
+                                    await _restClient.SetTaskStateAsync(param.Item1, taskState.tsInvaild);
+                                }
+                            }
+
+                            if (needCreateNewTask)
+                            {
+                                await _restClient.SetTaskStateAsync(param.Item1, taskState.tsInvaild);
+                                await _restClient.AddReScheduleTaskAsync(param.Item1);
+                            }
+                        }
+                    }
+                }
+                else
+                    Logger.Error("OnRunningTaskMonitorAsync devicegrain null");
+            }
+           
+        }
+
 
         public Task DeleteTaskAsync(TaskContent task)
         {

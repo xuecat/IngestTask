@@ -15,7 +15,6 @@ namespace IngestTask.Abstraction.Grains
         
         Task<bool> AddTaskAsync(TaskContent task);
         Task<bool> StopTaskAsync(TaskContent task);
-        Task ModifyTaskAsync(TaskContent task);
         Task DeleteTaskAsync(TaskContent task);
 
         Task<bool> JudgeTaskPriorityAsync(TaskContent taskcurrent, TaskContent taskcompare);

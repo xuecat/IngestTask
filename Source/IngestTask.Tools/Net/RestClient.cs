@@ -668,6 +668,23 @@ namespace IngestTask.Tool
             }
             return null;
         }
+
+        public async Task<int> AddReScheduleTaskAsync(int oldtaskid)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() =>
+            {
+
+                return PostAsync<ResponseMessage<TaskContent>>(
+                    $"{_ingestDbUrl}/{TASKAPI20}/periodic/createtask/{taskid}", null,
+                    GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null && back.IsSuccess())
+            {
+                return back.Ext;
+            }
+            return 0;
+        }
         #endregion
 
         #region Matrix

@@ -13,7 +13,7 @@ namespace IngestTask.Abstraction.Grains
         Task<int> CheckChannelSatetAsync();
         Task<bool> IsChannelInvalidAsync(int channelid);
         Task<ChannelInfo> GetChannelInfoAsync(int channelid);
-
+        Task<int> QueryRunningTaskInChannelAsync(string ip, int index);
         Task<Guid> JoinAsync(int nickname);
         Task<Guid> LeaveAsync(int nickname);
     }
