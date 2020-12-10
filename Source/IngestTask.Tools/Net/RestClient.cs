@@ -675,13 +675,13 @@ namespace IngestTask.Tool
             {
 
                 return PostAsync<ResponseMessage<TaskContent>>(
-                    $"{_ingestDbUrl}/{TASKAPI20}/periodic/createtask/{taskid}", null,
+                    $"{_ingestDbUrl}/{TASKAPI21}/schedule/{oldtaskid}", null,
                     GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null && back.IsSuccess())
             {
-                return back.Ext;
+                return back.Ext.TaskId;
             }
             return 0;
         }
@@ -857,7 +857,7 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<DeviceInfo>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<DeviceInfo>>>(
-                    $"{_ingestDbUrl}/{DEVICEAPI21}/device/all", null, GetIngestHeader());
+                    $"{_ingestDbUrl}/{DEVICEAPI21}/allocdevice", null, GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null)
