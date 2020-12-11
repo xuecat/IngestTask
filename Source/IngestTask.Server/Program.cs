@@ -27,7 +27,6 @@ namespace IngestTask.Server
     using Orleans.Serialization.ProtobufNet;
     using IngestTask.Grain.Service;
     using IngestTask.Abstraction.Service;
-    using IngestTask.Server.Dispatcher;
     using IngestTask.Abstraction.Grains;
     using System.Collections.Generic;
     using System.Xml.Linq;
@@ -147,7 +146,8 @@ namespace IngestTask.Server
                     (context, services) =>
                     {
                         services.AddScoped<MsvClientCtrlSDK>();
-                        services.AddSingleton<RestClient>(new RestClient(context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value));
+                        var client = new RestClient(context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
+                        services.AddSingleton<RestClient>(client);
                         //services.AddSingleton<IScheduleService, ScheduleTaskService>();
                         services.AddSingleton<IScheduleClient, ScheduleTaskClient>();
 
@@ -342,7 +342,7 @@ namespace IngestTask.Server
                 if (item.Attribute("module").Value.CompareTo("INGESTDB") == 0)
                 {
                     return string.Format(
-                "Server={0};Port={4};Database={1};Uid={2};Pwd={3};Pooling=true;minpoolsize=0;maxpoolsize=40;SslMode=none;ConnectionReset=True;ConnectionLifeTime=120",
+                "Server={0};Port={4};Database={1};Uid={2};Pwd={3};Pooling=true;minpoolsize=0;maxpoolsize=40;SslMode=none;",
                 vip, item.Element("Instance").Value,
                 item.Element("Username").Value,
                 Base64SQL.Base64_Decode(item.Element("Password").Value),

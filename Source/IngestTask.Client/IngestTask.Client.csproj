@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>..\..\Bin\Client\</OutputPath>
+    <OutputPath>..\..\Bin\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>

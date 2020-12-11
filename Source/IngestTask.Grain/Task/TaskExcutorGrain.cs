@@ -275,6 +275,11 @@ namespace IngestTask.Grain
             {
                 //归档
                 RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskContentInfo = task });
+                if (_timer != null)
+                {
+                    _timer.Dispose();
+                    _timer = null;
+                }
                 
                 return Task.FromResult(true);
             }

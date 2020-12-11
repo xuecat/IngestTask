@@ -15,11 +15,15 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>..\..\Bin\Test</OutputPath>
+    <OutputPath>..\..\Bin</OutputPath>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Source\IngestTask.Abstraction\IngestTask.Abstraction.csproj" />
+    <ProjectReference Include="..\..\Source\IngestTask.Dto\IngestTask.Dto.csproj" />
+    <ProjectReference Include="..\..\Source\IngestTask.Grain\IngestTask.Grain.csproj" />
+    <ProjectReference Include="..\..\Source\IngestTask.Tools\IngestTask.Tools.csproj" />
   </ItemGroup>
 
 </Project>

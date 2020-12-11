@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace IngestTask.Server.Dispatcher
+namespace IngestTask.Grain
 {
     public class TaskHandlerFactory : ITaskHandlerFactory
     {
