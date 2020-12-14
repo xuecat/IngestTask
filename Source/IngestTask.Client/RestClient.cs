@@ -1,6 +1,4 @@
-﻿using IngestTask.Tools;
-using IngestTask.Dto;
-using Sobey.Core.Log;
+﻿using IngestTask.Dto;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -11,19 +9,18 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IngestTask.Tool
+namespace IngestTask.Client
 {
     public class RestClient : IDisposable
     {
-        private readonly ILogger Logger = LoggerManager.GetLogger("ApiClient");
-
+        
         private HttpClient _httpClient = null;
         const string TASKAPI20 = "api/v2/task";
         const string TASKAPI21 = "api/v2.1/task";
-        const string MATRIXAPI20 = "api/v2/matrix";
-        const string USERAPI20 = "api/v2/user";
-        const string DEVICEAPI21 = "api/v2.1/device";
-        const string DEVICEAPI20 = "api/v2/device";
+        //const string MATRIXAPI20 = "api/v2/matrix";
+        //const string USERAPI20 = "api/v2/user";
+        //const string DEVICEAPI21 = "api/v2.1/device";
+        //const string DEVICEAPI20 = "api/v2/device";
 
         private string _ingestDbUrl;
         private string _cmServerUrl;
@@ -69,28 +66,22 @@ namespace IngestTask.Tool
             _disposed = true;
         }
 
-        public Dictionary<string, string> GetTokenHeader(string usertoken)
+        public static Dictionary<string, string> GetTokenHeader(string usertoken)
         {
             return new Dictionary<string, string>() { 
                 {"sobeyhive-http-token", usertoken }
             };
         }
 
-        public Dictionary<string, string> GetCodeHeader(string usertoken)
-        {
-            return new Dictionary<string, string>() {
-                {"sobeyhive-http-secret", RSAHelper.RSAstr()},
-                {"current-user-code", usertoken }
-            };
-        }
-        public Dictionary<string, string> GetIngestHeader()
+        
+        public static Dictionary<string, string> GetIngestHeader()
         {
             return new Dictionary<string, string>() {
                 {"sobeyhive-ingest-signature", Base64SQL.ToBase64String($"ingest_server;{DateTime.Now}")},
             };
         }
 
-        public async Task<TResponse> PostAsync<TResponse>(string url, object body, string method = "POST", NameValueCollection queryString = null, int timeout = 60)
+        public async Task<TResponse> PostAsync<TResponse>(string url, object body, string method = "POST", NameValueCollection queryString = null)
             where TResponse : class, new()
         {
             TResponse response = null;
@@ -126,21 +117,19 @@ namespace IngestTask.Tool
                     var res = await client.PostAsync(url, sc).ConfigureAwait(true);
                     byte[] rData = await res.Content.ReadAsByteArrayAsync().ConfigureAwait(true);
                     string rJson = Encoding.UTF8.GetString(rData);
-                    Logger.Info("url body response：\r\n{0} {1} {2}", url, json, rJson);
                     response = JsonHelper.ToObject<TResponse>(rJson);
                     return response;
                 }
                    
             }
-            catch (System.Exception e)
+            catch (System.Exception )
             {
                 TResponse r = new TResponse();
-                Logger.Error("请求异常：\r\n{0} {1}", e.ToString(), url);
                 throw;
             }
         }
 
-        public async Task<string> PostAsync(string url, string body, string method = "POST", NameValueCollection queryString = null, int timeout = 60)
+        public async Task<string> PostAsync(string url, string body, string method = "POST", NameValueCollection queryString = null)
         {
             string response = null;
             try
@@ -177,10 +166,9 @@ namespace IngestTask.Tool
                 }
                     
             }
-            catch (System.Exception e)
+            catch (System.Exception )
             {
                 response = "ERROR";
-                Logger.Error("请求异常：\r\n{0} {1}", e.ToString(), url);
             }
             return response;
         }
@@ -221,9 +209,8 @@ namespace IngestTask.Tool
                 }
 
             }
-            catch (System.Exception e)
+            catch (System.Exception )
             {
-                Logger.Error("请求异常：\r\n{0} {1}", e.ToString(), url);
                 throw;
             }
         }
@@ -254,15 +241,13 @@ namespace IngestTask.Tool
                     }
                     var backinfo = await client.SendAsync(requestMessage).ConfigureAwait(true);
                     var rJson = await backinfo.Content.ReadAsStringAsync().ConfigureAwait(true);
-                    Logger.Info("url response：\r\n{0} {1}", url, rJson);
                     response = JsonHelper.ToObject<TResponse>(rJson);
                 }
 
             }
-            catch (System.Exception e)
+            catch (System.Exception )
             {
                 TResponse r = new TResponse();
-                Logger.Error("请求异常：\r\n{0}", e.ToString(), url);
                 return r;
             }
             return response;
@@ -292,15 +277,13 @@ namespace IngestTask.Tool
                     }
                     var backinfo = await client.SendAsync(requestMessage).ConfigureAwait(true);
                     var rJson = await backinfo.Content.ReadAsStringAsync().ConfigureAwait(true);
-                    Logger.Info("url response：\r\n{0} {1}", url, rJson);
                     response = JsonHelper.ToObject<TResponse>(rJson);
                 }
                 
             }
-            catch (System.Exception e)
+            catch (System.Exception )
             {
                 TResponse r = new TResponse();
-                Logger.Error("请求异常：\r\n{0} {1}", e.ToString(), url);
                 return r;
             }
             return response;
@@ -535,32 +518,42 @@ namespace IngestTask.Tool
         }
 
         #region Global
-        public async Task<List<UserLoginInfo>> GetAllUserLoginInfosAsync()
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<List<UserLoginInfo>>>(() =>
-            {
-                return GetAsync<ResponseMessage<List<UserLoginInfo>>>(
-                    $"{_ingestDbUrl}/{USERAPI20}/userlogininfo/all", null, GetIngestHeader()
-                    );
-            }).ConfigureAwait(true);
+        //public async Task<List<UserLoginInfo>> GetAllUserLoginInfosAsync()
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<List<UserLoginInfo>>>(() =>
+        //    {
+        //        return GetAsync<ResponseMessage<List<UserLoginInfo>>>(
+        //            $"{_ingestDbUrl}/{USERAPI20}/userlogininfo/all", null, GetIngestHeader()
+        //            );
+        //    }).ConfigureAwait(true);
 
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return null;
-        }
+        //    if (back != null)
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return null;
+        //}
         #endregion
 
         #region Task
 
         public async Task<List<TaskContent>> GetNeedSyncTaskListAsync()
         {
-            var back = await AutoRetry.RunAsync<ResponseMessage<List<TaskContent>>>(() => {
-                return GetAsync<ResponseMessage<List<TaskContent>>>(
+            var back = await GetAsync<ResponseMessage<List<TaskContent>>>(
                     $"{_ingestDbUrl}/{TASKAPI20}/needsync", null, GetIngestHeader()
-                    );
-            }).ConfigureAwait(true);
+                    ).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
+        public async Task<DispatchTask> GetTaskDBAsync(int taskid)
+        {
+            var back = await GetAsync<ResponseMessage<DispatchTask>>(
+                    $"{_ingestDbUrl}/{TASKAPI21}/db/{taskid}", null, GetIngestHeader()
+                    ).ConfigureAwait(true);
 
             if (back != null)
             {
@@ -569,425 +562,334 @@ namespace IngestTask.Tool
             return null;
         }
 
-        public async Task<TaskContent> GetChannelCapturingTaskInfoAsync(int channelid)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() => {
-                NameValueCollection v = new NameValueCollection();
-                v.Add("newest", "1");
+        //public async Task<TaskContent> GetChannelCapturingTaskInfoAsync(int channelid)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() => {
+        //        NameValueCollection v = new NameValueCollection();
+        //        v.Add("newest", "1");
 
-                return GetAsync<ResponseMessage<TaskContent>>(
-                    $"{_ingestDbUrl}/{TASKAPI20}/capturing/{channelid}", v, GetIngestHeader()
-                    );
-            }).ConfigureAwait(true);
+        //        return GetAsync<ResponseMessage<TaskContent>>(
+        //            $"{_ingestDbUrl}/{TASKAPI20}/capturing/{channelid}", v, GetIngestHeader()
+        //            );
+        //    }).ConfigureAwait(true);
 
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return null;
-        }
+        //    if (back != null)
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return null;
+        //}
 
-        public async Task<TaskSource> GetTaskSourceByTaskIdAsync(int taskid)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<TaskSource>>(() =>
-            {
-                return GetAsync<ResponseMessage<TaskSource>>(
-                    $"{_ingestDbUrl}/{TASKAPI20}/tasksource/{taskid}",
-                    null, GetIngestHeader());
-            }).ConfigureAwait(true);
+        //public async Task<TaskSource> GetTaskSourceByTaskIdAsync(int taskid)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<TaskSource>>(() =>
+        //    {
+        //        return GetAsync<ResponseMessage<TaskSource>>(
+        //            $"{_ingestDbUrl}/{TASKAPI20}/tasksource/{taskid}",
+        //            null, GetIngestHeader());
+        //    }).ConfigureAwait(true);
 
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return TaskSource.emUnknowTask;
-        }
+        //    if (back != null)
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return TaskSource.emUnknowTask;
+        //}
 
-        public async Task<TaskFullInfo> GetTaskFullInfoAsync(int taskid)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<TaskFullInfo>>(() =>
-            {
-                return GetAsync<ResponseMessage<TaskFullInfo>>(
-                    $"{_ingestDbUrl}/{TASKAPI21}/taskinfo/{taskid}/full",
-                    null, GetIngestHeader());
-            }).ConfigureAwait(true);
+        //public async Task<TaskFullInfo> GetTaskFullInfoAsync(int taskid)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<TaskFullInfo>>(() =>
+        //    {
+        //        return GetAsync<ResponseMessage<TaskFullInfo>>(
+        //            $"{_ingestDbUrl}/{TASKAPI21}/taskinfo/{taskid}/full",
+        //            null, GetIngestHeader());
+        //    }).ConfigureAwait(true);
 
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return null;
-        }
+        //    if (back != null)
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return null;
+        //}
 
-        public async Task<bool> CompleteSynTasksAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage>(() =>
-            {
-                CompleteSyncTask task = new CompleteSyncTask()
-                {
-                    DispatchState = (int)dpstate,
-                    IsFinish = false,
-                    Perodic2Next = false,
-                    SynState = (int)systate,
-                    TaskID = taskid,
-                    TaskState = (int)tkstate
-                };
+        //public async Task<bool> CompleteSynTasksAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage>(() =>
+        //    {
+        //        CompleteSyncTask task = new CompleteSyncTask()
+        //        {
+        //            DispatchState = (int)dpstate,
+        //            IsFinish = false,
+        //            Perodic2Next = false,
+        //            SynState = (int)systate,
+        //            TaskID = taskid,
+        //            TaskState = (int)tkstate
+        //        };
 
-                return PutAsync<ResponseMessage>(
-                    $"{_ingestDbUrl}/{TASKAPI20}/completesync",
-                    task, GetIngestHeader());
-            }).ConfigureAwait(true);
+        //        return PutAsync<ResponseMessage>(
+        //            $"{_ingestDbUrl}/{TASKAPI20}/completesync",
+        //            task, GetIngestHeader());
+        //    }).ConfigureAwait(true);
 
-            if (back != null && back.IsSuccess())
-            {
-                return true;
-            }
-            return false;
-        }
+        //    if (back != null && back.IsSuccess())
+        //    {
+        //        return true;
+        //    }
+        //    return false;
+        //}
 
-        public async Task<int> DeleteTaskAsync(int taskid)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage>(() =>
-            {
-                return DeleteAsync<ResponseMessage>(
-                    $"{_ingestDbUrl}/{TASKAPI20}/delete/{taskid}",
-                    GetIngestHeader());
-            }).ConfigureAwait(true);
+        //public async Task<int> DeleteTaskAsync(int taskid)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage>(() =>
+        //    {
+        //        return DeleteAsync<ResponseMessage>(
+        //            $"{_ingestDbUrl}/{TASKAPI20}/delete/{taskid}",
+        //            GetIngestHeader());
+        //    }).ConfigureAwait(true);
 
-            if (back != null && back.IsSuccess())
-            {
-                return taskid;
-            }
-            return 0;
-        }
+        //    if (back != null && back.IsSuccess())
+        //    {
+        //        return taskid;
+        //    }
+        //    return 0;
+        //}
 
-        public async Task<int> SetTaskStateAsync(int taskid, taskState tkstate)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<int>>(() =>
-            {
-                NameValueCollection v = new NameValueCollection();
-                v.Add("state", ((int)tkstate).ToString());
+        //public async Task<int> SetTaskStateAsync(int taskid, taskState tkstate)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<int>>(() =>
+        //    {
+        //        NameValueCollection v = new NameValueCollection();
+        //        v.Add("state", ((int)tkstate).ToString());
 
-                return PutAsync<ResponseMessage<int>>(
-                    $"{_ingestDbUrl}/{TASKAPI20}/state/{taskid}",null,
-                    GetIngestHeader(), v);
-            }).ConfigureAwait(true);
+        //        return PutAsync<ResponseMessage<int>>(
+        //            $"{_ingestDbUrl}/{TASKAPI20}/state/{taskid}",null,
+        //            GetIngestHeader(), v);
+        //    }).ConfigureAwait(true);
 
-            if (back != null && back.IsSuccess())
-            {
-                return taskid;
-            }
-            return 0;
-        }
+        //    if (back != null && back.IsSuccess())
+        //    {
+        //        return taskid;
+        //    }
+        //    return 0;
+        //}
 
-        public async Task<TaskContent> CreatePeriodcTaskAsync(int taskid)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() =>
-            {
-               
-                return PostAsync<ResponseMessage<TaskContent>>(
-                    $"{_ingestDbUrl}/{TASKAPI20}/periodic/createtask/{taskid}", null,
-                    GetIngestHeader());
-            }).ConfigureAwait(true);
+        //public async Task<TaskContent> CreatePeriodcTaskAsync(int taskid)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() =>
+        //    {
 
-            if (back != null && back.IsSuccess())
-            {
-                return back.Ext;
-            }
-            return null;
-        }
+        //        return PostAsync<ResponseMessage<TaskContent>>(
+        //            $"{_ingestDbUrl}/{TASKAPI20}/periodic/createtask/{taskid}", null,
+        //            GetIngestHeader());
+        //    }).ConfigureAwait(true);
 
-        public async Task<int> AddReScheduleTaskAsync(int oldtaskid)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() =>
-            {
+        //    if (back != null && back.IsSuccess())
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return null;
+        //}
 
-                return PostAsync<ResponseMessage<TaskContent>>(
-                    $"{_ingestDbUrl}/{TASKAPI21}/schedule/{oldtaskid}", null,
-                    GetIngestHeader());
-            }).ConfigureAwait(true);
+        //public async Task<int> AddReScheduleTaskAsync(int oldtaskid)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() =>
+        //    {
 
-            if (back != null && back.IsSuccess())
-            {
-                return back.Ext.TaskId;
-            }
-            return 0;
-        }
+        //        return PostAsync<ResponseMessage<TaskContent>>(
+        //            $"{_ingestDbUrl}/{TASKAPI21}/schedule/{oldtaskid}", null,
+        //            GetIngestHeader());
+        //    }).ConfigureAwait(true);
+
+        //    if (back != null && back.IsSuccess())
+        //    {
+        //        return back.Ext.TaskId;
+        //    }
+        //    return 0;
+        //}
         #endregion
 
         #region Matrix
-        public async Task<bool> SwitchMatrixAsync(int inport, int outport)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
-            {
-                var query = new NameValueCollection();
-                query.Add("inport", inport.ToString());
-                query.Add("outport", outport.ToString());
-                return GetAsync<ResponseMessage<bool>>(
-                    $"{_ingestDbUrl}/{MATRIXAPI20}/switch/",
-                    query,
-                    GetIngestHeader());
-            }).ConfigureAwait(true);
+        //public async Task<bool> SwitchMatrixAsync(int inport, int outport)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+        //    {
+        //        var query = new NameValueCollection();
+        //        query.Add("inport", inport.ToString());
+        //        query.Add("outport", outport.ToString());
+        //        return GetAsync<ResponseMessage<bool>>(
+        //            $"{_ingestDbUrl}/{MATRIXAPI20}/switch/",
+        //            query,
+        //            GetIngestHeader());
+        //    }).ConfigureAwait(true);
 
-            if (back != null && back.IsSuccess())
-            {
-                return back.Ext;
-            }
-            return false;
-        }
+        //    if (back != null && back.IsSuccess())
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return false;
+        //}
 
-        public async Task<bool> SwitchMatrixSignalChannelAsync(int signalid, int channelid)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
-            {
-                var query = new NameValueCollection();
-                query.Add("signal", signalid.ToString());
-                query.Add("channel", channelid.ToString());
-                return GetAsync<ResponseMessage<bool>>(
-                    $"{_ingestDbUrl}/{MATRIXAPI20}/switchsignalchannel/",
-                    query,
-                    GetIngestHeader());
-            }).ConfigureAwait(true);
+        //public async Task<bool> SwitchMatrixSignalChannelAsync(int signalid, int channelid)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+        //    {
+        //        var query = new NameValueCollection();
+        //        query.Add("signal", signalid.ToString());
+        //        query.Add("channel", channelid.ToString());
+        //        return GetAsync<ResponseMessage<bool>>(
+        //            $"{_ingestDbUrl}/{MATRIXAPI20}/switchsignalchannel/",
+        //            query,
+        //            GetIngestHeader());
+        //    }).ConfigureAwait(true);
 
-            if (back != null && back.IsSuccess())
-            {
-                return back.Ext;
-            }
-            return false;
-        }
+        //    if (back != null && back.IsSuccess())
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return false;
+        //}
 
-        public async Task<bool> SwitchMatrixChannelRtmpAsync(int channelid, string url)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
-            {
-                var query = new NameValueCollection();
+        //public async Task<bool> SwitchMatrixChannelRtmpAsync(int channelid, string url)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+        //    {
+        //        var query = new NameValueCollection();
 
-                query.Add("channelid", channelid.ToString());
-                query.Add("url", url);
-                return GetAsync<ResponseMessage<bool>>(
-                    $"{_ingestDbUrl}/{MATRIXAPI20}/switchchannelrtmpurl/",
-                    query,
-                    GetIngestHeader());
-            }).ConfigureAwait(true);
+        //        query.Add("channelid", channelid.ToString());
+        //        query.Add("url", url);
+        //        return GetAsync<ResponseMessage<bool>>(
+        //            $"{_ingestDbUrl}/{MATRIXAPI20}/switchchannelrtmpurl/",
+        //            query,
+        //            GetIngestHeader());
+        //    }).ConfigureAwait(true);
 
-            if (back != null && back.IsSuccess())
-            {
-                return back.Ext;
-            }
-            return false;
-        }
+        //    if (back != null && back.IsSuccess())
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return false;
+        //}
 
-        public async Task<bool> SwitchMatrixRtmpAsync(int outport, string url)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
-            {
-                var query = new NameValueCollection();
-                
-                query.Add("outport", outport.ToString());
-                query.Add("url", url);
-                return GetAsync<ResponseMessage<bool>>(
-                    $"{_ingestDbUrl}/{MATRIXAPI20}/switchrtmpurl/",
-                    query,
-                    GetIngestHeader());
-            }).ConfigureAwait(true);
+        //public async Task<bool> SwitchMatrixRtmpAsync(int outport, string url)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+        //    {
+        //        var query = new NameValueCollection();
 
-            if (back != null && back.IsSuccess())
-            {
-                return back.Ext;
-            }
-            return false;
-        }
+        //        query.Add("outport", outport.ToString());
+        //        query.Add("url", url);
+        //        return GetAsync<ResponseMessage<bool>>(
+        //            $"{_ingestDbUrl}/{MATRIXAPI20}/switchrtmpurl/",
+        //            query,
+        //            GetIngestHeader());
+        //    }).ConfigureAwait(true);
+
+        //    if (back != null && back.IsSuccess())
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return false;
+        //}
+        //#endregion
+
+        //#region Device
+
+        //public async Task<List<CaptureChannelInfo>> GetAllCaptureChannelAsync()
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureChannelInfo>>>(() =>
+        //    {
+        //        return GetAsync<ResponseMessage<List<CaptureChannelInfo>>>(
+        //            $"{_ingestDbUrl}/{DEVICEAPI20}/capturechannel/all", null, GetIngestHeader()
+        //            );
+        //    }).ConfigureAwait(true);
+
+        //    if (back != null)
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return null;
+        //}
+
+        //public async Task<List<SignalSrc>> GetAllSignalSrcAsync()
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<List<SignalSrc>>>(() =>
+        //    {
+        //        return GetAsync<ResponseMessage<List<SignalSrc>>>(
+        //            $"{_ingestDbUrl}/{DEVICEAPI20}/signalsrc/all", null, GetIngestHeader()
+        //            );
+        //    }).ConfigureAwait(true);
+
+        //    if (back != null)
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return null;
+        //}
+
+        //public async Task<List<MsvChannelState>> GetAllChannelStateAsync()
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<List<MsvChannelState>>>(() =>
+        //    {
+        //        return GetAsync<ResponseMessage<List<MsvChannelState>>>(
+        //            $"{_ingestDbUrl}/{DEVICEAPI20}/channelstate/all", null, GetIngestHeader()
+        //            );
+        //    }).ConfigureAwait(true);
+
+        //    if (back != null)
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return null;
+        //}
+
+        //public async Task<List<ProgrammeInfo>> GetAllProgrammeAsync()
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<List<ProgrammeInfo>>>(() =>
+        //    {
+        //        return GetAsync<ResponseMessage<List<ProgrammeInfo>>>(
+        //            $"{_ingestDbUrl}/{DEVICEAPI20}/programme/all", null, GetIngestHeader()
+        //            );
+        //    }).ConfigureAwait(true);
+
+        //    if (back != null)
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return null;
+        //}
+        //public async Task<bool> UpdateMSVChannelStateAsync(int id, MSV_Mode mode, Device_State state)
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+        //    {
+        //        return PostAsync<ResponseMessage<bool>>(
+        //            $"{_ingestDbUrl}/{DEVICEAPI20}/channelstate/{id}", 
+        //            new { DevState = state, MSVMode = mode }, GetIngestHeader());
+        //    }).ConfigureAwait(true);
+
+        //    if (back != null)
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return false;
+        //}
+
+        //public async Task<List<DeviceInfo>> GetAllDeviceInfoAsync()
+        //{
+        //    var back = await AutoRetry.RunAsync<ResponseMessage<List<DeviceInfo>>>(() =>
+        //    {
+        //        return GetAsync<ResponseMessage<List<DeviceInfo>>>(
+        //            $"{_ingestDbUrl}/{DEVICEAPI21}/allocdevice", null, GetIngestHeader());
+        //    }).ConfigureAwait(true);
+
+        //    if (back != null)
+        //    {
+        //        return back.Ext;
+        //    }
+        //    return null;
+        //}
+
+
         #endregion
 
-        #region Device
-
-        public async Task<List<CaptureChannelInfo>> GetAllCaptureChannelAsync()
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureChannelInfo>>>(() =>
-            {
-                return GetAsync<ResponseMessage<List<CaptureChannelInfo>>>(
-                    $"{_ingestDbUrl}/{DEVICEAPI20}/capturechannel/all", null, GetIngestHeader()
-                    );
-            }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return null;
-        }
-
-        public async Task<List<SignalSrc>> GetAllSignalSrcAsync()
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<List<SignalSrc>>>(() =>
-            {
-                return GetAsync<ResponseMessage<List<SignalSrc>>>(
-                    $"{_ingestDbUrl}/{DEVICEAPI20}/signalsrc/all", null, GetIngestHeader()
-                    );
-            }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return null;
-        }
-
-        public async Task<List<MsvChannelState>> GetAllChannelStateAsync()
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<List<MsvChannelState>>>(() =>
-            {
-                return GetAsync<ResponseMessage<List<MsvChannelState>>>(
-                    $"{_ingestDbUrl}/{DEVICEAPI20}/channelstate/all", null, GetIngestHeader()
-                    );
-            }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return null;
-        }
-
-        public async Task<List<ProgrammeInfo>> GetAllProgrammeAsync()
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<List<ProgrammeInfo>>>(() =>
-            {
-                return GetAsync<ResponseMessage<List<ProgrammeInfo>>>(
-                    $"{_ingestDbUrl}/{DEVICEAPI20}/programme/all", null, GetIngestHeader()
-                    );
-            }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return null;
-        }
-        public async Task<bool> UpdateMSVChannelStateAsync(int id, MSV_Mode mode, Device_State state)
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
-            {
-                return PostAsync<ResponseMessage<bool>>(
-                    $"{_ingestDbUrl}/{DEVICEAPI20}/channelstate/{id}", 
-                    new { DevState = state, MSVMode = mode }, GetIngestHeader());
-            }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return false;
-        }
-
-        public async Task<List<DeviceInfo>> GetAllDeviceInfoAsync()
-        {
-            var back = await AutoRetry.RunAsync<ResponseMessage<List<DeviceInfo>>>(() =>
-            {
-                return GetAsync<ResponseMessage<List<DeviceInfo>>>(
-                    $"{_ingestDbUrl}/{DEVICEAPI21}/allocdevice", null, GetIngestHeader());
-            }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return null;
-        }
-
-        
-        #endregion
-
-        #region cmapi接口统一管理，方便后面修改
-        public async Task<string> GetGlobalParamAsync(bool usetokencode, string userTokenOrCode, string key)
-        {
-            Dictionary<string, string> header = null;
-            if (usetokencode)
-                header = GetTokenHeader(userTokenOrCode);
-            else
-                header = GetCodeHeader(userTokenOrCode);
-
-            var back = await AutoRetry.RunAsync<ResponseMessage<CmParam>>(() =>
-            {
-                DefaultParameter param = new DefaultParameter()
-                {
-                    tool = "DEFAULT",
-                    paramname = key,
-                    system = "INGEST"
-                };
-                return PostAsync<ResponseMessage<CmParam>>(
-                string.Format("{0}/CMApi/api/basic/config/getsysparam", _cmServerUrl),
-                param, header);
-
-            }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return back.Ext?.paramvalue;
-            }
-            return string.Empty;
-        }
-
-
-        public async Task<int> GetUserParamTemplateIDAsync(bool usetokencode, string userTokenOrCode)
-        {
-            Dictionary<string, string> header = null;
-            if (usetokencode)
-                header = GetTokenHeader(userTokenOrCode);
-            else
-                header = GetCodeHeader(userTokenOrCode);
-
-            var back = await AutoRetry.RunAsync<ResponseMessage<CmParam>>(() =>
-                {
-                    DefaultParameter param = new DefaultParameter()
-                    {
-                        tool = "DEFAULT",
-                        paramname = "HIGH_RESOLUTION",
-                        system = "INGEST"
-                    };
-                    return PostAsync<ResponseMessage<CmParam>>(
-                    string.Format("{0}/CMApi/api/basic/config/getuserparam", _cmServerUrl),
-                    param, header);
-
-                }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return int.Parse(back.Ext?.paramvalue);
-            }
-            return 0;
-        }
-
-        
-
-        public async Task<CMUserInfo> GetUserInfoAsync(bool usetokencode, string userTokenOrCode, string userCode)
-        {
-            Dictionary<string, string> header = null;
-            if (usetokencode)
-                header = GetTokenHeader(userTokenOrCode);
-            else
-                header = GetCodeHeader(userTokenOrCode);
-
-
-            var back = await AutoRetry.RunAsync<ResponseMessage<CMUserInfo>>(() =>
-            {
-
-                NameValueCollection v = new NameValueCollection();
-                v.Add("usercode", userCode);
-                return GetAsync<ResponseMessage<CMUserInfo>>(
-                    string.Format("{0}/CMApi/api/basic/account/getuserinfobyusercode", _cmServerUrl),
-                    v, header);
-            }).ConfigureAwait(true);
-
-            if (back != null)
-            {
-                return back.Ext;
-            }
-            return null;
-        }
-
-       
-
-        #endregion
     }
 }
