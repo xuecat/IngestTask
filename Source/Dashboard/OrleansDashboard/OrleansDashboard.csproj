@@ -1,0 +1,80 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyVersion>3.1.3</AssemblyVersion>
+    <Authors>OrleansContrib</Authors>
+    <Company>OrleansContrib</Company>
+    <Copyright>Copyright © 2019</Copyright>
+    <Description>An admin dashboard for Microsoft Orleans</Description>
+    <FileVersion>3.1.3</FileVersion>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageIcon>OrleansLogo.png</PackageIcon>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl></PackageProjectUrl>
+    <PackageTags>orleans dashboard metrics monitor</PackageTags>
+    <RepositoryUrl></RepositoryUrl>
+    <Version>3.1.3</Version>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Remove="favicon.ico" />
+    <None Remove="Index.html" />
+    <None Remove="index.min.js" />
+	<None Remove="AdminLTE.min.css" />
+	<None Remove="bootstrap.min.css" />
+	<None Remove="Chart.min.css" />
+	<None Remove="Chart.min.js" />
+	<None Remove="font-awesome.min.css" />
+	<None Remove="skin-purple.min.css" />
+	<None Remove="FontAwesome.otf" />
+	<None Remove="fontawesome-webfont.eot" />
+	<None Remove="fontawesome-webfont.svg" />
+	<None Remove="fontawesome-webfont.ttf" />
+	<None Remove="fontawesome-webfont.woff" />
+	<None Remove="fontawesome-webfont.woff2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="OrleansLogo.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="favicon.ico" />
+    <EmbeddedResource Include="Index.html" />
+    <EmbeddedResource Include="index.min.js" />
+	<EmbeddedResource Include="AdminLTE.min.css" />
+	<EmbeddedResource Include="bootstrap.min.css" />
+	<EmbeddedResource Include="Chart.min.css" />
+	<EmbeddedResource Include="Chart.min.js" />
+	<EmbeddedResource Include="font-awesome.min.css" />
+	<EmbeddedResource Include="skin-purple.min.css" />
+	<EmbeddedResource Include="FontAwesome.otf" />
+	<EmbeddedResource Include="fontawesome-webfont.eot" />
+	<EmbeddedResource Include="fontawesome-webfont.svg" />
+	<EmbeddedResource Include="fontawesome-webfont.ttf" />
+	<EmbeddedResource Include="fontawesome-webfont.woff" />
+	<EmbeddedResource Include="fontawesome-webfont.woff2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Core" Version="3.2.0" />
+    <PackageReference Include="Microsoft.Orleans.CodeGenerator.MSBuild" Version="3.2.0" PrivateAssets="all">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="3.2.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OrleansDashboard.Core\OrleansDashboard.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="fonts\" />
+  </ItemGroup>
+</Project>

@@ -16,7 +16,7 @@ namespace IngestTask.Grain
     
 
     [Reentrant]
-    class CheckScheduleTaskGrain : Grain<List<CheckTaskContent>>, ICheckSchedule
+    public class CheckScheduleTaskGrain : Grain<List<CheckTaskContent>>, ICheckSchedule
     {
         private IDisposable _dispoScheduleTimer;
         private readonly RestClient _restClient;

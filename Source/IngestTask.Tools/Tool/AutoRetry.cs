@@ -20,7 +20,12 @@ namespace IngestTask.Tools
                 try
                 {
                     r = await proc().ConfigureAwait(true);
-                    isOk = r.Code == ResponseCodeDefines.SuccessCode;
+                    if (r == null)
+                    {
+                        isOk = false;
+                    }
+                    else
+                        isOk = r.Code == ResponseCodeDefines.SuccessCode;
                 }
                 catch (System.Exception )
                 {

@@ -24,6 +24,7 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
 
         public void Configure(IConfiguration configuration, IClientBuilder clientBuilder)
         {
+            
             clientBuilder.AddSimpleMessageStreamProvider(StreamProviderName.Default);
             clientBuilder.ConfigureAppConfiguration((config) =>
             {

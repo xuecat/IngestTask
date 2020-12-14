@@ -20,7 +20,7 @@ namespace IngestTask.Grain
 
     //[ProtoContract]
     [Serializable]
-    class DeviceState
+    public class DeviceState
     {
         //[ProtoMember(1)]
         public int ActionType { get; set; }
@@ -31,7 +31,7 @@ namespace IngestTask.Grain
 
     
     [Reentrant]
-    class DeviceInspectionGrain : Grain<DeviceState>, IDeviceInspections
+    public class DeviceInspectionGrain : Grain<DeviceState>, IDeviceInspections
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("DeviceInfo");
         private readonly MsvClientCtrlSDK _msvClient;
@@ -43,7 +43,7 @@ namespace IngestTask.Grain
         private readonly List<int> _onlineMembers;
         private IDisposable _timer;
 
-        DeviceInspectionGrain(MsvClientCtrlSDK msv, RestClient client, IMapper mapper)
+        public DeviceInspectionGrain(MsvClientCtrlSDK msv, RestClient client, IMapper mapper)
         {
             _timer = null;
             Mapper = mapper;

@@ -13,6 +13,7 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
     using IngestTask.Grain;
     using AutoMapper;
     using IngestTask.Tools;
+    using Microsoft.Extensions.DependencyInjection.Extensions;
 
     public class TestSiloConfigurator : ISiloConfigurator
     {
@@ -22,6 +23,8 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
 #pragma warning restore CA1062 // 验证公共方法的参数
                 .ConfigureServices((context, services) =>
                 {
+                    services.RemoveAll<RestClient>();
+
                     services.AddScoped<MsvClientCtrlSDK>();
                     var client = new RestClient("http://172.16.0.205:9025", "http://172.16.0.205:10023");
                     services.AddSingleton<RestClient>(client);
@@ -34,6 +37,7 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
                 }/*services.AddSingleton<ILoggerFactory>(x => new SerilogLoggerFactory())*/)
                 .AddMemoryGrainStorageAsDefault()
                 .AddMemoryGrainStorage("PubSubStore")
+                .AddGrainService<ScheduleTaskService>()
                 .AddSimpleMessageStreamProvider(StreamProviderName.Default);
 
     }

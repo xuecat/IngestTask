@@ -15,7 +15,7 @@ namespace IngestTask.Grain
     using System.Threading.Tasks;
 
     [StatelessWorker]
-    class DispatcherGrain : Grain, IDispatcherGrain
+    public class DispatcherGrain : Grain, IDispatcherGrain
     {
         public IConfiguration Configuration { get; }
         private readonly IScheduleClient _scheduleClient;

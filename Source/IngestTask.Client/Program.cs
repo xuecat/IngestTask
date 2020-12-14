@@ -10,6 +10,8 @@ namespace IngestTask.Client
     using IngestTask.Abstraction.Constants;
     using IngestTask.Abstraction.Grains;
     using Microsoft.Extensions.Logging;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
 
     public static class Program
     {
@@ -30,6 +32,19 @@ namespace IngestTask.Client
 
                 // Set a trace ID, so that requests can be identified.
                 RequestContext.Set("TraceId", Guid.NewGuid());
+
+                using (var _httpClient = new RestClient("http://172.16.0.205:9025", "http://172.16.0.205:10023"))
+                {
+                    var lsttask = await _httpClient.GetNeedSyncTaskListAsync().ConfigureAwait(true);
+                    if (lsttask != null && lsttask.Count >0)
+                    {
+                        var taskitem = await _httpClient.GetTaskDBAsync(lsttask[0].TaskId).ConfigureAwait(true);
+                        var grain = clusterClient.GetGrain<IDispatcherGrain>(0);
+
+                        await grain.AddTaskAsync(taskitem).ConfigureAwait(true);
+                        var namefa = Console.ReadLine();
+                    }
+                }
 
                 var reminderGrain = clusterClient.GetGrain<IReminderGrain>(Guid.Empty);
                 await reminderGrain.SetReminderAsync("Don't forget to say hello!").ConfigureAwait(false);

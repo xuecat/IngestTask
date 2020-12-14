@@ -31,26 +31,27 @@ namespace IngestTask.Tools.Net
             {
                 var lstlogininfo = await _restClient.GetAllUserLoginInfosAsync().ConfigureAwait(true);
 
-                Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-
-                Byte[] bySend = Encoding.Unicode.GetBytes(GetErrorMsg(level, info));
-
-                foreach (var item in lstlogininfo)
+                using (var sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
                 {
-                    
+                    Byte[] bySend = Encoding.Unicode.GetBytes(GetErrorMsg(level, info));
 
-                    _soketArgs.RemoteEndPoint = new IPEndPoint(IPAddress.Parse(item.Ip), item.Port);
-                    bySend.CopyTo(_soketArgs.Buffer, 0);
-                    _soketArgs.SetBuffer(0, bySend.Length);
-                    
-                    if (!sock.SendToAsync(_soketArgs))
+                    foreach (var item in lstlogininfo)
                     {
-                        Logger.Info($"udpnotify error {item.Ip}");
-                    }
-                }
 
-                sock.Close();
-                sock = null;
+
+                        _soketArgs.RemoteEndPoint = new IPEndPoint(IPAddress.Parse(item.Ip), item.Port);
+                        bySend.CopyTo(_soketArgs.Buffer, 0);
+                        _soketArgs.SetBuffer(0, bySend.Length);
+
+                        if (!sock.SendToAsync(_soketArgs))
+                        {
+                            Logger.Info($"udpnotify error {item.Ip}");
+                        }
+                    }
+
+                    sock.Close();
+                }
+               
             }
         }
 

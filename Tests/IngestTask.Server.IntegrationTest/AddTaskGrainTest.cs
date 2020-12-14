@@ -18,7 +18,7 @@ namespace IngestTask.Server.IntegrationTest
         public async Task AddTaskAsync()
         {
             var devicegrain = this.Cluster.GrainFactory.GetGrain<IDeviceInspections>(0);
-            var streamid = await devicegrain.JoinAsync(1).ConfigureAwait(true);
+            var streamid = await devicegrain.IsChannelInvalidAsync(1).ConfigureAwait(true);
 
             var grain = this.Cluster.GrainFactory.GetGrain<IDispatcherGrain>(0);
             Dto.DispatchTask task = new Dto.DispatchTask();
