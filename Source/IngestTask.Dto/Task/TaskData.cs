@@ -36,7 +36,6 @@ namespace IngestTask.Dto
     [Serializable]
     public partial class DispatchTask
     {
-        public int StartOrStop { get; set; }
         public int Taskid { get; set; }
         public string Taskname { get; set; }
         public int? Recunitid { get; set; }

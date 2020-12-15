@@ -32,7 +32,6 @@ namespace IngestTask.Grain
         }
         public Task SendAsync(Tuple<int, string>[] messages)
         {
-
             return Task.CompletedTask;
         }
 
@@ -40,6 +39,9 @@ namespace IngestTask.Grain
         {
             if (task != null)
             {
+                //记录缓存
+                await _grainFactory.GetGrain<ITaskCache>(0).AddTaskAsync(task);
+
                 if ((task.Starttime - DateTime.Now).TotalSeconds >
                     Configuration.GetSection("Task:TaskSchedulePrevious").Get<int>())
                 {
@@ -63,6 +65,11 @@ namespace IngestTask.Grain
 
             }
         }
+
+        public async Task UpdateTaskAsync(DispatchTask task)
+        { }
+        public async Task StopTaskAsync(DispatchTask task)
+        { }
 
     }
 }

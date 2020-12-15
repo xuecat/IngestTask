@@ -9,6 +9,7 @@ namespace IngestTask.Grain.Service
     using IngestTask.Tool;
     using IngestTask.Tools;
     using Microsoft.Extensions.Configuration;
+    using NLog;
     using Orleans;
     using Orleans.Concurrency;
     using Orleans.Core;
@@ -28,14 +29,16 @@ namespace IngestTask.Grain.Service
         private IDisposable _dispoScheduleTimer;
         private IMapper _mapper;
         private readonly RestClient _restClient;
+        private readonly Sobey.Core.Log.ILogger Logger;
         public IConfiguration Configuration { get; }
 
+        
         public ScheduleTaskService(IServiceProvider services, IGrainIdentity id, Silo silo,
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory,
             IGrainFactory grainFactory, IMapper mapper, RestClient restClient, IConfiguration configuration)
             : base(id, silo, loggerFactory)
         {
-            
+            Logger = Sobey.Core.Log.LoggerManager.GetLogger("ScheduleService");
             _dispoScheduleTimer = null;
             _grainFactory = grainFactory;
             _lstScheduleTask = new List<DispatchTask>();
@@ -44,7 +47,7 @@ namespace IngestTask.Grain.Service
             Configuration = configuration;
         }
        
-        public Task<int> AddTaskAsync(DispatchTask task)
+        public Task<int> AddScheduleTaskAsync(DispatchTask task)
         {
             if (task != null && _lstScheduleTask.Find(x => x.Taskid == task.Taskid) == null)
             {
@@ -59,49 +62,18 @@ namespace IngestTask.Grain.Service
             return Task.FromResult(0);
         }
 
-        public Task<int> UpdateTaskAsync(DispatchTask task)
-        {
-            if (task != null)
-            {
-                var item = _lstScheduleTask.Find(x => x.Taskid == task.Taskid);
-                if (item == null)
-                {
-                    lock (_lstScheduleTask)
-                    {
-                        _lstScheduleTask.Add(task);
-                        _lstScheduleTask = _lstScheduleTask.OrderBy(x => x.Starttime).ToList();
-                        return Task.FromResult(1);
-                    }
-                }
-                else
-                {
-                    lock (_lstScheduleTask)
-                    {
-                        _lstScheduleTask = _lstScheduleTask.OrderBy(x => x.Starttime).ToList();
-                        return Task.FromResult(1);
-                    }
-                }
-            }
-
-            return Task.FromResult(0);
-        }
-
-        public Task<int> CheckTaskListAsync(List<DispatchTask> task)
-        {
-            throw new NotImplementedException();
-        }
         public override Task Init(IServiceProvider serviceProvider)
         {
             return base.Init(serviceProvider);
         }
 
-        protected override Task StartInBackground()
+        protected override async Task StartInBackground()
         {
             _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-
+            
             var device = _grainFactory.GetGrain<IDeviceInspections>(0);
+            await device.CheckChannelSatetAsync();
 
-            return Task.CompletedTask;
         }
 
         public override async Task Start()
@@ -125,55 +97,68 @@ namespace IngestTask.Grain.Service
 
             int test = Configuration.GetSection("Task:TaskSchedulePrevious").Get<int>();
             var _lstRemoveTask = new List<DispatchTask>();
-            foreach (var task in _lstScheduleTask)
-            {
-                if (task.StartOrStop <= 0 && task.SyncState == (int)syncState.ssNot )
-                {
-                    if (task.Tasktype == (int)TaskType.TT_PERIODIC
-                        && task.State == (int)taskState.tsReady
-                        && task.OldChannelid == 0)
-                    {
-                        var nowdate = DateTime.Now;
-                        DateTime date = new DateTime(nowdate.Year, nowdate.Month, nowdate.Day, task.Starttime.Hour, task.Starttime.Minute, task.Starttime.Second);
-                        if ((task.Starttime - DateTime.Now).TotalSeconds <=
-                            test)
-                        {
-                            var info = await _restClient.CreatePeriodcTaskAsync(task.Taskid);
 
-                            if (info != null)
-                            {
-                                task.StartOrStop++;
-                                _lstRemoveTask.Add(task);
-                            }
-                        }
-                    }
-                    else
+            if (_lstScheduleTask.Count > 0)
+            {
+                //获取最新缓存，保证中途修改，删除了也不会更新
+                var lsttask = await _grainFactory.GetGrain<ITaskCache>(0).GetTaskListAsync(_lstScheduleTask.Select(x => x.Taskid).ToList());
+                if (lsttask != null)
+                {
+                    foreach (var task in lsttask)
                     {
-                        if ((task.Starttime - DateTime.Now).TotalSeconds <=
-                            test && task.Endtime > DateTime.Now)
+                        if (task.SyncState == (int)syncState.ssNot)
                         {
-                            if (await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task)))
+                            if (task.Tasktype == (int)TaskType.TT_PERIODIC
+                                && task.State == (int)taskState.tsReady
+                                && task.OldChannelid == 0)
                             {
-                                task.StartOrStop++;
+                                var nowdate = DateTime.Now;
+                                DateTime date = new DateTime(nowdate.Year, nowdate.Month, nowdate.Day, task.Starttime.Hour, task.Starttime.Minute, task.Starttime.Second);
+                                if ((task.Starttime - DateTime.Now).TotalSeconds <=
+                                    test)
+                                {
+                                    var info = await _restClient.CreatePeriodcTaskAsync(task.Taskid);
+
+                                    if (info != null)
+                                    {
+                                        _lstRemoveTask.Add(task);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if ((task.Starttime - DateTime.Now).TotalSeconds <=
+                                    test && task.Endtime > DateTime.Now)
+                                {
+                                    await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task));
+                                }
                             }
                         }
+                        else if (task.SyncState == (int)syncState.ssSync)
+                        {
+                            var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
+                            if (spansecond > 0 && spansecond < test)
+                            {
+                                if (await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.StopTaskAsync(_mapper.Map<TaskContent>(task)))
+                                {
+                                    _lstRemoveTask.Add(task);
+                                }
+                            }
+                        }
+
                     }
                 }
-                else if (task.SyncState == (int)syncState.ssSync)
+                else
                 {
-                    var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
-                    if ( spansecond > 0 && spansecond < test)
+                    lock (_lstScheduleTask)
                     {
-                        if (await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.StopTaskAsync(_mapper.Map<TaskContent>(task)))
-                        {
-                            task.StartOrStop++;
-                            _lstRemoveTask.Add(task);
-                        }
+                        _lstScheduleTask.Clear();
+                        Logger.Info("clear all scheduletask");
                     }
                 }
                 
             }
-
+            
             if (_lstRemoveTask.Count > 0)
             {
                 lock (_lstScheduleTask)
@@ -183,6 +168,8 @@ namespace IngestTask.Grain.Service
                         _lstScheduleTask.Remove(item);
                     }
                 }
+
+                await _grainFactory.GetGrain<ITaskCache>(0).CompleteTaskAsync(_lstRemoveTask.Select(x => x.Taskid).ToList());
             }
 
         }

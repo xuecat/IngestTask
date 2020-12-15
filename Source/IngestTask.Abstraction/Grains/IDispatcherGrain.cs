@@ -10,5 +10,7 @@ namespace IngestTask.Abstraction.Grains
     {
         Task SendAsync(Tuple<int, string>[] messages);
         Task AddTaskAsync(DispatchTask task);
+        Task UpdateTaskAsync(DispatchTask task);
+        Task StopTaskAsync(DispatchTask task);
     }
 }
