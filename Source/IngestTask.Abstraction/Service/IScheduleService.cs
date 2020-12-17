@@ -9,6 +9,7 @@ namespace IngestTask.Abstraction.Service
     public interface IScheduleService : IGrainService
     {
         Task<int> AddScheduleTaskAsync(DispatchTask task);
+        Task<int> RemoveScheduleTaskAsync(DispatchTask task);
     }
 
    

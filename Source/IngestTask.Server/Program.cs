@@ -155,7 +155,6 @@ namespace IngestTask.Server
 
                         services.Configure<ApplicationOptions>(context.Configuration);
                         services.Configure<ClusterOptions>(context.Configuration.GetSection(nameof(ApplicationOptions.Cluster)));
-                        services.Configure<StorageOptions>(context.Configuration.GetSection(nameof(ApplicationOptions.Storage)));
                     })
                 .UseSiloUnobservedExceptionsHandler()
                 .UseAdoNetClustering(
@@ -351,6 +350,5 @@ namespace IngestTask.Server
             }
             return string.Empty;
         }
-            //configuration.GetSection(nameof(ApplicationOptions.Storage)).Get<StorageOptions>();
     }
 }

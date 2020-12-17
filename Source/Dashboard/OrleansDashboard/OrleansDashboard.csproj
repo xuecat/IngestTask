@@ -8,13 +8,17 @@
     <Copyright>Copyright © 2019</Copyright>
     <Description>An admin dashboard for Microsoft Orleans</Description>
     <FileVersion>3.1.3</FileVersion>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageIcon>OrleansLogo.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl></PackageProjectUrl>
     <PackageTags>orleans dashboard metrics monitor</PackageTags>
     <RepositoryUrl></RepositoryUrl>
     <Version>3.1.3</Version>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\..\..\Bin\</OutputPath>
   </PropertyGroup>
   
   <ItemGroup>

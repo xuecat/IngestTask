@@ -608,7 +608,7 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<TaskFullInfo>>(() =>
             {
                 return GetAsync<ResponseMessage<TaskFullInfo>>(
-                    $"{_ingestDbUrl}/{TASKAPI21}/taskinfo/{taskid}/full",
+                    $"{_ingestDbUrl}/{TASKAPI21}/{taskid}",
                     null, GetIngestHeader());
             }).ConfigureAwait(true);
 

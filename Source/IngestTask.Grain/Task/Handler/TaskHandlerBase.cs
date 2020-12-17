@@ -132,10 +132,8 @@ namespace IngestTask.Grain
         public virtual async Task<string> GetCaptureParmAsync(TaskFullInfo taskinfo, ChannelInfo channel)
         {
             string captureparam = taskinfo.CaptureMeta;
-            var typeinfo = await AutoRetry.RunSyncAsync(async () =>
-            {
-                return await _msvClient.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
-            },
+            var typeinfo = await AutoRetry.RunSyncAsync(() =>_msvClient.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger)
+            ,
                 (e) =>
                 {
                     if (e!= null && e.SignalType != 255)

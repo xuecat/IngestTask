@@ -7,9 +7,9 @@ namespace IngestTask.Dto
     [Serializable]
     public class TaskFullInfo : TaskAllInfo
     {
+        public bool HandleTask { get; set; }
         public bool StartOrStop { get; set; }
         public int RetryTimes { get; set; }
-
         public int OldChannelId { get; set; }
 
         public dispatchState DispatchState { get; set; }

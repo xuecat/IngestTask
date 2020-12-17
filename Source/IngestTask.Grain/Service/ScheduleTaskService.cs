@@ -62,6 +62,20 @@ namespace IngestTask.Grain.Service
             return Task.FromResult(0);
         }
 
+        public Task<int> RemoveScheduleTaskAsync(DispatchTask task)
+        {
+            if (task != null)
+            {
+                lock (_lstScheduleTask)
+                {
+                    _lstScheduleTask.RemoveAll(x => x.Taskid == task.Taskid);
+                    return Task.FromResult(1);
+                }
+            }
+
+            return Task.FromResult(0);
+        }
+
         public override Task Init(IServiceProvider serviceProvider)
         {
             return base.Init(serviceProvider);

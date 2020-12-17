@@ -14,7 +14,8 @@ namespace IngestTask.Grain.Service
         {
 
         }
-        public Task<int> AddScheduleTaskAsync(DispatchTask task) => GrainService.AddTaskAsync(task);
+        public Task<int> AddScheduleTaskAsync(DispatchTask task) => GrainService.AddScheduleTaskAsync(task);
+        public Task<int> RemoveScheduleTaskAsync(DispatchTask task) => GrainService.RemoveScheduleTaskAsync(task);
 
     }
 }

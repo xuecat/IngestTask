@@ -17,6 +17,7 @@ namespace IngestTask.Grain
     using ProtoBuf;
     using Orleans.Streams;
     using IngestTask.Tools;
+    using System.Linq;
 
     //[ProtoContract]
     [Serializable]
@@ -54,13 +55,12 @@ namespace IngestTask.Grain
 
         public override async Task OnActivateAsync()
         {
+            await InitLoadAsync();
             _timer = RegisterTimer(this.OnCheckAllChannelsAsync, State.ActionType, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
             Logger.Info(" DeviceInspectionGrain active");
 
             var streamProvider = GetStreamProvider(Abstraction.Constants.StreamProviderName.Default);
             _stream = streamProvider.GetStream<ChannelInfo>(Guid.NewGuid(), Abstraction.Constants.StreamName.DeviceReminder);
-
-            await InitLoadAsync();
 
             await base.OnActivateAsync();
         }
@@ -83,7 +83,18 @@ namespace IngestTask.Grain
                 var channelstate = await _restClient.GetAllChannelStateAsync();
 
                 State.ChannelInfos = Mapper.Map<List<ChannelInfo>>(lstdevice);
-                State.ChannelInfos = Mapper.Map<List<MsvChannelState>, List<ChannelInfo>>(channelstate, State.ChannelInfos);
+
+                State.ChannelInfos.ForEach(x => {
+                    var info = channelstate.Find(y => y.ChannelId == x.ChannelId);
+                    if (info != null)
+                    {
+                        x.CurrentDevState = info.DevState;
+                        x.KamatakiInfo = info.KamatakiInfo;
+                        x.LastMsvMode = info.MsvMode;
+                        x.UploadMode = info.UploadMode;
+                        x.VtrId = info.VtrId;
+                    }
+                });
             }
             catch (Exception e)
             {
@@ -94,10 +105,10 @@ namespace IngestTask.Grain
             return true;
         }
         
-        private Task OnCheckAllChannelsAsync(object type)
+        private async Task OnCheckAllChannelsAsync(object type)
         {
 
-            switch (type)
+            switch (State.ActionType)
             {
                 case 0:
                     {
@@ -105,11 +116,18 @@ namespace IngestTask.Grain
                     } break;
                 case 1:
                     {
-                        foreach (var item in State.ChannelInfos)
+                        if (State.ChannelInfos != null && State.ChannelInfos.Count >0)
                         {
-                            _ = Task.Run(async () =>
+                            foreach (var item in State.ChannelInfos)
                             {
-                                var state = await _msvClient.QueryDeviceStateAsync(item.ChannelIndex, item.Ip, false, Logger);
+                                var state = await AutoRetry.RunSyncAsync(() => _msvClient.QueryDeviceStateAsync(item.ChannelIndex, item.Ip, false, Logger),
+                                    (e) => {
+                                        if (e == Device_State.DISCONNECTTED)
+                                        {
+                                            return false;
+                                        }
+                                        return true;
+                                    }, 3, 400, false);
 
                                 MSV_Mode msvmode = MSV_Mode.NETWORK;
                                 if (state == Device_State.DISCONNECTTED)
@@ -133,16 +151,16 @@ namespace IngestTask.Grain
                                 }
 
                                 if (item.LastDevState == Device_State.DISCONNECTTED
-                                     && item.CurrentDevState == Device_State.CONNECTED
-                                     && item.NeedStopFlag)
+                                        && item.CurrentDevState == Device_State.CONNECTED
+                                        && item.NeedStopFlag)
                                 {
                                     item.NeedStopFlag = false;
                                 }
 
                                 if (item.LastDevState == Device_State.DISCONNECTTED
-                                     && item.CurrentDevState == Device_State.WORKING
-                                     && changedstate
-                                     && item.NeedStopFlag)
+                                        && item.CurrentDevState == Device_State.WORKING
+                                        && changedstate
+                                        && item.NeedStopFlag)
                                 {
                                     var taskinfo = await _msvClient.QueryTaskInfoAsync(item.ChannelIndex, item.Ip, Logger);
                                     if (taskinfo != null && taskinfo.ulID > 0)
@@ -159,25 +177,22 @@ namespace IngestTask.Grain
                                         if (needstop)
                                         {
                                             /*
-                                             * flag 通知出去走正常流程stop，并任务complete状态
-                                             */
+                                                * flag 通知出去走正常流程stop，并任务complete状态
+                                                */
                                         }
 
                                         item.NeedStopFlag = false;
                                     }
                                 }
-
-
-                            });
+                            }
                         }
+                        
                     }
                     break;
                 default:
                     break;
             }
 
-
-            return Task.CompletedTask;
         }
         public Task<Guid> JoinAsync(int nickname)
         {
@@ -230,10 +245,7 @@ namespace IngestTask.Grain
         public async Task<int> QueryRunningTaskInChannelAsync(string ip, int index)
         {
             //通道状态校验，
-            var backinfo = await AutoRetry.RunSyncAsync(async () =>
-            {
-                return await _msvClient.QueryTaskInfoAsync(index, ip, Logger);
-            },
+            var backinfo = await AutoRetry.RunSyncAsync(() => _msvClient.QueryTaskInfoAsync(index, ip, Logger),
                (e) =>
                {
                    if (e != null)
@@ -257,7 +269,8 @@ namespace IngestTask.Grain
 
         public Task<int> CheckChannelSatetAsync()
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            return Task.FromResult(0);
         }
 
        

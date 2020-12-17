@@ -12,6 +12,7 @@ namespace IngestTask.Client
     using Microsoft.Extensions.Logging;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Net;
 
     public static class Program
     {
@@ -20,14 +21,22 @@ namespace IngestTask.Client
             try
             {
                 var clusterClient = CreateClientBuilder()
-                    .UseLocalhostClustering()
+                    //.UseLocalhostClustering()
+                    //.UseAdoNetClustering(
+                    //options =>
+                    //{
+                    //    options.Invariant = "MySql.Data.MySqlClient";
+                    //    options.ConnectionString = "Server=172.16.0.205;Port=3307;Database=ingestdb;Uid=ingestdba;Pwd=sobeydba1;Pooling=true;minpoolsize=0;maxpoolsize=40;SslMode=none;";
+                    //})
+                    .UseStaticClustering(new IPEndPoint[] { new IPEndPoint(IPAddress.Parse("172.16.135.116"), 30000) })
                     .Configure<ClusterOptions>(options =>
                     {
-                        options.ClusterId = "ClusterId";
-                        options.ServiceId = "ServiceId";
+                        options.ClusterId = "IngestTaskClusterId";
+                        options.ServiceId = "IngestTaskServiceId";
                     })
                     .ConfigureLogging(logging => logging.AddConsole())
                     .Build();
+                var namefaa = Console.ReadLine();
                 await clusterClient.Connect().ConfigureAwait(false);
 
                 // Set a trace ID, so that requests can be identified.
@@ -35,15 +44,15 @@ namespace IngestTask.Client
 
                 using (var _httpClient = new RestClient("http://172.16.0.205:9025", "http://172.16.0.205:10023"))
                 {
-                    var lsttask = await _httpClient.GetNeedSyncTaskListAsync().ConfigureAwait(true);
-                    if (lsttask != null && lsttask.Count >0)
-                    {
-                        var taskitem = await _httpClient.GetTaskDBAsync(lsttask[0].TaskId).ConfigureAwait(true);
+                    //var lsttask = await _httpClient.GetNeedSyncTaskListAsync().ConfigureAwait(true);
+                    //if (lsttask != null && lsttask.Count >0)
+                    //{
+                        var taskitem = await _httpClient.GetTaskDBAsync(5184).ConfigureAwait(true);
                         var grain = clusterClient.GetGrain<IDispatcherGrain>(0);
 
                         await grain.AddTaskAsync(taskitem).ConfigureAwait(true);
                         var namefa = Console.ReadLine();
-                    }
+                    //}
                 }
 
                 var reminderGrain = clusterClient.GetGrain<IReminderGrain>(Guid.Empty);

@@ -59,10 +59,9 @@ namespace IngestTask.Grain
             {
                 case opType.otAdd:
                     {
-                        if (@event.TaskContentInfo.State == taskState.tsReady 
-                            && TaskLists.Find(a => a.TaskContent.TaskId == @event.TaskContentInfo.TaskId) == null)
+                        if (TaskLists.Find(a => a.TaskContent.TaskId == @event.TaskContentInfo.TaskId) == null)
                         {
-                            TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = true});
+                            TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = true, HandleTask = false});
                         }
                         
                     }
@@ -77,6 +76,19 @@ namespace IngestTask.Grain
                 case opType.otModify:
                     break;
                 case opType.otStop:
+                    {
+                        var item = TaskLists.Find(a => a.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
+                        if (item == null)
+                        {
+                            TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = false, HandleTask = false });
+                        }
+                        else
+                        {
+                            item.StartOrStop = false;
+                            item.HandleTask = false;
+                        }
+                            
+                    }
                     break;
                 case opType.otReDispatch:
                     {
@@ -86,7 +98,7 @@ namespace IngestTask.Grain
                             taskitem.RetryTimes++;
                             //重调度任务把开始时间滞后看看
                             taskitem.NewBeginTime = DateTime.Now.AddSeconds(2);
-
+                            taskitem.HandleTask = false;
                             DateTime dt = DateTime.Now;
                             if (dt >= DateTimeFormat.DateTimeFromString(taskitem.TaskContent.End))
                             {
@@ -120,6 +132,7 @@ namespace IngestTask.Grain
         private StreamSubscriptionHandle<ChannelInfo> _streamHandle;
         private IDisposable _timer;
         readonly IGrainFactory _grainFactory;
+
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
            IGrainFactory grainFactory,
             RestClient rest,
@@ -180,17 +193,22 @@ namespace IngestTask.Grain
         protected override void OnStateChanged()
         {
             // read state and/or event log and take appropriate action
-            
+            //好像会有定时读取,所以一定要是调度分发过来的才进行处理
 
             if (State.TaskLists.Count > 0)
             {
                 var orleansts = TaskScheduler.Current;
                 foreach (var item in State.TaskLists)
                 {
-                    _ = Task.Factory.StartNew(async () =>
+                    if (!item.HandleTask)
                     {
-                        return await HandleTaskAsync(item);
-                    }, CancellationToken.None, TaskCreationOptions.None, scheduler: orleansts);
+                        item.HandleTask = true;
+                        _ = Task.Factory.StartNew(async () =>
+                        {
+                            return await HandleTaskAsync(item);
+                        }, CancellationToken.None, TaskCreationOptions.None, scheduler: orleansts);
+                    }
+                    
                 }
             }
         }
@@ -203,7 +221,7 @@ namespace IngestTask.Grain
             {
                 //如果判断到是周期任务，那么需要对它做分任务的处理
                 //这个步骤挪到后台server去做
-                if (task.TaskSource == TaskSource.emUnknowTask || task.ContentMeta != null)
+                if (task.TaskSource == TaskSource.emUnknowTask || task.ContentMeta == null)
                 {
                     if (_restClient != null)
                     {
@@ -280,7 +298,6 @@ namespace IngestTask.Grain
                     _timer.Dispose();
                     _timer = null;
                 }
-                
                 return Task.FromResult(true);
             }
             return Task.FromResult(false);
@@ -292,7 +309,7 @@ namespace IngestTask.Grain
             {
                 //归档
                 RaiseEvent(new TaskEvent() { OpType = opType.otStop, TaskContentInfo = task });
-
+                
                 return Task.FromResult(true);
             }
             return Task.FromResult(false);

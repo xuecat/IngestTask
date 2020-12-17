@@ -29,6 +29,6 @@ namespace IngestTask.Dto
         public Upload_Mode UploadMode { get; set; } = Upload_Mode.NOUPLOAD;
 
         /// <summary>通道索引</summary>
-        public int ChannelIndex { get; set; }
+        //public int ChannelIndex { get; set; }
     }
 }

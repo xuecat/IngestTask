@@ -159,10 +159,8 @@ namespace IngestTask.Grain
         public override async Task<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
 
-            var backinfo = await AutoRetry.RunSyncAsync(async () =>
-            {
-               return await _msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
-            },
+            var backinfo = await AutoRetry.RunSyncAsync(() =>_msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger)
+            ,
             (e) => {
                 if (e != null)
                 {
@@ -299,10 +297,8 @@ namespace IngestTask.Grain
             {
                 if (DateTime.Now >= end)
                 {
-                    var msvtaskinfo = await AutoRetry.RunSyncAsync(async () =>
-                    {
-                        return await _msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
-                    },
+                    var msvtaskinfo = await AutoRetry.RunSyncAsync(() =>_msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger)
+                    ,
                     (e) =>
                     {
                         if (e != null)

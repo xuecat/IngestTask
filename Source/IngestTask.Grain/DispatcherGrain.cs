@@ -17,7 +17,7 @@ namespace IngestTask.Grain
     [StatelessWorker]
     public class DispatcherGrain : Grain, IDispatcherGrain
     {
-        public IConfiguration Configuration { get; }
+        public int _taskSchedulePrevious { get; }
         private readonly IScheduleClient _scheduleClient;
         readonly IGrainFactory _grainFactory;
         private IMapper _mapper;
@@ -28,7 +28,7 @@ namespace IngestTask.Grain
             _mapper = mapper;
             _grainFactory = grainFactory;
             _scheduleClient = dataServiceClient;
-            Configuration = configuration;
+            _taskSchedulePrevious = configuration.GetSection("Task:TaskSchedulePrevious").Get<int>();
         }
         public Task SendAsync(Tuple<int, string>[] messages)
         {
@@ -43,7 +43,7 @@ namespace IngestTask.Grain
                 await _grainFactory.GetGrain<ITaskCache>(0).AddTaskAsync(task);
 
                 if ((task.Starttime - DateTime.Now).TotalSeconds >
-                    Configuration.GetSection("Task:TaskSchedulePrevious").Get<int>())
+                    _taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < _taskSchedulePrevious)
                 {
                     //提交开始监听
                     await _scheduleClient.AddScheduleTaskAsync(task);
@@ -66,10 +66,43 @@ namespace IngestTask.Grain
             }
         }
 
+        //修改或者stop
         public async Task UpdateTaskAsync(DispatchTask task)
-        { }
-        public async Task StopTaskAsync(DispatchTask task)
-        { }
+        {
+            if (task != null)
+            {
+                await _grainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(task);
+
+                if ((task.Starttime - DateTime.Now).TotalSeconds >
+                    _taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < _taskSchedulePrevious)
+                {
+                    //提交开始监听
+                    await _scheduleClient.AddScheduleTaskAsync(task);
+                }
+                else
+                {
+                    var add = await _grainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
+                    if (!add)
+                    {
+                        await _scheduleClient.AddScheduleTaskAsync(task);
+                    }
+                    else//添加结束的监听
+                    {
+                        task.SyncState = (int)syncState.ssSync;
+                        await _scheduleClient.AddScheduleTaskAsync(task);
+                    }
+                }
+            }
+        }
+
+        public async Task DeleteTaskAsync(DispatchTask task)
+        {
+            if (task != null)
+            {
+                await _grainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(task);
+                var add = await _grainFactory.GetGrain<ITask>((long)task.Channelid).StopTaskAsync(_mapper.Map<TaskContent>(task));
+            }
+        }
 
     }
 }
