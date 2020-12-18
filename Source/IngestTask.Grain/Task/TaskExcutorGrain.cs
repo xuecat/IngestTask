@@ -12,6 +12,7 @@ namespace IngestTask.Grain
     using Orleans.EventSourcing;
     using Orleans.LogConsistency;
     using Orleans.Runtime;
+    using Orleans.Storage;
     using Orleans.Streams;
     using ProtoBuf;
     using Sobey.Core.Log;
@@ -43,25 +44,24 @@ namespace IngestTask.Grain
     [Serializable]
     public class TaskState
     {
-        public TaskState ()
-        {
-            TaskLists = new List<TaskFullInfo>();
-        }
+        
         //[ProtoMember(1)]
         public long ChannelId { get; set; }
         //public long ReminderTimer { get; set; }
-        public List<TaskFullInfo> TaskLists { get; set; }
+        public List<TaskFullInfo> TaskLists { get; set; } = new List<TaskFullInfo>();
 
         //修改状态对象之外，TransitionState方法不应该有任何副作用，并且应该是确定性的
         public void Apply(TaskEvent @event)
         {
+            //我认为无论任务重复不，都不需要筛选，无非一系列工作交给执行器做而已。后面引入cancletoken保证及时终止就可以了
             switch (@event.OpType)
             {
                 case opType.otAdd:
                     {
-                        if (TaskLists.Find(a => a.TaskContent.TaskId == @event.TaskContentInfo.TaskId) == null)
+                        var info = TaskLists.Find(x => x.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
+                        if (info == null)
                         {
-                            TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = true, HandleTask = false});
+                            TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = true, HandleTask = false });
                         }
                         
                     }
@@ -77,17 +77,7 @@ namespace IngestTask.Grain
                     break;
                 case opType.otStop:
                     {
-                        var item = TaskLists.Find(a => a.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
-                        if (item == null)
-                        {
-                            TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = false, HandleTask = false });
-                        }
-                        else
-                        {
-                            item.StartOrStop = false;
-                            item.HandleTask = false;
-                        }
-                            
+                        TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = false, HandleTask = false });
                     }
                     break;
                 case opType.otReDispatch:
@@ -112,8 +102,8 @@ namespace IngestTask.Grain
             }
         }
 
-        public void Apply(DeviceEvent @event)
-        { }
+        //public void Apply(DeviceEvent @event)
+        //{ }
     }
 
 
@@ -128,16 +118,18 @@ namespace IngestTask.Grain
         
         private readonly RestClient _restClient;
         private readonly ITaskHandlerFactory _handlerFactory;
-
+        private IServiceProvider _services;
         private StreamSubscriptionHandle<ChannelInfo> _streamHandle;
         private IDisposable _timer;
         readonly IGrainFactory _grainFactory;
-
+        
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
            IGrainFactory grainFactory,
             RestClient rest,
-            ITaskHandlerFactory handlerfac)
+            ITaskHandlerFactory handlerfac,
+            IServiceProvider services)
         {
+            _services = services;
             _timer = null;
             _grainFactory = grainFactory;
             _restClient = rest;
@@ -153,17 +145,27 @@ namespace IngestTask.Grain
             var streamProvider = GetStreamProvider(Abstraction.Constants.StreamProviderName.Default)
                                     .GetStream<ChannelInfo>(streamid, Abstraction.Constants.StreamName.DeviceReminder);
             _streamHandle = await streamProvider.SubscribeAsync(new StreamObserver(Logger, OnNextStream)).ConfigureAwait(true);
-             
+
+            if (State.TaskLists.Count > 0)
+            {
+                State.TaskLists.Clear();
+            }
             Logger.Info($" TaskBase active {State.ChannelId}");
             await base.OnActivateAsync();
         }
+
         public override async Task OnDeactivateAsync()
         {
             if (_streamHandle != null)
             {
                 await _streamHandle.UnsubscribeAsync();
             }
-
+            var grainStorage = this.GetGrainStorage(ServiceProvider);
+            if (grainStorage != null)
+            {
+                await grainStorage.ClearStateAsync(this.GetType().FullName, this.GrainReference, grainState: null);
+            }
+            
             if (_timer != null)
             {
                 _timer.Dispose();
@@ -227,9 +229,19 @@ namespace IngestTask.Grain
                     {
                         var fullinfo = await _restClient.GetTaskFullInfoAsync(task.TaskContent.TaskId);
 
-                        ObjectTool.CopyObjectData(fullinfo, task, "StartOrStop,RetryTimes,NewBeginTime,NewEndTime", BindingFlags.Public|BindingFlags.Instance);
+                        if (fullinfo != null)
+                        {
+                            ObjectTool.CopyObjectData(fullinfo, task, "StartOrStop,RetryTimes,NewBeginTime,NewEndTime", BindingFlags.Public | BindingFlags.Instance);
+
+                            Logger.Info($"TaskExcutor HandleTaskAsync get {JsonHelper.ToJson(task)}");
+                        }
+                        else
+                        {
+                            task.HandleTask = false;
+                            return 0;
+                        }
+                            
                         
-                        Logger.Info($"TaskExcutor HandleTaskAsync get {JsonHelper.ToJson(task)}");
                     }
                 }
 
@@ -242,10 +254,13 @@ namespace IngestTask.Grain
                     var chinfo = await devicegrain.GetChannelInfoAsync(task.TaskContent.ChannelId);
                     if (chinfo != null)
                     {
-                        var taskid = await _handlerFactory.CreateInstance(task)?.HandleTaskAsync(task, chinfo);
+                        var taskid = await _handlerFactory.CreateInstance(task, _services)?.HandleTaskAsync(task, chinfo);
                         if (taskid > 0)
                         {
+                            await _grainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(task);
+
                             RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
+                            await ConfirmEvents();
                             if (task.StartOrStop)
                             {
                                 _timer = RegisterTimer(this.OnRunningTaskMonitorAsync, new Tuple<int, int, string, int, int, string>(taskid, (int)task.TaskContent.TaskType, task.TaskContent.Begin, chinfo.ChannelId, chinfo.ChannelIndex, chinfo.Ip), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
@@ -262,6 +277,7 @@ namespace IngestTask.Grain
                         else
                         {
                             RaiseEvent(new TaskEvent() { OpType = opType.otReDispatch, TaskContentInfo = task.TaskContent });
+                            await ConfirmEvents();
                         }
                     }
                     else
@@ -287,32 +303,33 @@ namespace IngestTask.Grain
 
         }
 
-        public Task<bool> AddTaskAsync(TaskContent task)
+        public async Task<bool> AddTaskAsync(TaskContent task)
         {
             if (task != null)
             {
                 //归档
                 RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskContentInfo = task });
+                await ConfirmEvents();
                 if (_timer != null)
                 {
                     _timer.Dispose();
                     _timer = null;
                 }
-                return Task.FromResult(true);
+                return true;
             }
-            return Task.FromResult(false);
+            return false;
         }
 
-        public Task<bool> StopTaskAsync(TaskContent task)
+        public async Task<bool> StopTaskAsync(TaskContent task)
         {
             if (task != null)
             {
                 //归档
                 RaiseEvent(new TaskEvent() { OpType = opType.otStop, TaskContentInfo = task });
-                
-                return Task.FromResult(true);
+                await ConfirmEvents();
+                return true;
             }
-            return Task.FromResult(false);
+            return false;
         }
 
         public Task<bool> JudgeTaskPriorityAsync(TaskContent taskcurrent, TaskContent taskcompare)

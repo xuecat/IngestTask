@@ -2089,6 +2089,10 @@ namespace IngestTask.Tools.Msv
                                 if (nError != null)
                                 {
                                     m_error_desc = nError.InnerText;
+                                    if (m_error_desc == "Operator Failed: No Running Task")
+                                    {
+                                        return taskParam;
+                                    }
                                 }
                                 return null;
                             }

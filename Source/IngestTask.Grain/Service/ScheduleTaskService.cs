@@ -161,6 +161,19 @@ namespace IngestTask.Grain.Service
                         }
 
                     }
+
+                    if (_lstRemoveTask.Count > 0)
+                    {
+                        lock (_lstScheduleTask)
+                        {
+                            foreach (var item in _lstScheduleTask)
+                            {
+                                _lstScheduleTask.Remove(item);
+                            }
+                        }
+
+                        await _grainFactory.GetGrain<ITaskCache>(0).CompleteTaskAsync(_lstRemoveTask.Select(x => x.Taskid).ToList());
+                    }
                 }
                 else
                 {
@@ -173,19 +186,6 @@ namespace IngestTask.Grain.Service
                 
             }
             
-            if (_lstRemoveTask.Count > 0)
-            {
-                lock (_lstScheduleTask)
-                {
-                    foreach (var item in _lstScheduleTask)
-                    {
-                        _lstScheduleTask.Remove(item);
-                    }
-                }
-
-                await _grainFactory.GetGrain<ITaskCache>(0).CompleteTaskAsync(_lstRemoveTask.Select(x => x.Taskid).ToList());
-            }
-
         }
     }
 }

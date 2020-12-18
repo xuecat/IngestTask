@@ -146,6 +146,7 @@ namespace IngestTask.Server
                     (context, services) =>
                     {
                         services.AddScoped<MsvClientCtrlSDK>();
+                        
                         var client = new RestClient(context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
                         services.AddSingleton<RestClient>(client);
                         //services.AddSingleton<IScheduleService, ScheduleTaskService>();
@@ -155,6 +156,8 @@ namespace IngestTask.Server
 
                         services.Configure<ApplicationOptions>(context.Configuration);
                         services.Configure<ClusterOptions>(context.Configuration.GetSection(nameof(ApplicationOptions.Cluster)));
+                        
+                        //services.BuildServiceProvider();
                     })
                 .UseSiloUnobservedExceptionsHandler()
                 .UseAdoNetClustering(

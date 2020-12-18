@@ -89,46 +89,44 @@ namespace IngestTask.Grain
                     return taskid;
                 }
 
-                if (task.OpType == opType.otAdd)
+                if (channel.CurrentDevState == Device_State.DISCONNECTTED)
                 {
-                    if (channel.CurrentDevState != Device_State.CONNECTED)
-                    {
-                        return await UnlockTaskAsync(taskid,
-                            taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync) ? 1 : 0;
-                    }
+                    return await UnlockTaskAsync(taskid,
+                        taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync) ? 1 : 0;
+                }
 
-                    if (await StartTaskAsync(task, channel) > 0)
+                if (await StartTaskAsync(task, channel) > 0)
+                {
+                    //成功
+                    await UnlockTaskAsync(taskid, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
+                    return taskid;
+                }
+                else
+                {
+                    //使用备份信号
+                    //我擦，居然可以不用写，stop才有
+                    Logger.Info("start error. begin to use backupsignal");
+
+
+                    if (task.TaskContent.TaskType == TaskType.TT_OPENEND ||
+                        task.TaskContent.TaskType == TaskType.TT_OPENENDEX)
                     {
-                        //成功
-                        await UnlockTaskAsync(taskid, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
-                        return taskid;
+                        await UnlockTaskAsync(taskid, taskState.tsInvaild, dispatchState.dpsDispatched, syncState.ssSync);
                     }
                     else
                     {
-                        //使用备份信号
-                        //我擦，居然可以不用写，stop才有
-                        Logger.Info("start error. begin to use backupsignal");
-
-
-                        if (task.TaskContent.TaskType == TaskType.TT_OPENEND ||
-                            task.TaskContent.TaskType == TaskType.TT_OPENENDEX)
-                        {
-                            await UnlockTaskAsync(taskid, taskState.tsInvaild, dispatchState.dpsDispatched, syncState.ssSync);
-                        }
-                        else
-                        {
-                            await UnlockTaskAsync(taskid, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
-                        }
-
-                        //重调度还失败，要看看是否超过了，超过就从列表去了
-                        if (task.RetryTimes > 0)
-                        {
-                            return IsNeedRedispatchask(task);
-                        }
-
-                        return 0;
+                        await UnlockTaskAsync(taskid, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
                     }
+
+                    //重调度还失败，要看看是否超过了，超过就从列表去了
+                    if (task.RetryTimes > 0)
+                    {
+                        return IsNeedRedispatchask(task);
+                    }
+
+                    return 0;
                 }
+                
                 
             }
             else
@@ -242,29 +240,23 @@ namespace IngestTask.Grain
                     dtcurrent = DateTime.Now;
                     if (dtcurrent >= dtbegin)
                     {
-                        _msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", task.CaptureMeta, Logger);
+                        _msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", capparam, Logger);
 
-                        bool backrecord = await AutoRetry.BoolRunAsync( async () => {
-                            if (await _msvClient.RecordAsync(channel.ChannelIndex, channel.Ip, Logger))
-                            {
-                                return true;
-                            }
-                            return false;
-                        }, 3, 200);
-
+                        bool backrecord = await AutoRetry.BoolRunAsync(() => _msvClient.RecordAsync(channel.ChannelIndex, channel.Ip, Logger), 3, 200);
 
                         if (backrecord)
                         {
-                            backrecord = await AutoRetry.BoolRunAsync(async () => {
-                                if ( await _msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger) 
-                                            == Device_State.WORKING)
-                                {
-                                    return true;
-                                }
-                                return false;
-                            });
+                            var state = await AutoRetry.RunSyncAsync(() => _msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger),
+                                (e) => {
+                                    if (e == Device_State.WORKING)
+                                    {
+                                        return true;
+                                    }
+                                    return false;
+                                });
+                                            
 
-                            if (backrecord)
+                            if (state == Device_State.WORKING)
                             {
                                 return task.TaskContent.TaskId;
                             }
@@ -313,17 +305,17 @@ namespace IngestTask.Grain
                     {
                         if (msvtaskinfo.ulID == task.TaskContent.TaskId)
                         {
-                            var stopback = await AutoRetry.BoolRunAsync(async () =>
-                            {
-                                var backlong = await _msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
-                                if (backlong > 0)
-                                {
-                                    return true;
+                            var stopback = await AutoRetry.RunSyncAsync(() =>_msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger),
+                                (backlong) => {
+                                    if (backlong > 0)
+                                    {
+                                        return true;
+                                    }
+                                    return false;
                                 }
-                                return false;
-                            });
+                            );
 
-                            if (stopback)
+                            if (stopback > 0)
                             {
                                 await RestClientApi.SetTaskStateAsync(task.TaskContent.TaskId, taskState.tsComplete);
                                 await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsNo, dispatchState.dpsDispatched, syncState.ssSync);
@@ -356,9 +348,24 @@ namespace IngestTask.Grain
             }
         }
 
-        public Task<int> ForceStopTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public async Task<int> ForceStopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
-            throw new NotImplementedException();
+            var stopback = await AutoRetry.RunSyncAsync(() => _msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger),
+                                (backlong) =>
+                                {
+                                    if (backlong > 0)
+                                    {
+                                        return true;
+                                    }
+                                    return false;
+                                }
+                            );
+
+            if (stopback > 0)
+            {
+                return task.TaskContent.TaskId;
+            }
+            return 0;
         }
     }
 }

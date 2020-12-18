@@ -47,7 +47,7 @@ namespace IngestTask.Client
                     //var lsttask = await _httpClient.GetNeedSyncTaskListAsync().ConfigureAwait(true);
                     //if (lsttask != null && lsttask.Count >0)
                     //{
-                        var taskitem = await _httpClient.GetTaskDBAsync(5184).ConfigureAwait(true);
+                        var taskitem = await _httpClient.GetTaskDBAsync(5203).ConfigureAwait(true);
                         var grain = clusterClient.GetGrain<IDispatcherGrain>(0);
 
                         await grain.AddTaskAsync(taskitem).ConfigureAwait(true);

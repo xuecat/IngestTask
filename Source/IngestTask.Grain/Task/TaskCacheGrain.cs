@@ -25,11 +25,19 @@ namespace IngestTask.Grain
             await ReadStateAsync();
             await base.OnActivateAsync();
         }
+        
         public async Task AddTaskAsync(DispatchTask task)
         {
-            if (this.State.Find( x=> x.Taskid == task.Taskid) == null)
+            var tkitem = this.State.Find(x => x.Taskid == task.Taskid);
+            if (tkitem == null)
             {
                 this.State.Add(task);
+                await WriteStateAsync();
+            }
+            else
+            {
+                ObjectTool.CopyObjectData(task, tkitem, "", BindingFlags.Public | BindingFlags.Instance);
+
                 await WriteStateAsync();
             }
         }

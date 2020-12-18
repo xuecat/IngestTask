@@ -7,7 +7,7 @@ namespace IngestTask.Abstraction.Grains
 {
     public interface ITaskHandlerFactory
     {
-        ITaskHandler CreateInstance(TaskFullInfo task);
+        ITaskHandler CreateInstance(TaskFullInfo task, IServiceProvider services);
         bool RegisterHandler<T>();
     }
 }
