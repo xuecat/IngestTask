@@ -871,7 +871,17 @@ namespace IngestTask.Tools.Msv
                 string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                 
                 string cmd = string.Format("<?xml version =\"1.0\"?><query_state><nChannel>{0}</nChannel></query_state>", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                //string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd),
+                    (e) => {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1626,7 +1636,17 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = FromatParmaToStringNew(param, "start_msv_task", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                //string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd),
+                    (e) => {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
                 if (logger != null)
                     logger.Info(string.Format("taskID:{0}, MSVStartTaskNew strRet:{1}", param.taskParam.ulID, strRet));
                 if (!string.IsNullOrEmpty(strRet))
@@ -1688,7 +1708,16 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><stop_msv_task><nChannel>{0}</nChannel><nSendTaskID>{1}</nSendTaskID></stop_msv_task>\0", nChannel, lSendTaskID);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd),
+                    (e) => {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
+                //string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
                 if (logger != null)
                     logger.Info(string.Format("{0}, MSVStopTask ", strRet));
                 if (!string.IsNullOrEmpty(strRet))
@@ -1998,9 +2027,16 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><query_runing_task><nChannel>{0}</nChannel></query_runing_task>\0", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
- 
-                    
+
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd),
+                    (e) => {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -2195,7 +2231,16 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><query_SDI_format><nChannel>{0}</nChannel></query_SDI_format>\0", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                //string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd),
+                    (e) => {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -3041,7 +3086,17 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
                 string cmd = string.Format("<?xml version =\"1.0\"?><set_muldest_path>{0}</set_muldest_path>\0", strMulDestPathXML);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd),
+                    (e) => {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
+                //string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);

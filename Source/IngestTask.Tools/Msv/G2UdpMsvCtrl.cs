@@ -117,7 +117,7 @@ namespace IngestTask.Tools.Msv
 
                         buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数  
 
-                        await Task.Delay(200).ConfigureAwait(true);
+                        await Task.Delay(100).ConfigureAwait(true);
                         //System.Threading.Thread.Sleep(100);
                     }
 

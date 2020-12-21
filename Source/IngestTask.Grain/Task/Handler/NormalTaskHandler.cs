@@ -157,20 +157,7 @@ namespace IngestTask.Grain
         public override async Task<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
 
-            var backinfo = await AutoRetry.RunSyncAsync(() =>_msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger)
-            ,
-            (e) => {
-                if (e != null)
-                {
-                    return true;
-                }
-                else
-                {
-                    Logger.Error("QueryTaskInfoAsync no task running");
-                }
-                return false;
-            },
-            5, 500);
+            var backinfo = await _msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
 
 
             if (backinfo != null)
@@ -242,19 +229,11 @@ namespace IngestTask.Grain
                     {
                         _msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", capparam, Logger);
 
-                        bool backrecord = await AutoRetry.BoolRunAsync(() => _msvClient.RecordAsync(channel.ChannelIndex, channel.Ip, Logger), 3, 200);
+                        bool backrecord = await _msvClient.RecordAsync(channel.ChannelIndex, channel.Ip, Logger);
 
                         if (backrecord)
                         {
-                            var state = await AutoRetry.RunSyncAsync(() => _msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger),
-                                (e) => {
-                                    if (e == Device_State.WORKING)
-                                    {
-                                        return true;
-                                    }
-                                    return false;
-                                });
-                                            
+                            var state = await _msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger);
 
                             if (state == Device_State.WORKING)
                             {
@@ -289,31 +268,13 @@ namespace IngestTask.Grain
             {
                 if (DateTime.Now >= end)
                 {
-                    var msvtaskinfo = await AutoRetry.RunSyncAsync(() =>_msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger)
-                    ,
-                    (e) =>
-                    {
-                        if (e != null)
-                        {
-                            return true;
-                        }
-                        return false;
-                    },
-                    5, 300);
+                    var msvtaskinfo = await _msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
 
                     if (msvtaskinfo != null)
                     {
                         if (msvtaskinfo.ulID == task.TaskContent.TaskId)
                         {
-                            var stopback = await AutoRetry.RunSyncAsync(() =>_msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger),
-                                (backlong) => {
-                                    if (backlong > 0)
-                                    {
-                                        return true;
-                                    }
-                                    return false;
-                                }
-                            );
+                            var stopback = await _msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
 
                             if (stopback > 0)
                             {
@@ -350,16 +311,7 @@ namespace IngestTask.Grain
 
         public async Task<int> ForceStopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
-            var stopback = await AutoRetry.RunSyncAsync(() => _msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger),
-                                (backlong) =>
-                                {
-                                    if (backlong > 0)
-                                    {
-                                        return true;
-                                    }
-                                    return false;
-                                }
-                            );
+            var stopback = await _msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
 
             if (stopback > 0)
             {

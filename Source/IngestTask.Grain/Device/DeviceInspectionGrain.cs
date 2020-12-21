@@ -120,14 +120,7 @@ namespace IngestTask.Grain
                         {
                             foreach (var item in State.ChannelInfos)
                             {
-                                var state = await AutoRetry.RunSyncAsync(() => _msvClient.QueryDeviceStateAsync(item.ChannelIndex, item.Ip, false, Logger),
-                                    (e) => {
-                                        if (e == Device_State.DISCONNECTTED)
-                                        {
-                                            return false;
-                                        }
-                                        return true;
-                                    }, 3, 400, false);
+                                var state = await _msvClient.QueryDeviceStateAsync(item.ChannelIndex, item.Ip, false, Logger);
 
                                 MSV_Mode msvmode = MSV_Mode.NETWORK;
                                 if (state == Device_State.DISCONNECTTED)
@@ -245,20 +238,7 @@ namespace IngestTask.Grain
         public async Task<int> QueryRunningTaskInChannelAsync(string ip, int index)
         {
             //通道状态校验，
-            var backinfo = await AutoRetry.RunSyncAsync(() => _msvClient.QueryTaskInfoAsync(index, ip, Logger),
-               (e) =>
-               {
-                   if (e != null)
-                   {
-                       return true;
-                   }
-                   else
-                   {
-                       Logger.Error("QueryTaskInfoAsync no task running");
-                   }
-                   return false;
-               },
-               5, 500);
+            var backinfo = await  _msvClient.QueryTaskInfoAsync(index, ip, Logger);
             if (backinfo != null)
             {
                 return (int)backinfo.ulID;
