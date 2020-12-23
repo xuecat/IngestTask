@@ -18,8 +18,7 @@ namespace IngestTask.Tools.Msv
         {
         }
         public async Task<string> SendMsvCommandAsync(
-            ILogger logger,string strlocip,
-            int nlocport, string strmsvip,
+            ILogger logger, IPAddress ipaddress, string strmsvip,
             int nmsvchport, string strcmd)
         {
             string strret = "";
@@ -30,13 +29,13 @@ namespace IngestTask.Tools.Msv
             }
 
             string strtmplog = string.Format("{0}:{1}", strmsvip, nmsvchport);
-            logger.Info(strtmplog +", strcmd:" + strcmd);
+            //logger.Info(strtmplog + ", strcmd:" + strcmd);
 
             using (UdpClient udpClient = new UdpClient(0))
             {
                 try
                 {
-                    IPEndPoint remoteIpep = new IPEndPoint(IPAddress.Parse(strmsvip), nmsvchport); // 发送到的IP地址和端口号
+                    IPEndPoint remoteIpep = new IPEndPoint(ipaddress, nmsvchport); // 发送到的IP地址和端口号
                     string strContent = strcmd;//string.Format("<?xml version=\"1.0\"?><query_state><nChannel>{0}</nChannel></query_state>\0", 3100);
                     byte[] bytes = System.Text.Encoding.Unicode.GetBytes(strContent);
                     int u = bytes.Length + 8;
@@ -56,7 +55,7 @@ namespace IngestTask.Tools.Msv
                     int ntimes = 4;
                     uint nNeedRecvLen = 0;
                     uint nRecvedLen = (uint)0;
-                    byte[] bytedata = new byte[3072];
+                    byte[] bytedata = new byte[2048];
                     while (true)
                     {
                         if (buffSizeCurrent <= 1)
@@ -81,7 +80,7 @@ namespace IngestTask.Tools.Msv
                             continue;
                         }
 
-                        if (buffSizeCurrent > 0)     //有数据时候才读，不然会出异常哦
+                        if (buffSizeCurrent > 1)     //有数据时候才读，不然会出异常哦
                         {
                             //byte[] data = await udpClient.ReceiveAsync(ref remoteIpep).ConfigureAwait(true);  
                             var backinfo = await udpClient.ReceiveAsync().ConfigureAwait(true);
@@ -97,11 +96,19 @@ namespace IngestTask.Tools.Msv
                                 else
                                 {
                                     uint nlen = (uint)(bytedata[3] | bytedata[2] << 8 | bytedata[1] << 16 | bytedata[0] << 24);
-                                    nNeedRecvLen = nlen;
-                                    if (nRecvedLen >= nNeedRecvLen)
+                                    if (nlen > 2048)//无效值
                                     {
-                                        break;
+                                        continue;
                                     }
+                                    else
+                                    {
+                                        nNeedRecvLen = nlen;
+                                        if (nRecvedLen >= nNeedRecvLen)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                    
                                 }
                             }
                             else
@@ -132,7 +139,7 @@ namespace IngestTask.Tools.Msv
                         //bytedata[nRecvedLen - 1] = Convert.ToByte('\0');
                         strret = Encoding.Unicode.GetString(datatmp).TrimEnd('\0');
 
-                        logger.Info($"{strmsvip}:{nmsvchport} len: {nRecvedLen} recv: {strret}");
+                        //logger.Info($"{strmsvip}:{nmsvchport} len: {nRecvedLen} recv: {strret}");
                         datatmp = null;
                     }
                     else

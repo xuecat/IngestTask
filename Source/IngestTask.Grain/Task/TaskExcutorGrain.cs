@@ -59,7 +59,7 @@ namespace IngestTask.Grain
                 case opType.otAdd:
                     {
                         var info = TaskLists.Find(x => x.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
-                        if (info == null && DateTimeFormat.DateTimeFromString(@event.TaskContentInfo.End) < DateTime.Now)//防止持久性从数据库加载过期任务执行
+                        if (info == null && DateTimeFormat.DateTimeFromString(@event.TaskContentInfo.End) > DateTime.Now)//防止持久性从数据库加载过期任务执行
                         {
                             TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = true, HandleTask = false });
                         }
@@ -78,7 +78,7 @@ namespace IngestTask.Grain
                 case opType.otStop:
                     {
                         //防止持久性从数据库加载过期任务执行
-                        if (DateTimeFormat.DateTimeFromString(@event.TaskContentInfo.End) < DateTime.Now.AddSeconds(-10))
+                        if (DateTimeFormat.DateTimeFromString(@event.TaskContentInfo.End) < DateTime.Now.AddSeconds(10))
                         {
                             TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = false, HandleTask = false });
                         }
@@ -245,8 +245,6 @@ namespace IngestTask.Grain
                             task.HandleTask = false;
                             return 0;
                         }
-                            
-                        
                     }
                 }
 
@@ -262,7 +260,7 @@ namespace IngestTask.Grain
                         var taskid = await _handlerFactory.CreateInstance(task, _services)?.HandleTaskAsync(task, chinfo);
                         if (taskid > 0)
                         {
-                            await _grainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(await _restClient.GetTaskDBAsync(task.TaskContent.TaskId));
+                            
 
                             RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
                             await ConfirmEvents();
@@ -275,8 +273,13 @@ namespace IngestTask.Grain
 
                             if (task.StartOrStop)
                             {
-                                
+                                await _grainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(await _restClient.GetTaskDBAsync(task.TaskContent.TaskId));
                                 _timer = RegisterTimer(this.OnRunningTaskMonitorAsync, new Tuple<int, int, string, int, int, string>(taskid, (int)task.TaskContent.TaskType, task.TaskContent.Begin, chinfo.ChannelId, chinfo.ChannelIndex, chinfo.Ip), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
+                            }
+                            else
+                            {
+                                
+                                await _grainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(taskid);
                             }
                         }
                         else

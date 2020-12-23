@@ -42,12 +42,16 @@ namespace IngestTask.Grain
             }
         }
 
-        public async Task DeleteTaskAsync(DispatchTask task)
+        public async Task DeleteTaskAsync(int task)
         {
-            if (task != null)
+            if (task > 0)
             {
-                this.State.RemoveAll(x => x.Taskid == task.Taskid);
-                await WriteStateAsync();
+                int ncount =this.State.RemoveAll(x => x.Taskid == task);
+                if (ncount > 0)
+                {
+                    await WriteStateAsync();
+                }
+                
             }
         }
 

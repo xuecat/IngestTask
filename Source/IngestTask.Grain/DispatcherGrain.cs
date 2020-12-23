@@ -99,7 +99,7 @@ namespace IngestTask.Grain
         {
             if (task != null)
             {
-                await _grainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(task);
+                await _grainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(task.Taskid);
                 var add = await _grainFactory.GetGrain<ITask>((long)task.Channelid).StopTaskAsync(_mapper.Map<TaskContent>(task));
             }
         }

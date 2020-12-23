@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -805,7 +806,32 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<? xml version =\"1.0\"?><set_msv_ctrlmode><b_mode>{0}</b_mode><nChannel>{1}</nChannel><set_msv_ctrlmode>\0", Convert.ToInt32(bCtrl), nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                //string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -873,10 +899,26 @@ namespace IngestTask.Tools.Msv
                 string cmd = string.Format("<?xml version =\"1.0\"?><query_state><nChannel>{0}</nChannel></query_state>", nChannel);
                 //string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
 
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd),
-                    (e) => {
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return null;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
                         if (string.IsNullOrEmpty(e))
                         {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
                             return false;
                         }
                         return true;
@@ -884,7 +926,6 @@ namespace IngestTask.Tools.Msv
 
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -984,7 +1025,31 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><switch_msv_state><s_mode>{0}</s_mode><nChannel>{1}</nChannel></switch_msv_state>\0", Convert.ToInt32(mode), nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
 
                 if (!string.IsNullOrEmpty(strRet))
                 {
@@ -1047,7 +1112,32 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><get_tasklist_state><nChannel>{0}</nChannel></get_tasklist_state>\0", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return BATCH_STATE.BS_ERROR;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1111,7 +1201,32 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><set_tasklist_state><s_state>{0}</s_state><nChannel>{1}</nChannel></set_tasklist_state>\0", Convert.ToInt32(BATCH_STATE.BS_RUNNING), nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1170,7 +1285,32 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><set_tasklist_state><s_state>{0}</s_state><nChannel>{1}</nChannel></set_tasklist_state>\0", Convert.ToInt32(BATCH_STATE.BS_STOP), nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1238,7 +1378,31 @@ namespace IngestTask.Tools.Msv
             {
                 string cmd = FromatParmaToString(param, "set_msv_task", nChannel);
                 string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1305,8 +1469,31 @@ namespace IngestTask.Tools.Msv
                 {
                     string cmd = FromatParmaToStringNew(param, "set_msv_task", nChannel);
                     string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
-                    string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
-                    if (!string.IsNullOrEmpty(strRet))
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
+                if (!string.IsNullOrEmpty(strRet))
                     {
                         _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
@@ -1364,7 +1551,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><del_msv_task><i_taskID>{0}</i_taskID><nChannel>{1}</nChannel></del_msv_task>\0", taskID, nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1430,7 +1640,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = FromatParmaToString(param, "update_msv_task", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1493,7 +1726,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = !string.IsNullOrEmpty(strMsvIp) ? strMsvIp : m_iCtrlIp;
                 string cmd = FromatParmaToStringNew(param, "update_msv_task", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1565,7 +1821,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = FromatParmaToString(param, "start_msv_task", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1638,10 +1917,26 @@ namespace IngestTask.Tools.Msv
                 string cmd = FromatParmaToStringNew(param, "start_msv_task", nChannel);
                 //string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
 
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd),
-                    (e) => {
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
                         if (string.IsNullOrEmpty(e))
                         {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
                             return false;
                         }
                         return true;
@@ -1708,10 +2003,26 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><stop_msv_task><nChannel>{0}</nChannel><nSendTaskID>{1}</nSendTaskID></stop_msv_task>\0", nChannel, lSendTaskID);
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd),
-                    (e) => {
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return -1;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
                         if (string.IsNullOrEmpty(e))
                         {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
                             return false;
                         }
                         return true;
@@ -1783,7 +2094,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><query_manu_task><nChannel>{0}</nChannel></query_manu_task>\0", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return null;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1906,7 +2240,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><msv_pause_capture><nChannel>{0}</nChannel><taskid>{1}</taskid></msv_pause_capture>\0", nChannel, taskID);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -1966,7 +2323,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><msv_continue_capture><nChannel>{0}</nChannel><taskid>{1}</taskid></msv_continue_capture>\0",nChannel, taskID);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -2028,10 +2408,26 @@ namespace IngestTask.Tools.Msv
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><query_runing_task><nChannel>{0}</nChannel></query_runing_task>\0", nChannel);
 
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd),
-                    (e) => {
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return null;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
                         if (string.IsNullOrEmpty(e))
                         {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
                             return false;
                         }
                         return true;
@@ -2169,7 +2565,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><query_task_state><s_taskid>{0}</s_taskid><nChannel>{1}</nChannel></query_task_state>\0", taskID, nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return TASK_STATE.TS_ERROR;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -2232,10 +2651,26 @@ namespace IngestTask.Tools.Msv
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><query_SDI_format><nChannel>{0}</nChannel></query_SDI_format>\0", nChannel);
                 //string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd),
-                    (e) => {
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return null;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
                         if (string.IsNullOrEmpty(e))
                         {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
                             return false;
                         }
                         return true;
@@ -2360,7 +2795,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = FromatParmaToStringNew(param, "start_msv_retrospecttask", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -2411,7 +2869,7 @@ namespace IngestTask.Tools.Msv
 
         }
         //手动打点
-        public async Task<MANUALKEYFRAME> SetEssenceMarkAsync(string strMSVIP, Sobey.Core.Log.ILogger logger)
+        public async Task<MANUALKEYFRAME> SetEssenceMarkAsync(string strMSVIP, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             
 
@@ -2419,7 +2877,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
                 string cmd = "<Set_MSV_EssenceMark></Set_MSV_EssenceMark>\0";
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return null;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -2497,14 +2978,37 @@ namespace IngestTask.Tools.Msv
 
         }
         //发送智能分段命令 by yj
-        public async Task<MSV_RET> MSVSetExceptCutClipAsync(string strMSVIP, bool bEnable, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVSetExceptCutClipAsync(string strMSVIP, bool bEnable, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             
             try
             {
                 string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><Set_MSV_ExceptCut><bEnable>{0}</bEnable></Set_MSV_ExceptCut>\0", Convert.ToInt32(bEnable));
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -2658,7 +3162,30 @@ namespace IngestTask.Tools.Msv
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><msv_NetDriver_Status><disk>{0}</disk><nChannel>{1}</nChannel></msv_NetDriver_Status>\0",
                     strDisk.Substring(0, 1), nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return false;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -2718,7 +3245,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIP)) ? strMsvIP : m_iCtrlIp;
                 string cmd = string.Format("<?xml version=\"1.0\"?><msv_query_DBEChannel><nChannel>{0}</nChannel></msv_query_DBEChannel>\0", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return 0;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -2893,7 +3443,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version =\"1.0\"?><Relocate><Port>{0}</Port><TargetIP>{1}</TargetIP><LocalIP>{2}</LocalIP><PgmID>{3}</PgmID><bUdp>{4}</bUdp><taskID>{5}</taskID></Relocate>", nPort, lpStrTargetIP, lpStrLocalIP, nPgmID, bUDP, taskID);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nPort, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -2952,7 +3525,30 @@ namespace IngestTask.Tools.Msv
                 string ip = (!string.IsNullOrEmpty(strTSIp)) ? strTSIp : m_iCtrlIp;
                 string cmd = string.Format("<?xml version =\"1.0\"?><Relocate><Port>{0}</Port><TargetIP>{1}</TargetIP><LocalIP>{2}</LocalIP><PgmID>{3}</PgmID><taskID>{4}</taskID></Relocate>",
                     nPort, lpStrTargetIP, lpStrLocalIP, nAnalyzeID, taskID);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return 0;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nTSPort, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -3029,7 +3625,30 @@ namespace IngestTask.Tools.Msv
             {
                 string ip = (!string.IsNullOrEmpty(strMsvIp)) ? strMsvIp : m_iCtrlIp;
                 string cmd = FromatParmaToString(param, "start_msv_retrospecttask", nChannel);
-                string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", nChannel, ip, nChannel, cmd).ConfigureAwait(true);
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                    (e) =>
+                    {
+                        if (string.IsNullOrEmpty(e))
+                        {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
+                            return false;
+                        }
+                        return true;
+                    }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
                     _xml.LoadXml(strRet);
@@ -3079,7 +3698,7 @@ namespace IngestTask.Tools.Msv
             
         }
 
-        public async Task<MSV_RET> MSVSetMulDestPathAsync(string strMSVIP, string strMulDestPathXML, Sobey.Core.Log.ILogger logger)
+        public async Task<MSV_RET> MSVSetMulDestPathAsync(string strMSVIP, int channel, string strMulDestPathXML, Sobey.Core.Log.ILogger logger)
         {
            
             try
@@ -3087,10 +3706,26 @@ namespace IngestTask.Tools.Msv
                 string ip = (!string.IsNullOrEmpty(strMSVIP)) ? strMSVIP : m_iCtrlIp;
                 string cmd = string.Format("<?xml version =\"1.0\"?><set_muldest_path>{0}</set_muldest_path>\0", strMulDestPathXML);
 
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd),
-                    (e) => {
+                IPAddress ipaddress;
+                if (!IPAddress.TryParse(ip, out ipaddress))
+                {
+                    return MSV_RET.MSV_FAILED;
+                }
+                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, channel, cmd),
+                    (e) =>
+                    {
                         if (string.IsNullOrEmpty(e))
                         {
+                            return false;
+                        }
+
+                        try
+                        {
+                            _xml.LoadXml(e);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error($"parese xml error {ex.Message}");
                             return false;
                         }
                         return true;

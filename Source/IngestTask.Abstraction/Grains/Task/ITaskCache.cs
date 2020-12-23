@@ -13,7 +13,7 @@ namespace IngestTask.Abstraction.Grains
     {
         Task AddTaskAsync(DispatchTask task);
         Task UpdateTaskAsync(DispatchTask task);
-        Task DeleteTaskAsync(DispatchTask task);
+        Task DeleteTaskAsync(int task);
         Task<DispatchTask> GetTaskAsync(int taskid);
         Task<List<DispatchTask>> GetTaskListAsync(List<int> taskid);
         Task CompleteTaskAsync(List<int> taskid);

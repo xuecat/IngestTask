@@ -116,11 +116,11 @@ namespace IngestTask.Grain.Service
             {
                 //获取最新缓存，保证中途修改，删除了也不会更新
                 var lsttask = await _grainFactory.GetGrain<ITaskCache>(0).GetTaskListAsync(_lstScheduleTask.Select(x => x.Taskid).ToList());
-                if (lsttask != null)
+                if (lsttask != null && lsttask.Count > 0)
                 {
                     foreach (var task in lsttask)
                     {
-                        if (task.SyncState == (int)syncState.ssNot)
+                        if (task.State == (int)taskState.tsReady)
                         {
                             if (task.Tasktype == (int)TaskType.TT_PERIODIC
                                 && task.State == (int)taskState.tsReady
@@ -148,7 +148,7 @@ namespace IngestTask.Grain.Service
                                 }
                             }
                         }
-                        else if (task.SyncState == (int)syncState.ssSync)
+                        else if (task.State == (int)taskState.tsExecuting || task.State == (int)taskState.tsManuexecuting)
                         {
                             var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
                             if (spansecond > 0 && spansecond < test)
@@ -166,10 +166,12 @@ namespace IngestTask.Grain.Service
                     {
                         lock (_lstScheduleTask)
                         {
-                            foreach (var item in _lstScheduleTask)
+                            if (_lstScheduleTask.Count >0)
                             {
-                                _lstScheduleTask.Remove(item);
+                                var lst = _lstRemoveTask.Select(x => x.Taskid).ToList();
+                                _lstScheduleTask.RemoveAll(x => lst.Contains(x.Taskid));
                             }
+                            
                         }
 
                         await _grainFactory.GetGrain<ITaskCache>(0).CompleteTaskAsync(_lstRemoveTask.Select(x => x.Taskid).ToList());

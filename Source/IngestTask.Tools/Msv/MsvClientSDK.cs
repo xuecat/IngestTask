@@ -176,7 +176,7 @@ namespace IngestTask.Tools.Msv
                     strPath = pathNode.InnerText;
                     strMutPath = string.Format("<multiDest><taskid>{0}</taskid>{1}</multiDest>", m_taskParam.ulID, strPath);
                     //ret = _clientSdk.MSVSetMulDestPath(strMsvIP, strMutPath, logger);
-                    ret = await _clientSdk.MSVSetMulDestPathAsync(strMsvIP, strMutPath, logger).ConfigureAwait(true);
+                    ret = await _clientSdk.MSVSetMulDestPathAsync(strMsvIP, nChPort, strMutPath, logger).ConfigureAwait(true);
                     if (ret == MSV_RET.MSV_NETERROR)
                     {
                         logger.Error($"MSVSetMulDestPath::taskName={m_taskParam.strName};Error:{_clientSdk.MSVGetLastErrorString()}!");
