@@ -69,7 +69,9 @@ namespace IngestTask.Grain
                 {
                     foreach (var item in needsynctasklst)
                     {
-                        await _grainFactory.GetGrain<ITask>(item.ChannelId).AddTaskAsync(item);
+                        //
+                        await _grainFactory.GetGrain<IDispatcherGrain>(0).AddTaskAsync(await _restClient.GetTaskDBAsync(item.TaskId));
+                        //await _grainFactory.GetGrain<ITask>(item.ChannelId).AddTaskAsync(item);
                     }
                 }
             }

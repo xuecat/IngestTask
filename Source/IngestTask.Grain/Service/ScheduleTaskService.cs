@@ -32,7 +32,7 @@ namespace IngestTask.Grain.Service
         private readonly Sobey.Core.Log.ILogger Logger;
         public IConfiguration Configuration { get; }
 
-        
+        private int _timerMinutesTimes;
         public ScheduleTaskService(IServiceProvider services, IGrainIdentity id, Silo silo,
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory,
             IGrainFactory grainFactory, IMapper mapper, RestClient restClient, IConfiguration configuration)
@@ -45,8 +45,10 @@ namespace IngestTask.Grain.Service
             _mapper = mapper;
             _restClient = restClient;
             Configuration = configuration;
+            _timerMinutesTimes = 1;
         }
        
+        
         public Task<int> AddScheduleTaskAsync(DispatchTask task)
         {
             if (task != null && _lstScheduleTask.Find(x => x.Taskid == task.Taskid) == null)
@@ -54,7 +56,11 @@ namespace IngestTask.Grain.Service
                 lock (_lstScheduleTask)
                 {
                     _lstScheduleTask.Add(task);
-                    _lstScheduleTask = _lstScheduleTask.OrderBy(x => x.Starttime).ToList();
+                    if (_dispoScheduleTimer == null)
+                    {
+                        _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(_timerMinutesTimes));
+                    }
+                    
                     return Task.FromResult(1);
                 }
             }
@@ -69,8 +75,14 @@ namespace IngestTask.Grain.Service
                 lock (_lstScheduleTask)
                 {
                     _lstScheduleTask.RemoveAll(x => x.Taskid == task.Taskid);
-                    return Task.FromResult(1);
+                    
                 }
+                if (_lstScheduleTask.Count == 0 && _dispoScheduleTimer != null)
+                {
+                    _dispoScheduleTimer.Dispose();
+                    _dispoScheduleTimer = null;
+                }
+                return Task.FromResult(1);
             }
 
             return Task.FromResult(0);
@@ -83,8 +95,7 @@ namespace IngestTask.Grain.Service
 
         protected override async Task StartInBackground()
         {
-            _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
-            
+           
             var device = _grainFactory.GetGrain<IDeviceInspections>(0);
             await device.CheckChannelSatetAsync();
 
@@ -98,6 +109,7 @@ namespace IngestTask.Grain.Service
 
         public override Task Stop()
         {
+            _lstScheduleTask.Clear();
             return base.Stop();
         }
 
@@ -187,7 +199,13 @@ namespace IngestTask.Grain.Service
                 }
                 
             }
-            
+
+            if (_lstScheduleTask.Count == 0 && _dispoScheduleTimer != null)
+            {
+                _dispoScheduleTimer.Dispose();
+                _dispoScheduleTimer = null;
+            }
+
         }
     }
 }

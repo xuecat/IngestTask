@@ -260,8 +260,6 @@ namespace IngestTask.Grain
                         var taskid = await _handlerFactory.CreateInstance(task, _services)?.HandleTaskAsync(task, chinfo);
                         if (taskid > 0)
                         {
-                            
-
                             RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
                             await ConfirmEvents();
 
@@ -274,7 +272,7 @@ namespace IngestTask.Grain
                             if (task.StartOrStop)
                             {
                                 await _grainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(await _restClient.GetTaskDBAsync(task.TaskContent.TaskId));
-                                _timer = RegisterTimer(this.OnRunningTaskMonitorAsync, new Tuple<int, int, string, int, int, string>(taskid, (int)task.TaskContent.TaskType, task.TaskContent.Begin, chinfo.ChannelId, chinfo.ChannelIndex, chinfo.Ip), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
+                                _timer = RegisterTimer(this.OnRunningTaskMonitorAsync, new Tuple<int, int, string, int, int, string>(taskid, (int)task.TaskContent.TaskType, task.TaskContent.Begin, chinfo.ChannelId, chinfo.ChannelIndex, chinfo.Ip), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
                             }
                             else
                             {
