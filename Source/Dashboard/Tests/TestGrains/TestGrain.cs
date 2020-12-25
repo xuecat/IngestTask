@@ -25,7 +25,7 @@ namespace TestGrains
         {
             if (random.Next(100) > 50)
             {
-                throw new Exception();
+                //throw new Exception();
             }
 
             return Task.CompletedTask;

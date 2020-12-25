@@ -30,8 +30,7 @@ Source/Dashboard/Tests/PerformanceTests/bin/
 Source/Dashboard/Tests/PerformanceTests/obj/
 Source/Dashboard/Tests/TestGrains/bin/
 Source/Dashboard/Tests/TestGrains/obj/
-Source/Dashboard/Tests/TestHosts/TestHost/bin/
-Source/Dashboard/Tests/TestHosts/TestHost/obj/
+Source/Dashboard/Tests/TestHosts/TestHost/
 Source/Dashboard/Tests/TestHosts/TestHostBuilder/bin/
 Source/Dashboard/Tests/TestHosts/TestHostBuilder/obj/
 Source/Dashboard/Tests/TestHosts/TestHostCohosted/bin/
