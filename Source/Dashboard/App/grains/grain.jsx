@@ -36,7 +36,84 @@ const GrainGraph = props => {
     </div>
   )
 }
+const Taskinfo = props => {
+  const values = props.stats
+  const timepoints = []
 
+  const tasktypes = [
+    'TT_NORMAL','TT_PERIODIC','TT_OPENEND','TT_LOOP' ,'TT_TIEUP' ,'TT_MANUTASK','TT_VTRUPLOAD' ,'TT_OPENENDEX'
+  ];
+  
+  if (!values.length) {
+    return null
+  }
+
+  return (
+    <table className="table">
+      <tbody>
+        <tr>
+          <th style={{ textAlign: 'left' }}>Id</th>
+          <th style={{ textAlign: 'right' }}>Type</th>
+          <th style={{ textAlign: 'right' }}>Begin</th>
+          <th style={{ textAlign: 'right' }}>End</th>
+          <th style={{ textAlign: 'right' }}>State</th>
+          <th style={{ textAlign: 'right' }}>SyncState</th>
+          <th style={{ textAlign: 'right' }}>DispatchState</th>
+        </tr>
+        {values.map((item) =>{
+         
+            return (
+              <tr key={item.taskid}>
+                <td style={{ textOverflow: 'ellipsis' }} title={item.taskid}>
+                </td>
+                <td>
+                  <span className="pull-right">
+                    <strong>{item.tasktype}</strong>{tasktypes[item.tasktype]}
+                  </span>
+                </td>
+                <td>
+                  <span className="pull-right">
+                    <strong>
+                      {item.starttime}
+                    </strong>
+                  </span>
+                </td>
+                <td>
+                  <span className="pull-right">
+                    <strong>
+                      {item.endtime}
+                    </strong>{' '}
+                  </span>
+                </td>
+                <td>
+                  <span className="pull-right">
+                    <strong>
+                      {item.state}
+                    </strong>{' '}
+                  </span>
+                </td>
+                <td>
+                  <span className="pull-right">
+                    <strong>
+                      {item.syncState}
+                    </strong>{' '}
+                  </span>
+                </td>
+                <td>
+                  <span className="pull-right">
+                    <strong>
+                      {item.dispatchState}
+                    </strong>{' '}
+                  </span>
+                </td>
+              </tr>
+            )
+          
+        })}
+      </tbody>
+    </table>
+  )
+}
 // add multiple axis to the chart
 // https://jsfiddle.net/devonuto/pa7k6xn9/
 module.exports = class Grain extends React.Component {
@@ -109,7 +186,7 @@ module.exports = class Grain extends React.Component {
               />
             </div>
           </div>
-
+          {this.props.ingesttaskinfo != null? <Taskinfo stats={this.props.ingesttaskinfo}></Taskinfo>:null}
           <Panel title="Method Profiling">
             <div>
               <span>

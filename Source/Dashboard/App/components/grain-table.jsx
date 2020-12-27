@@ -58,6 +58,7 @@ module.exports = class GrainTable extends React.Component {
     var grainClassName = parts[parts.length - 1]
     var systemGrain = stat.grainType.startsWith('Orleans.')
     var dashboardGrain = stat.grainType.startsWith('OrleansDashboard.')
+    var ingestGrain = stat.grainType.includes('IngestTask.')
     return (
       <tr key={stat.grainType}>
         <td style={{ textOverflow: 'ellipsis' }} title={stat.grainType}>
@@ -69,6 +70,9 @@ module.exports = class GrainTable extends React.Component {
           ) : null}
           {dashboardGrain ? (
             <span className="label label-primary">Dashboard Grain</span>
+          ) : null}
+          {ingestGrain ? (
+            <span className="label label-primary">Ingest Grain</span>
           ) : null}
         </td>
         <td>

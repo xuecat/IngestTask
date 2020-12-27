@@ -21,7 +21,6 @@ namespace IngestTask.Grain.Service
     using System.Text;
     using System.Threading.Tasks;
    
-    [Reentrant]
     public class ScheduleTaskService : GrainService, IScheduleService
     {
         readonly IGrainFactory _grainFactory;
@@ -183,7 +182,11 @@ namespace IngestTask.Grain.Service
                                 var lst = _lstRemoveTask.Select(x => x.Taskid).ToList();
                                 _lstScheduleTask.RemoveAll(x => lst.Contains(x.Taskid));
                             }
-                            
+                            if (_lstScheduleTask.Count == 0 && _dispoScheduleTimer != null)
+                            {
+                                _dispoScheduleTimer.Dispose();
+                                _dispoScheduleTimer = null;
+                            }
                         }
 
                         await _grainFactory.GetGrain<ITaskCache>(0).CompleteTaskAsync(_lstRemoveTask.Select(x => x.Taskid).ToList());
@@ -194,17 +197,19 @@ namespace IngestTask.Grain.Service
                     lock (_lstScheduleTask)
                     {
                         _lstScheduleTask.Clear();
+
+                        if (_lstScheduleTask.Count == 0 && _dispoScheduleTimer != null)
+                        {
+                            _dispoScheduleTimer.Dispose();
+                            _dispoScheduleTimer = null;
+                        }
                         Logger.Info("clear all scheduletask");
                     }
                 }
                 
             }
 
-            if (_lstScheduleTask.Count == 0 && _dispoScheduleTimer != null)
-            {
-                _dispoScheduleTimer.Dispose();
-                _dispoScheduleTimer = null;
-            }
+            
 
         }
     }
