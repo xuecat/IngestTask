@@ -16,6 +16,7 @@ namespace IngestTask.Abstraction.Grains
         Task DeleteTaskAsync(int task);
         Task<DispatchTask> GetTaskAsync(int taskid);
         Task<List<DispatchTask>> GetTaskListAsync(List<int> taskid);
+        Task<List<DispatchTask>> GetTaskListAsync();
         Task CompleteTaskAsync(List<int> taskid);
     }
 }

@@ -7,12 +7,12 @@ namespace OrleansDashboard.Metrics
 {
     public static class GrainProfilerExtensions
     {
-        public static void Track<T>(this IGrainProfiler profiler, double elapsedMs, [CallerMemberName] string methodName = null, bool failed = false)
+        public static void Track<T>(this IGrainProfiler profiler, double elapsedMs, string identity, [CallerMemberName] string methodName = null, bool failed = false)
         {
-            profiler.Track(elapsedMs, typeof(T), methodName, failed);
+            profiler.Track(elapsedMs, typeof(T), identity, methodName, failed);
         }
 
-        public static async Task TrackAsync<T>(this IGrainProfiler profiler, Func<Task> handler, [CallerMemberName] string methodName = null)
+        public static async Task TrackAsync<T>(this IGrainProfiler profiler, Func<Task> handler, string identity, [CallerMemberName] string methodName = null)
         {
             var stopwatch = Stopwatch.StartNew();
 
@@ -22,13 +22,13 @@ namespace OrleansDashboard.Metrics
 
                 stopwatch.Stop();
 
-                profiler.Track(stopwatch.Elapsed.TotalMilliseconds, typeof(T), methodName);
+                profiler.Track(stopwatch.Elapsed.TotalMilliseconds, typeof(T), identity, methodName);
             }
             catch (Exception)
             {
                 stopwatch.Stop();
 
-                profiler.Track(stopwatch.Elapsed.TotalMilliseconds, typeof(T), methodName, true);
+                profiler.Track(stopwatch.Elapsed.TotalMilliseconds, typeof(T), identity, methodName, true);
                 throw;
             }
         }

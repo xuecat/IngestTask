@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using OrleansDashboard.Abstraction;
 
 namespace OrleansDashboard.Metrics
 {
@@ -69,7 +70,23 @@ namespace OrleansDashboard.Metrics
 
                 var grainMethodName = formatMethodName(context);
 
-                profiler.Track(elapsedMs, context.Grain.GetType(), grainMethodName, isException);
+                if (context.Grain.GetType().GetCustomAttribute<MultiGrainAttribute>() == null)
+                {
+                    profiler.Track(elapsedMs, context.Grain.GetType(), string.Empty, grainMethodName, isException);
+                }
+                else
+                {
+                    string identity = string.Empty;
+                    if (context.Grain.GetPrimaryKeyString() == null)
+                    {
+                        identity = context.Grain.GetPrimaryKeyLong().ToString();
+                    }
+                    else
+                        identity = context.Grain.GetPrimaryKeyString();
+
+                    profiler.Track(elapsedMs, context.Grain.GetType(), identity, grainMethodName, isException);
+                }
+                    
             }
             catch (Exception ex)
             {

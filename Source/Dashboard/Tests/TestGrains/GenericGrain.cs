@@ -29,7 +29,7 @@ namespace TestGrains
         [NoProfiling]
         public async Task<T> EchoNoProfiling(T value)
         {
-            await profiler.TrackAsync<GenericGrain<T>>(() => Task.Delay(1000));
+            await profiler.TrackAsync<GenericGrain<T>>(() => Task.Delay(1000), this.GrainReference.GetPrimaryKeyString());
 
             return value;
         }

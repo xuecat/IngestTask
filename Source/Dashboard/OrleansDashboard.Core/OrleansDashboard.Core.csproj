@@ -32,4 +32,7 @@
   <ItemGroup>
     <None Include="OrleansLogo.png" Pack="true" PackagePath="\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OrleansDashboard.Abstraction\OrleansDashboard.Abstraction.csproj" />
+  </ItemGroup>
 </Project>

@@ -15,7 +15,6 @@ namespace IngestTask.Grain
 
     
 
-    [Reentrant]
     public class CheckScheduleTaskGrain : Grain<List<CheckTaskContent>>, ICheckSchedule
     {
         private IDisposable _dispoScheduleTimer;

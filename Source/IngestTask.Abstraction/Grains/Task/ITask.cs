@@ -10,7 +10,7 @@ namespace IngestTask.Abstraction.Grains
 {
     public interface ITask : IGrainWithIntegerKey
     {
-        Task<TaskContent> GetCurrentTaskAsync();
+        Task<List<DispatchTask>> GetCurrentTaskListAsync();
 
         
         Task<bool> AddTaskAsync(TaskContent task);

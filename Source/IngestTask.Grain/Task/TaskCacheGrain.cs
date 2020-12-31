@@ -4,6 +4,7 @@ using IngestTask.Tools;
 using Orleans;
 using Orleans.Concurrency;
 using Orleans.Providers;
+using OrleansDashboard.Abstraction;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace IngestTask.Grain
 {
+    [TraceGrain("IngestTask.Grain.TaskCacheGrain", TaskTraceEnum.TaskExec)]
     [Reentrant]
     //[StorageProvider(ProviderName = "MemoryStore")]
     public class TaskCacheGrain : Grain<List<DispatchTask>>, ITaskCache
@@ -85,6 +87,9 @@ namespace IngestTask.Grain
             return Task.FromResult(lstitem);
         }
 
-        
+        public Task<List<DispatchTask>> GetTaskListAsync()
+        {
+            return Task.FromResult(this.State);
+        }
     }
 }

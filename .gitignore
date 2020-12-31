@@ -26,8 +26,16 @@ Source/Dashboard/OrleansDashboard/bin/
 Source/Dashboard/OrleansDashboard/obj/
 Source/Dashboard/OrleansDashboard.Core/bin/
 Source/Dashboard/OrleansDashboard.Core/obj/
+
+Source/Dashboard/OrleansDashboard.Abstraction/bin/
+Source/Dashboard/OrleansDashboard.Abstraction/obj/
+
 Source/Dashboard/Tests/PerformanceTests/bin/
 Source/Dashboard/Tests/PerformanceTests/obj/
+
+Source/Dashboard/Tests/IngestTestGrain/bin/
+Source/Dashboard/Tests/IngestTestGrain/obj/
+
 Source/Dashboard/Tests/TestGrains/bin/
 Source/Dashboard/Tests/TestGrains/obj/
 Source/Dashboard/Tests/TestHosts/TestHost/

@@ -18,6 +18,7 @@ namespace IngestTask.Grain
     using Orleans.Streams;
     using IngestTask.Tools;
     using System.Linq;
+    using OrleansDashboard.Abstraction;
 
     //[ProtoContract]
     [Serializable]
@@ -32,6 +33,7 @@ namespace IngestTask.Grain
 
     
     [Reentrant]
+    [TraceGrain("IngestTask.Grain.DeviceInspectionGrain", TaskTraceEnum.TaskExec)]
     public class DeviceInspectionGrain : Grain<DeviceState>, IDeviceInspections
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("DeviceInfo");
@@ -210,6 +212,11 @@ namespace IngestTask.Grain
             await _stream.OnNextAsync( info);
 
             return 0;
+        }
+
+        public Task<List<ChannelInfo>> GetChannelInfosAsync()
+        {
+            return Task.FromResult(this.State.ChannelInfos);
         }
 
         public Task<bool> IsChannelInvalidAsync(int channelid)

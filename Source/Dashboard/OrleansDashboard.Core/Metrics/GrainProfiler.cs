@@ -71,7 +71,7 @@ namespace OrleansDashboard.Metrics
         }
 
 
-        public void Track(double elapsedMs, Type grainType, [CallerMemberName] string methodName = null, bool failed = false)
+        public void Track(double elapsedMs, Type grainType, string identity, [CallerMemberName] string methodName = null, bool failed = false)
         {
             if (grainType == null)
             {
@@ -83,7 +83,12 @@ namespace OrleansDashboard.Metrics
                 throw new ArgumentException("Method name cannot be null or empty.", nameof(methodName));
             }
 
-            var grainName = GetFullName(grainType);
+            var grainName = GetFullName(grainType) ;
+
+            if (!string.IsNullOrEmpty(identity))
+            {
+                grainName += $":{identity}";
+            }
 
             var key = $"{grainName}.{methodName}";
 

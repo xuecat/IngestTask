@@ -11,6 +11,8 @@ using OrleansDashboard.Model.History;
 using OrleansDashboard.Metrics.Details;
 using OrleansDashboard.Metrics.History;
 using OrleansDashboard.Metrics.TypeFormatting;
+using System.Reflection;
+using OrleansDashboard.Abstraction;
 
 namespace OrleansDashboard
 {
@@ -52,7 +54,7 @@ namespace OrleansDashboard
             {
                 var metricsGrain = GrainFactory.GetGrain<IManagementGrain>(0);
                 var activationCountTask = metricsGrain.GetTotalActivationCount();
-                var simpleGrainStatsTask = metricsGrain.GetSimpleGrainStatistics();
+                var simpleGrainStatsTask = metricsGrain.GetDetailedGrainStatistics();
                 var siloDetailsTask = siloDetailsProvider.GetSiloDetails();
 
                 await Task.WhenAll(activationCountTask, simpleGrainStatsTask, siloDetailsTask);
@@ -68,7 +70,7 @@ namespace OrleansDashboard
         }
 
         internal void RecalculateCounters(int activationCount, SiloDetails[] hosts,
-            IList<SimpleGrainStatistic> simpleGrainStatistics)
+            IList<DetailedGrainStatistic> simpleGrainStatistics)
         {
             counters.TotalActivationCount = activationCount;
 
@@ -86,11 +88,26 @@ namespace OrleansDashboard
             counters.SimpleGrainStats = simpleGrainStatistics.Select(x =>
             {
                 var grainName = TypeFormatter.Parse(x.GrainType);
+                
+                if (MultiGrainAttribute.IsRecordClass(x.GrainType))
+                {
+                    if (x.GrainIdentity.PrimaryKeyString != null)
+                    {
+                        grainName += $":{x.GrainIdentity.PrimaryKeyString}";
+                    }
+                    else
+                    {
+                        grainName += $":{x.GrainIdentity.PrimaryKeyLong}";
+                    }
+                    
+                }
+                
                 var siloAddress = x.SiloAddress.ToParsableString();
 
                 var result = new SimpleGrainStatisticCounter
                 {
-                    ActivationCount = x.ActivationCount,
+                    //ActivationCount = x.ActivationCount,
+                    ActivationCount = 1,
                     GrainType = grainName,
                     SiloAddress = siloAddress,
                     TotalSeconds = elapsedTime
@@ -105,6 +122,22 @@ namespace OrleansDashboard
 
                 return result;
             }).ToArray();
+        }
+
+        private async Task RecalculateTask()
+        {
+            foreach (var item in counters.SimpleGrainStats)
+            {
+                var type = TraceGrainAttribute.GetRecordTrace(item.GrainType);
+                if (type != TaskTraceEnum.No)
+                {
+                    var grin = GrainFactory.GetGrain<IDashboardTaskGrain>(0);
+                    if (grin != null)
+                    {
+                        item.ExtraData = await grin.GetTaskTrace(item.GrainType, type);
+                    }
+                }
+            }
         }
 
         public override Task OnActivateAsync()
@@ -124,7 +157,7 @@ namespace OrleansDashboard
         public async Task<Immutable<Dictionary<string, Dictionary<string, GrainTraceEntry>>>> GetGrainTracing(string grain)
         {
             await EnsureCountersAreUpToDate();
-
+            await RecalculateTask();
             return history.QueryGrain(grain).AsImmutable();
         }
 

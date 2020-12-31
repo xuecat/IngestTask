@@ -24,11 +24,12 @@ namespace TestGrains
                 await genericGrain.TestTU("string", 1);
 
                 var random = new Random();
-
-                while (!tokenSource.IsCancellationRequested)
+                int i = 0;
+                while (i < 6)
                 {
                     try
                     {
+                        i++;
                         var testGrain = client.GetGrain<ITestGrain>(random.Next(500));
 
                         await Task.Delay(2000);

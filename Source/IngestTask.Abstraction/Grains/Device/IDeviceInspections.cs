@@ -11,6 +11,7 @@ namespace IngestTask.Abstraction.Grains
     public interface IDeviceInspections : IGrainWithIntegerKey
     {
         Task<int> CheckChannelSatetAsync();
+        Task<List<ChannelInfo>> GetChannelInfosAsync();
         Task<bool> IsChannelInvalidAsync(int channelid);
         Task<ChannelInfo> GetChannelInfoAsync(int channelid);
         Task<int> QueryRunningTaskInChannelAsync(string ip, int index);

@@ -3,6 +3,7 @@ using ProtoBuf;
 
 namespace IngestTask.Grain
 {
+    using AutoMapper;
     using IngestTask.Abstraction.Grains;
     using IngestTask.Dto;
     using IngestTask.Tool;
@@ -14,6 +15,7 @@ namespace IngestTask.Grain
     using Orleans.Runtime;
     using Orleans.Storage;
     using Orleans.Streams;
+    using OrleansDashboard.Abstraction;
     using ProtoBuf;
     using Sobey.Core.Log;
     using System;
@@ -116,6 +118,8 @@ namespace IngestTask.Grain
     //[LogConsistencyProvider(ProviderName = "CustomStorage")]
     //[StorageProvider(ProviderName="store1")]
 
+    [MultiGrain("IngestTask.Grain.TaskExcutorGrain")]
+    [TraceGrain("IngestTask.Grain.TaskExcutorGrain", TaskTraceEnum.TaskExec)]
     [ImplicitStreamSubscription(Abstraction.Constants.StreamName.DeviceReminder)]
     public class TaskExcutorGrain : JournaledGrain<TaskState,TaskEvent>, ITask
     {
@@ -127,18 +131,20 @@ namespace IngestTask.Grain
         private StreamSubscriptionHandle<ChannelInfo> _streamHandle;
         private IDisposable _timer;
         readonly IGrainFactory _grainFactory;
-        
+        private IMapper _mapper;
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
            IGrainFactory grainFactory,
             RestClient rest,
             ITaskHandlerFactory handlerfac,
-            IServiceProvider services)
+            IServiceProvider services,
+            IMapper mapper)
         {
             _services = services;
             _timer = null;
             _grainFactory = grainFactory;
             _restClient = rest;
             _handlerFactory = handlerfac;
+            _mapper = mapper;
         }
 
         public override async Task OnActivateAsync()
@@ -192,9 +198,9 @@ namespace IngestTask.Grain
 
         
 
-        public Task<TaskContent> GetCurrentTaskAsync()
+        public Task<List<DispatchTask>> GetCurrentTaskListAsync()
         {
-            throw new NotImplementedException();
+            return Task.FromResult(_mapper.Map<List<DispatchTask>>(this.State.TaskLists));
         }
 
         protected override void OnStateChanged()

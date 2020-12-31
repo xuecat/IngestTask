@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using Orleans;
 using Orleans.Runtime;
+using OrleansDashboard;
+using OrleansDashboard.Abstraction;
 
 namespace TestGrains
 {
@@ -12,6 +14,7 @@ namespace TestGrains
         Task ExampleMethod2();
     }
 
+    [MultiGrain("TestGrains.TestGrain")]
     public class TestGrain : Grain, ITestGrain, IRemindable
     {
         private readonly Random random = new Random();
@@ -38,6 +41,7 @@ namespace TestGrains
             await RegisterOrUpdateReminder("Weekly", TimeSpan.Zero, TimeSpan.FromDays(7));
         }
 
+        
         public Task ReceiveReminder(string reminderName, TickStatus status)
         {
             return Task.CompletedTask;

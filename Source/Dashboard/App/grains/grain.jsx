@@ -44,7 +44,7 @@ const Taskinfo = props => {
     'TT_NORMAL','TT_PERIODIC','TT_OPENEND','TT_LOOP' ,'TT_TIEUP' ,'TT_MANUTASK','TT_VTRUPLOAD' ,'TT_OPENENDEX'
   ];
   
-  if (!values.length) {
+  if (!values.length || values.length < 1) {
     return null
   }
 

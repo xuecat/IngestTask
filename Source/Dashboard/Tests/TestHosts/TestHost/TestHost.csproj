@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -15,7 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\IngestTask.Abstraction\IngestTask.Abstraction.csproj" />
+    <ProjectReference Include="..\..\..\..\IngestTask.Tools\IngestTask.Tools.csproj" />
     <ProjectReference Include="..\..\..\OrleansDashboard\OrleansDashboard.csproj" />
+    <ProjectReference Include="..\..\IngestTestGrain\IngestTestGrain.csproj" />
     <ProjectReference Include="..\..\TestGrains\TestGrains.csproj" />
   </ItemGroup>
 

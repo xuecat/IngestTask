@@ -10,5 +10,6 @@
         public double CallsPerSecond { get; set; }
         public object TotalSeconds { get; set; }
         public long TotalExceptions { get; set; }
+        public object ExtraData { get; set; }
     }
 }
