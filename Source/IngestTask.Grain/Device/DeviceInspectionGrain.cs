@@ -33,7 +33,7 @@ namespace IngestTask.Grain
 
     
     [Reentrant]
-    [TraceGrain("IngestTask.Grain.DeviceInspectionGrain", TaskTraceEnum.TaskExec)]
+    [TraceGrain("IngestTask.Grain.DeviceInspectionGrain", TaskTraceEnum.Device)]
     public class DeviceInspectionGrain : Grain<DeviceState>, IDeviceInspections
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("DeviceInfo");
