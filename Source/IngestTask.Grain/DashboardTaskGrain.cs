@@ -18,10 +18,9 @@ namespace IngestTask.Grain
     [StatelessWorker]
     public class DashboardTaskGrain : Grain, IDashboardTaskGrain
     {
-        readonly IGrainFactory _grainFactory;
-        DashboardTaskGrain(IGrainFactory grainFactory)
+     
+        public DashboardTaskGrain()
         {
-            _grainFactory = grainFactory;
         }
 
         public async Task<object> GetTaskTrace(string grain, TaskTraceEnum type)
@@ -44,7 +43,7 @@ namespace IngestTask.Grain
 
         public async Task<List<DispatchTask>> GetChacheTaskTraceAsync()
         {
-            var graininfo = _grainFactory.GetGrain<ITaskCache>(0);
+            var graininfo = GrainFactory.GetGrain<ITaskCache>(0);
             if (graininfo != null)
             {
                 return await graininfo.GetTaskListAsync();
@@ -54,7 +53,7 @@ namespace IngestTask.Grain
 
         public async Task<List<ChannelInfo>> GetDeviceTraceAsync()
         {
-            var graininfo = _grainFactory.GetGrain<IDeviceInspections>(0);
+            var graininfo = GrainFactory.GetGrain<IDeviceInspections>(0);
             if (graininfo != null)
             {
                 return await graininfo.GetChannelInfosAsync();
@@ -65,9 +64,9 @@ namespace IngestTask.Grain
         public async Task<List<DispatchTask>> GetExcuterTaskTraceAsync(string grain)
         {
             var info = grain.Split(":");
-            if (info.Length > 1 && _grainFactory != null)
+            if (info.Length > 1 && GrainFactory != null)
             {
-                var graininfo = _grainFactory.GetGrain<ITask>(int.Parse(info.ElementAt(1)));
+                var graininfo = GrainFactory.GetGrain<ITask>(int.Parse(info.ElementAt(1)));
                 if (graininfo != null)
                 {
                     return await graininfo.GetCurrentTaskListAsync();

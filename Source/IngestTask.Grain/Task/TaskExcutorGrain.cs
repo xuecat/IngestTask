@@ -130,10 +130,8 @@ namespace IngestTask.Grain
         private IServiceProvider _services;
         private StreamSubscriptionHandle<ChannelInfo> _streamHandle;
         private IDisposable _timer;
-        readonly IGrainFactory _grainFactory;
         private IMapper _mapper;
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
-           IGrainFactory grainFactory,
             RestClient rest,
             ITaskHandlerFactory handlerfac,
             IServiceProvider services,
@@ -141,7 +139,6 @@ namespace IngestTask.Grain
         {
             _services = services;
             _timer = null;
-            _grainFactory = grainFactory;
             _restClient = rest;
             _handlerFactory = handlerfac;
             _mapper = mapper;
@@ -151,7 +148,7 @@ namespace IngestTask.Grain
         {
             State.ChannelId = this.GetPrimaryKeyLong();
 
-            var devicegrain = _grainFactory.GetGrain<IDeviceInspections>(0);
+            var devicegrain = GrainFactory.GetGrain<IDeviceInspections>(0);
             var streamid = await devicegrain.JoinAsync((int)State.ChannelId);
             var streamProvider = GetStreamProvider(Abstraction.Constants.StreamProviderName.Default)
                                     .GetStream<ChannelInfo>(streamid, Abstraction.Constants.StreamName.DeviceReminder);
@@ -257,7 +254,7 @@ namespace IngestTask.Grain
                 /*
                 * flag katamaki任务检测
                 */
-                var devicegrain = _grainFactory.GetGrain<IDeviceInspections>(0);
+                var devicegrain = GrainFactory.GetGrain<IDeviceInspections>(0);
                 if (devicegrain != null)
                 {
                     var chinfo = await devicegrain.GetChannelInfoAsync(task.TaskContent.ChannelId);
@@ -277,13 +274,13 @@ namespace IngestTask.Grain
 
                             if (task.StartOrStop)
                             {
-                                await _grainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(await _restClient.GetTaskDBAsync(task.TaskContent.TaskId));
+                                await GrainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(await _restClient.GetTaskDBAsync(task.TaskContent.TaskId));
                                 _timer = RegisterTimer(this.OnRunningTaskMonitorAsync, new Tuple<int, int, string, int, int, string>(taskid, (int)task.TaskContent.TaskType, task.TaskContent.Begin, chinfo.ChannelId, chinfo.ChannelIndex, chinfo.Ip), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
                             }
                             else
                             {
                                 
-                                await _grainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(taskid);
+                                await GrainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(taskid);
                             }
                         }
                         else
@@ -366,7 +363,7 @@ namespace IngestTask.Grain
 
             if (taskinfolst != null)
             {
-                var devicegrain = _grainFactory.GetGrain<IDeviceInspections>(0);
+                var devicegrain = GrainFactory.GetGrain<IDeviceInspections>(0);
                 if (devicegrain != null)
                 {
                     int msvtaskid = await devicegrain.QueryRunningTaskInChannelAsync(param.Item6, param.Item5);

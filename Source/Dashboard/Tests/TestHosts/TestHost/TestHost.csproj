@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\IngestTask.Abstraction\IngestTask.Abstraction.csproj" />
+    <ProjectReference Include="..\..\..\..\IngestTask.Grain\IngestTask.Grain.csproj" />
     <ProjectReference Include="..\..\..\..\IngestTask.Tools\IngestTask.Tools.csproj" />
     <ProjectReference Include="..\..\..\OrleansDashboard\OrleansDashboard.csproj" />
     <ProjectReference Include="..\..\IngestTestGrain\IngestTestGrain.csproj" />

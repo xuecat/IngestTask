@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading;
 using System.Xml.Linq;
 using AutoMapper;
+using IngestTask.Abstraction.Constants;
 using IngestTask.Abstraction.Grains;
 using IngestTask.Abstraction.Service;
 using IngestTask.Tool;
@@ -111,6 +112,10 @@ namespace TestHost
                             config.AddInMemoryCollection(dic);
                         }
                     })
+                    .AddMemoryGrainStorageAsDefault()
+                .AddMemoryGrainStorage("PubSubStore")
+                //.AddGrainService<ScheduleTaskService>()
+                .AddSimpleMessageStreamProvider(StreamProviderName.Default)
                     .Build();
 
             silo.StartAsync().Wait();

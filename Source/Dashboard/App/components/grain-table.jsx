@@ -58,7 +58,7 @@ module.exports = class GrainTable extends React.Component {
     var grainClassName = parts[parts.length - 1]
     var systemGrain = stat.grainType.startsWith('Orleans.')
     var dashboardGrain = stat.grainType.startsWith('OrleansDashboard.')
-    var ingestGrain = stat.grainType.includes('IngestTask.')
+    var ingestGrain = stat.grainType.startsWith('IngestTask.')
     return (
       <tr key={stat.grainType}>
         <td style={{ textOverflow: 'ellipsis' }} title={stat.grainType}>

@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace IngestTask.Grain
 {
-    [TraceGrain("IngestTask.Grain.TaskCacheGrain", TaskTraceEnum.TaskExec)]
+    [TraceGrain("IngestTask.Grain.TaskCacheGrain", TaskTraceEnum.TaskCache)]
     [Reentrant]
     //[StorageProvider(ProviderName = "MemoryStore")]
     public class TaskCacheGrain : Grain<List<DispatchTask>>, ITaskCache

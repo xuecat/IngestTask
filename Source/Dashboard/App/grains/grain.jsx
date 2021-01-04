@@ -49,69 +49,81 @@ const Taskinfo = props => {
   }
 
   return (
-    <table className="table">
-      <tbody>
-        <tr>
-          <th style={{ textAlign: 'left' }}>Id</th>
-          <th style={{ textAlign: 'right' }}>Type</th>
-          <th style={{ textAlign: 'right' }}>Begin</th>
-          <th style={{ textAlign: 'right' }}>End</th>
-          <th style={{ textAlign: 'right' }}>State</th>
-          <th style={{ textAlign: 'right' }}>SyncState</th>
-          <th style={{ textAlign: 'right' }}>DispatchState</th>
-        </tr>
-        {values.map((item) =>{
-         
-            return (
-              <tr key={item.taskid}>
-                <td style={{ textOverflow: 'ellipsis' }} title={item.taskid}>
-                </td>
-                <td>
-                  <span className="pull-right">
-                    <strong>{item.tasktype}</strong>{tasktypes[item.tasktype]}
-                  </span>
-                </td>
-                <td>
-                  <span className="pull-right">
-                    <strong>
-                      {item.starttime}
-                    </strong>
-                  </span>
-                </td>
-                <td>
-                  <span className="pull-right">
-                    <strong>
-                      {item.endtime}
-                    </strong>{' '}
-                  </span>
-                </td>
-                <td>
-                  <span className="pull-right">
-                    <strong>
-                      {item.state}
-                    </strong>{' '}
-                  </span>
-                </td>
-                <td>
-                  <span className="pull-right">
-                    <strong>
-                      {item.syncState}
-                    </strong>{' '}
-                  </span>
-                </td>
-                <td>
-                  <span className="pull-right">
-                    <strong>
-                      {item.dispatchState}
-                    </strong>{' '}
-                  </span>
-                </td>
-              </tr>
-            )
+    <Panel title={"Task Infos: "+ props.address}>
+      <div>
+        <table className="table">
+        <tbody>
+          <tr>
+            <th style={{ textAlign: 'left' }}>Id</th>
+            <th style={{ textAlign: 'right' }}>Name</th>
+            <th style={{ textAlign: 'right' }}>Type</th>
+            <th style={{ textAlign: 'right' }}>Begin</th>
+            <th style={{ textAlign: 'right' }}>End</th>
+            <th style={{ textAlign: 'right' }}>State</th>
+            <th style={{ textAlign: 'right' }}>SyncState</th>
+            <th style={{ textAlign: 'right' }}>DispatchState</th>
+          </tr>
+          {values.map((item) =>{
           
-        })}
-      </tbody>
-    </table>
+              return (
+                <tr key={item.taskid}>
+                  <td style={{ textOverflow: 'ellipsis' }}>
+                      <strong>{item.taskid}</strong>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>{item.taskname}</strong>
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>{item.tasktype}</strong>{':'+tasktypes[item.tasktype]}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>
+                        {new Date(item.starttime).format("yyyy-MM-dd hh:mm:ss.S")}
+                      </strong>
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>
+                        {new Date(item.endtime).format("yyyy-MM-dd hh:mm:ss.S")}
+                      </strong>{' '}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>
+                        {item.state}
+                      </strong>{' '}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>
+                        {item.syncState}
+                      </strong>{' '}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>
+                        {item.dispatchState}
+                      </strong>{' '}
+                    </span>
+                  </td>
+                </tr>
+              )
+            
+          })}
+        </tbody>
+      </table>
+      </div>
+    </Panel>
+    
   )
 }
 // add multiple axis to the chart
@@ -127,7 +139,9 @@ module.exports = class Grain extends React.Component {
       totalSeconds: 0,
       totalAwaitTime: 0,
       totalCalls: 0,
-      totalExceptions: 0
+      totalExceptions: 0,
+      extraDtata: null,
+      siloAddress:''
     }
     this.props.dashboardCounters.simpleGrainStats.forEach(stat => {
       if (stat.grainType !== this.props.grainType) return
@@ -136,7 +150,10 @@ module.exports = class Grain extends React.Component {
       stats.totalAwaitTime += stat.totalAwaitTime
       stats.totalCalls += stat.totalCalls
       stats.totalExceptions += stat.totalExceptions
+      stats.extraDtata = stat.extraData;
+      stats.siloAddress = stat.siloAddress;
     })
+
 
     return (
       <Page
@@ -186,7 +203,7 @@ module.exports = class Grain extends React.Component {
               />
             </div>
           </div>
-          {this.props.ingesttaskinfo != null? <Taskinfo stats={this.props.ingesttaskinfo}></Taskinfo>:null}
+          {stats.extraDtata != null? <Taskinfo address={stats.siloAddress} stats={stats.extraDtata}></Taskinfo>:null}
           <Panel title="Method Profiling">
             <div>
               <span>

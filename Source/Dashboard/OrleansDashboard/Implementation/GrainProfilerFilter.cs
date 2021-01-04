@@ -72,10 +72,18 @@ namespace OrleansDashboard.Metrics
 
                 if (context.Grain.GetType().GetCustomAttribute<MultiGrainAttribute>() == null)
                 {
+                    //必须要这个
+                    if (context.Grain.GetType().GetCustomAttribute<TraceGrainAttribute>() == null)
+                    {
+
+                    }
+
                     profiler.Track(elapsedMs, context.Grain.GetType(), string.Empty, grainMethodName, isException);
                 }
                 else
                 {
+                    
+
                     string identity = string.Empty;
                     if (context.Grain.GetPrimaryKeyString() == null)
                     {

@@ -19,14 +19,12 @@ namespace IngestTask.Grain
     {
         public int _taskSchedulePrevious { get; }
         private readonly IScheduleClient _scheduleClient;
-        readonly IGrainFactory _grainFactory;
         private IMapper _mapper;
         public DispatcherGrain(IScheduleClient dataServiceClient,
-            IConfiguration configuration, IGrainFactory grainFactory, IMapper mapper)
+            IConfiguration configuration, IMapper mapper)
         {
             //_mapper = new Mapper();
             _mapper = mapper;
-            _grainFactory = grainFactory;
             _scheduleClient = dataServiceClient;
             _taskSchedulePrevious = configuration.GetSection("Task:TaskSchedulePrevious").Get<int>();
         }
@@ -40,7 +38,7 @@ namespace IngestTask.Grain
             if (task != null)
             {
                 //记录缓存
-                await _grainFactory.GetGrain<ITaskCache>(0).AddTaskAsync(task);
+                await GrainFactory.GetGrain<ITaskCache>(0).AddTaskAsync(task);
 
                 if ((task.Starttime - DateTime.Now).TotalSeconds >
                     _taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < _taskSchedulePrevious)
@@ -50,7 +48,7 @@ namespace IngestTask.Grain
                 }
                 else
                 {
-                    var add = await _grainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
+                    var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
                     if (!add)
                     {
                         await _scheduleClient.AddScheduleTaskAsync(task);
@@ -71,7 +69,7 @@ namespace IngestTask.Grain
         {
             if (task != null)
             {
-                await _grainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(task);
+                await GrainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(task);
 
                 if ((task.Starttime - DateTime.Now).TotalSeconds >
                     _taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < _taskSchedulePrevious)
@@ -81,7 +79,7 @@ namespace IngestTask.Grain
                 }
                 else
                 {
-                    var add = await _grainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
+                    var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
                     if (!add)
                     {
                         await _scheduleClient.AddScheduleTaskAsync(task);
@@ -99,8 +97,8 @@ namespace IngestTask.Grain
         {
             if (task != null)
             {
-                await _grainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(task.Taskid);
-                var add = await _grainFactory.GetGrain<ITask>((long)task.Channelid).StopTaskAsync(_mapper.Map<TaskContent>(task));
+                await GrainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(task.Taskid);
+                var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).StopTaskAsync(_mapper.Map<TaskContent>(task));
             }
         }
 

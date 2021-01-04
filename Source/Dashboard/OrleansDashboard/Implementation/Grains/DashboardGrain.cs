@@ -85,7 +85,7 @@ namespace OrleansDashboard
 
             var aggregatedTotals = history.GroupByGrainAndSilo().ToLookup(x => (x.Grain, x.SiloAddress));
 
-            counters.SimpleGrainStats = simpleGrainStatistics.Select(x =>
+            var grainstatts = simpleGrainStatistics.Select(x =>
             {
                 var grainName = TypeFormatter.Parse(x.GrainType);
                 
@@ -122,6 +122,23 @@ namespace OrleansDashboard
 
                 return result;
             }).ToArray();
+
+            foreach (var item in counters.SimpleGrainStats)
+            {
+                if (item.ExtraData != null)
+                {
+                    foreach (var item2 in grainstatts)
+                    {
+                        if (item2.GrainType == item.GrainType && item2.SiloAddress == item.SiloAddress)
+                        {
+                            item2.ExtraData = item.ExtraData;
+                            break;
+                        }
+                    }
+                }
+                
+            }
+            counters.SimpleGrainStats = grainstatts;
         }
 
         private async Task RecalculateTask()
