@@ -48,70 +48,72 @@ const Taskinfo = props => {
     return null
   }
 
+  var taskordevice = values[0].hasOwnProperty('taskid');
+
   return (
     <Panel title={"Task Infos: "+ props.address}>
       <div>
         <table className="table">
         <tbody>
           <tr>
-            <th style={{ textAlign: 'left' }}>Id</th>
-            <th style={{ textAlign: 'right' }}>Name</th>
-            <th style={{ textAlign: 'right' }}>Type</th>
-            <th style={{ textAlign: 'right' }}>Begin</th>
-            <th style={{ textAlign: 'right' }}>End</th>
-            <th style={{ textAlign: 'right' }}>State</th>
-            <th style={{ textAlign: 'right' }}>SyncState</th>
-            <th style={{ textAlign: 'right' }}>DispatchState</th>
+            <th style={{ textAlign: 'left' }}>{taskordevice?'TaskId':'ChannelId'}</th>
+            <th style={{ textAlign: 'right' }}>{taskordevice?'Name':'DeviceName'}</th>
+            <th style={{ textAlign: 'right' }}>{taskordevice?'Type':'Ip'}</th>
+            <th style={{ textAlign: 'right' }}>{taskordevice?'Begin':'Port'}</th>
+            <th style={{ textAlign: 'right' }}>{taskordevice?'End':'CurrentDevState'}</th>
+            <th style={{ textAlign: 'right' }}>{taskordevice?'State':'LastDevState'}</th>
+            <th style={{ textAlign: 'right' }}>{taskordevice?'SyncState':'LastMsvMode'}</th>
+            <th style={{ textAlign: 'right' }}>{taskordevice?'DispatchState':'NeedStopFlag'}</th>
           </tr>
           {values.map((item) =>{
           
               return (
                 <tr key={item.taskid}>
                   <td style={{ textOverflow: 'ellipsis' }}>
-                      <strong>{item.taskid}</strong>
+                      <strong>{taskordevice?item.taskid:item.channelid}</strong>
                   </td>
                   <td>
                     <span className="pull-right">
-                      <strong>{item.taskname}</strong>
+                      <strong>{taskordevice?item.taskname:item.devicename}</strong>
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
-                      <strong>{item.tasktype}</strong>{':'+tasktypes[item.tasktype]}
+                      <strong>{taskordevice?item.tasktype:item.ip}</strong>:{taskordevice?tasktypes[item.tasktype]:''}
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {new Date(item.starttime).format("yyyy-MM-dd hh:mm:ss.S")}
+                        {taskordevice?new Date(item.starttime).format("yyyy-MM-dd hh:mm:ss.S"):item.port}
                       </strong>
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {new Date(item.endtime).format("yyyy-MM-dd hh:mm:ss.S")}
+                        {taskordevice?new Date(item.endtime).format("yyyy-MM-dd hh:mm:ss.S"):item.currentdevstate}
                       </strong>{' '}
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {item.state}
+                        {taskordevice?item.state:item.lastdevstate}
                       </strong>{' '}
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {item.syncState}
+                        {taskordevice?item.syncState:item.lastmsvmode}
                       </strong>{' '}
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {item.dispatchState}
+                        {taskordevice?item.dispatchState:item.needstopflag}
                       </strong>{' '}
                     </span>
                   </td>
