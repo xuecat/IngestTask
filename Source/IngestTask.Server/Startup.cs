@@ -7,12 +7,15 @@ namespace IngestTask.Server
     using Microsoft.Extensions.Logging;
     using AutoMapper;
     using IngestTask.Tools;
+    using Microsoft.Extensions.Diagnostics.HealthChecks;
+    using System;
 #pragma warning disable CA1724 // The type name conflicts with the namespace name 'Orleans.Runtime.Startup'
     public class Startup
 #pragma warning restore CA1724 // The type name conflicts with the namespace name 'Orleans.Runtime.Startup'
     {
         public virtual void ConfigureServices(IServiceCollection services) =>
             services
+                .Configure<HealthCheckPublisherOptions>(opt => { opt.Period = TimeSpan.FromSeconds(3); })
                 .AddAutoMapper(typeof(GlobalProfile))
                 .AddRouting()
                 .AddHealthChecks()
@@ -30,13 +33,8 @@ namespace IngestTask.Server
                 application.UseCustomSerilogRequestLogging(loggerFactory);
             }
             application
-                .UseRouting()
-                .UseEndpoints(
-                    builder =>
-                    {
-                        builder.MapHealthChecks("/status");
-                        builder.MapHealthChecks("/status/self", new HealthCheckOptions() { Predicate = _ => false });
-                    });
+                .UseHealthChecks("/status")
+                .UseRouting();
 
             
         }

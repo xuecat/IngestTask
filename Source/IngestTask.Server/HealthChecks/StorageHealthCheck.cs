@@ -4,20 +4,18 @@ namespace IngestTask.Server.HealthChecks
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Extensions.Diagnostics.HealthChecks;
-    using Microsoft.Extensions.Logging;
     using Orleans;
     using IngestTask.Abstraction.Grains.HealthChecks;
+    using Sobey.Core.Log;
 
     public class StorageHealthCheck : IHealthCheck
     {
         private const string FailedMessage = "Failed storage health check.";
         private readonly IClusterClient client;
-        private readonly ILogger<StorageHealthCheck> logger;
-
-        public StorageHealthCheck(IClusterClient client, ILogger<StorageHealthCheck> logger)
+        private readonly ILogger Logger = LoggerManager.GetLogger("StorageHealthCheck");
+        public StorageHealthCheck(IClusterClient client)
         {
             this.client = client;
-            this.logger = logger;
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(
@@ -28,14 +26,14 @@ namespace IngestTask.Server.HealthChecks
             {
                 // Call this grain with a random key each time. This grain then deactivates itself, so there is a new
                 // instance created and destroyed each time.
-                await this.client.GetGrain<IStorageHealthCheckGrain>(Guid.NewGuid()).CheckAsync().ConfigureAwait(false);
+                await this.client.GetGrain<IStorageHealthCheckGrain>("ingesttaskstorage").CheckAsync().ConfigureAwait(false);
             }
 #pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception exception)
 #pragma warning restore CA1031 // Do not catch general exception types
             {
 #pragma warning disable CA1303 // Do not pass literals as localized parameters
-                this.logger.LogError(exception, FailedMessage);
+                Logger.Error(exception.Message+ FailedMessage);
 #pragma warning restore CA1303 // Do not pass literals as localized parameters
                 return HealthCheckResult.Unhealthy(FailedMessage, exception);
             }

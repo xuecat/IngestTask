@@ -30,12 +30,15 @@ namespace IngestTask.Server
     using IngestTask.Abstraction.Grains;
     using System.Collections.Generic;
     using System.Xml.Linq;
+    using System.Threading;
+    using System.Runtime.Loader;
 
     public static class Program
     {
         public static Task<int> Main(string[] args) => LogAndRunAsync(CreateHostBuilder(args).Build());
         private static Sobey.Core.Log.ILogger ExceptionLogger = LoggerManager.GetLogger("Exception");
         private static Sobey.Core.Log.ILogger StartLogger = LoggerManager.GetLogger("Startup");
+        private static int siloStopping = 0;
         public static async Task<int> LogAndRunAsync(IHost host)
         {
             if (host is null)
@@ -52,12 +55,18 @@ namespace IngestTask.Server
             CreateLogger(host);
             try
             {
+                var resetEvent = new ManualResetEvent(false);
+                ConfigureShutdown(host, resetEvent);
+
 #pragma warning disable CA1303 // 请不要将文本作为本地化参数传递
                 StartLogger.Info("Started application");
                 await host.RunAsync().ConfigureAwait(false);
                 StartLogger.Info("Stopped application");
 #pragma warning restore CA1303 // 请不要将文本作为本地化参数传递
-                
+
+                resetEvent.WaitOne();
+                resetEvent.Dispose();
+
                 return 0;
             }
 #pragma warning disable CA1031 // Do not catch general exception types
@@ -213,7 +222,10 @@ namespace IngestTask.Server
 
         private static void ConfigureWebHostBuilder(IWebHostBuilder webHostBuilder) =>
             webHostBuilder
-                .UseKestrel((builderContext, options) => options.AddServerHeader = false)
+                .UseKestrel((builderContext, options) => { 
+                    options.AddServerHeader = false; 
+                    options.ListenAnyIP(int.Parse(builderContext.Configuration.GetSection("HealthCheckPort").Value, CultureInfo.CurrentCulture));
+                })
                 .UseStartup<Startup>();
 
         private static IConfigurationBuilder AddConfiguration(
@@ -352,6 +364,53 @@ namespace IngestTask.Server
                 }
             }
             return string.Empty;
+        }
+
+        private static void ConfigureShutdown(IHost siloHost, ManualResetEvent resetEvent)
+        {
+            Console.CancelKeyPress += (sender, eventArgs) =>
+            {
+                StartLogger.Info($"Received shutdown via {nameof(Console.CancelKeyPress)}.");
+
+                eventArgs.Cancel = true;
+                Shutdown(siloHost, resetEvent);
+            };
+
+            AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
+            {
+                StartLogger.Info($"Received shutdown via {nameof(AppDomain.CurrentDomain.ProcessExit)}.");
+                Shutdown(siloHost, resetEvent);
+            };
+
+            AssemblyLoadContext.Default.Unloading += context =>
+            {
+                StartLogger.Info("Assembly unloading...");
+                Shutdown(siloHost, resetEvent);
+            };
+        }
+
+        private static void Shutdown(IHost siloHost, ManualResetEvent resetEvent)
+        {
+            if (Interlocked.Exchange(ref siloStopping, 1) == 0)
+            {
+                StartLogger.Info($"Shutting down silohost from thread ID:'{Thread.CurrentThread.ManagedThreadId}' name:'{Thread.CurrentThread.Name}'");
+
+                try
+                {
+#pragma warning disable VSTHRD002 // 避免有问题的同步等待
+                    siloHost.StopAsync().Wait();
+#pragma warning restore VSTHRD002 // 避免有问题的同步等待
+                }
+                finally
+                {
+                    StartLogger.Info($"SiloHost stopped at {DateTime.UtcNow} UTC.");
+                    resetEvent.Set();
+                }
+            }
+            else
+            {
+                StartLogger.Info("Shutdown in progress. Ignoring shutdown request.");
+            }
         }
     }
 }

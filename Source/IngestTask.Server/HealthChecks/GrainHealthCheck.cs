@@ -4,21 +4,19 @@ namespace IngestTask.Server.HealthChecks
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Extensions.Diagnostics.HealthChecks;
-    using Microsoft.Extensions.Logging;
     using Orleans;
     using IngestTask.Abstraction.Grains.HealthChecks;
+    using Sobey.Core.Log;
 
-    
     public class GrainHealthCheck : IHealthCheck
     {
         private const string FailedMessage = "Failed local health check.";
         private readonly IClusterClient client;
-        private readonly ILogger<GrainHealthCheck> logger;
+        private readonly ILogger Logger = LoggerManager.GetLogger("GrainHealthCheck");
 
-        public GrainHealthCheck(IClusterClient client, ILogger<GrainHealthCheck> logger)
+        public GrainHealthCheck(IClusterClient client)
         {
             this.client = client;
-            this.logger = logger;
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(
@@ -34,7 +32,7 @@ namespace IngestTask.Server.HealthChecks
 #pragma warning restore CA1031 // Do not catch general exception types
             {
 #pragma warning disable CA1303 // Do not pass literals as localized parameters
-                this.logger.LogError(exception, FailedMessage);
+                Logger.Error(exception.Message+ FailedMessage);
 #pragma warning restore CA1303 // Do not pass literals as localized parameters
                 return HealthCheckResult.Unhealthy(FailedMessage, exception);
             }
