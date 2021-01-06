@@ -38,10 +38,12 @@ const GrainGraph = props => {
 }
 const Taskinfo = props => {
   const values = props.stats
-  const timepoints = []
 
   const tasktypes = [
     'TT_NORMAL','TT_PERIODIC','TT_OPENEND','TT_LOOP' ,'TT_TIEUP' ,'TT_MANUTASK','TT_VTRUPLOAD' ,'TT_OPENENDEX'
+  ];
+  const devicestates = [
+    'DISCONNECTTED','CONNECTED','WORKING'
   ];
   
   if (!values.length || values.length < 1) {
@@ -50,8 +52,9 @@ const Taskinfo = props => {
 
   var taskordevice = values[0].hasOwnProperty('taskid');
 
+  var title = taskordevice?'Task Infos:':'Device Infos:';
   return (
-    <Panel title={"Task Infos: "+ props.address}>
+    <Panel title={title + props.address}>
       <div>
         <table className="table">
         <tbody>
@@ -63,18 +66,18 @@ const Taskinfo = props => {
             <th style={{ textAlign: 'right' }}>{taskordevice?'End':'CurrentDevState'}</th>
             <th style={{ textAlign: 'right' }}>{taskordevice?'State':'LastDevState'}</th>
             <th style={{ textAlign: 'right' }}>{taskordevice?'SyncState':'LastMsvMode'}</th>
-            <th style={{ textAlign: 'right' }}>{taskordevice?'DispatchState':'NeedStopFlag'}</th>
+            <th style={{ textAlign: 'right' }}>{taskordevice?'DispatchState':'DeviceName/DeviceType'}</th>
           </tr>
           {values.map((item) =>{
           
               return (
-                <tr key={item.taskid}>
+                <tr key={taskordevice?item.taskid:item.channelId}>
                   <td style={{ textOverflow: 'ellipsis' }}>
-                      <strong>{taskordevice?item.taskid:item.channelid}</strong>
+                      <strong>{taskordevice?item.taskid:item.channelId}</strong>
                   </td>
                   <td>
                     <span className="pull-right">
-                      <strong>{taskordevice?item.taskname:item.devicename}</strong>
+                      <strong>{taskordevice?item.taskname:item.channelName}</strong>
                     </span>
                   </td>
                   <td>
@@ -85,35 +88,35 @@ const Taskinfo = props => {
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {taskordevice?new Date(item.starttime).format("yyyy-MM-dd hh:mm:ss.S"):item.port}
+                        {taskordevice?new Date(item.starttime).format("yyyy-MM-dd hh:mm:ss.S"):item.channelIndex}
                       </strong>
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {taskordevice?new Date(item.endtime).format("yyyy-MM-dd hh:mm:ss.S"):item.currentdevstate}
+                        {taskordevice?new Date(item.endtime).format("yyyy-MM-dd hh:mm:ss.S"):(item.currentDevState+':'+devicestates[item.currentDevState])}
                       </strong>{' '}
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {taskordevice?item.state:item.lastdevstate}
+                        {taskordevice?item.state:item.lastDevState}
                       </strong>{' '}
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {taskordevice?item.syncState:item.lastmsvmode}
+                        {taskordevice?item.syncState:item.lastMsvMode}
                       </strong>{' '}
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {taskordevice?item.dispatchState:item.needstopflag}
+                        {taskordevice?item.dispatchState:(item.deviceName+'/'+item.deviceTypeId)}
                       </strong>{' '}
                     </span>
                   </td>

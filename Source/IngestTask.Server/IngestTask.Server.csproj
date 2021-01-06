@@ -8,6 +8,8 @@
     <UserSecretsId>IngestTask.Server-B9F45BDE-DEBF-4587-8F5A-DCEF344645FC</UserSecretsId>
     <!-- Disable publishing of a web.config file for IIS when calling dotnet publish. -->
     <IsTransformWebConfigDisabled Condition="'$(IIS)' == 'false'">true</IsTransformWebConfigDisabled>
+	<ServerGarbageCollection>true</ServerGarbageCollection>
+	<ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>
 
 

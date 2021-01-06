@@ -66,10 +66,10 @@ module.exports = class GrainTable extends React.Component {
         </td>
         <td>
           {systemGrain ? (
-            <span className="label label-primary">System Grain</span>
+            <span className="label label-info">System Grain</span>
           ) : null}
           {dashboardGrain ? (
-            <span className="label label-primary">Dashboard Grain</span>
+            <span className="label label-info">Dashboard Grain</span>
           ) : null}
           {ingestGrain ? (
             <span className="label label-primary">Ingest Grain</span>
