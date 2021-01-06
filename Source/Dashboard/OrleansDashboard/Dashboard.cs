@@ -13,7 +13,7 @@ namespace OrleansDashboard
 {
     public sealed class Dashboard : IStartupTask, IDisposable
     {
-        private IWebHost host;
+        private static IWebHost host;
         private readonly ILogger<Dashboard> logger;
         private readonly ILocalSiloDetails localSiloDetails;
         private readonly IGrainFactory grainFactory;
@@ -89,6 +89,18 @@ namespace OrleansDashboard
             await dashboardGrain.Init();
         }
 
+        public static void Stop()
+        {
+            try
+            {
+                host?.StopAsync().Wait();
+                host?.Dispose();
+            }
+            catch
+            {
+                /* NOOP */
+            }
+        }
         public void Dispose()
         {
             try

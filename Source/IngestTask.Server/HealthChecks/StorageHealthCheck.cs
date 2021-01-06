@@ -11,9 +11,9 @@ namespace IngestTask.Server.HealthChecks
     public class StorageHealthCheck : IHealthCheck
     {
         private const string FailedMessage = "Failed storage health check.";
-        private readonly IClusterClient client;
+        private readonly IGrainFactory client;
         private readonly ILogger Logger = LoggerManager.GetLogger("StorageHealthCheck");
-        public StorageHealthCheck(IClusterClient client)
+        public StorageHealthCheck(IGrainFactory client)
         {
             this.client = client;
         }

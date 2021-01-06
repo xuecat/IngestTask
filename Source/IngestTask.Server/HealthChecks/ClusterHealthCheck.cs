@@ -13,12 +13,12 @@ namespace IngestTask.Server.HealthChecks
     {
         private const string DegradedMessage = " silo(s) unavailable.";
         private const string FailedMessage = "Failed cluster status health check.";
-        private readonly IClusterClient client;
+        private readonly IGrainFactory client;
         private readonly ILogger Logger = LoggerManager.GetLogger("ClusterHealthCheck");
 
-        public ClusterHealthCheck(IClusterClient client)
+        public ClusterHealthCheck(IGrainFactory grainFactory)
         {
-            this.client = client;
+            this.client = grainFactory;
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(

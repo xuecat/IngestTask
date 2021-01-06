@@ -32,6 +32,7 @@ namespace IngestTask.Server
     using System.Xml.Linq;
     using System.Threading;
     using System.Runtime.Loader;
+    using OrleansDashboard;
 
     public static class Program
     {
@@ -155,7 +156,6 @@ namespace IngestTask.Server
                     (context, services) =>
                     {
                         services.AddScoped<MsvClientCtrlSDK>();
-                        
                         var client = new RestClient(context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
                         services.AddSingleton<RestClient>(client);
                         //services.AddSingleton<IScheduleService, ScheduleTaskService>();
@@ -398,6 +398,8 @@ namespace IngestTask.Server
                 try
                 {
 #pragma warning disable VSTHRD002 // 避免有问题的同步等待
+                    Dashboard.Stop();
+
                     siloHost.StopAsync().Wait();
 #pragma warning restore VSTHRD002 // 避免有问题的同步等待
                 }
