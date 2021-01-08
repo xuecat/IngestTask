@@ -24,20 +24,20 @@ namespace IngestTask.Grain
             return false;
         }
 
-        public override Task<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public override ValueTask<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
             Logger.Info("NormalTaskHandler HandleTaskAsync");
 
-           
-            return Task.FromResult(0);
+
+            throw new NotImplementedException();
         }
 
-        public override Task<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public override ValueTask<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
             throw new NotImplementedException();
         }
 
-        public override Task<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public override ValueTask<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
             throw new NotImplementedException();
         }

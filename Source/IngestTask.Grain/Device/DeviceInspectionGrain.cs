@@ -174,9 +174,10 @@ namespace IngestTask.Grain
                                             /*
                                                 * flag 通知出去走正常流程stop，并任务complete状态
                                                 */
+                                            item.NeedStopFlag = true;
                                         }
-
-                                        item.NeedStopFlag = false;
+                                        else
+                                            item.NeedStopFlag = false;
                                     }
                                 }
                             }

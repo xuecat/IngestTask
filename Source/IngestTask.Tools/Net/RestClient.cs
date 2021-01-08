@@ -728,6 +728,23 @@ namespace IngestTask.Tool
             }
             return 0;
         }
+
+        public async Task<TaskContent> ReScheduleTaskChannelAsync(int oldtaskid)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() =>
+            {
+
+                return PutAsync<ResponseMessage<TaskContent>>(
+                    $"{IngestDbUrl}/{TASKAPI21}/reschedule/channel/{oldtaskid}", null,
+                    GetIngestHeader());
+            }).ConfigureAwait(true);
+
+            if (back != null && back.IsSuccess())
+            {
+                return back.Ext;
+            }
+            return null;
+        }
         #endregion
 
         #region Matrix

@@ -164,7 +164,7 @@ namespace IngestTask.Server
                         services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
 
                         services.Configure<ApplicationOptions>(context.Configuration);
-                        services.Configure<ClusterOptions>(context.Configuration.GetSection(nameof(ApplicationOptions.Cluster)));
+                        services.Configure<ClusterOptions>(opt => { opt.ClusterId = Cluster.ClusterId; opt.ServiceId = Cluster.ServiceId; });
                         
                         //services.BuildServiceProvider();
                     })

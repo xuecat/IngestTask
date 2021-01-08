@@ -260,34 +260,41 @@ namespace IngestTask.Grain
                     var chinfo = await devicegrain.GetChannelInfoAsync(task.TaskContent.ChannelId);
                     if (chinfo != null)
                     {
-                        var taskid = await _handlerFactory.CreateInstance(task, _services)?.HandleTaskAsync(task, chinfo);
-                        if (taskid > 0)
+                        var handle = _handlerFactory.CreateInstance(task, _services);
+                        if (handle != null)
                         {
-                            RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
-                            await ConfirmEvents();
-
-                            if (_timer != null)
+                            var taskid = await handle.HandleTaskAsync(task, chinfo);
+                            if (taskid > 0)
                             {
-                                _timer.Dispose();
-                                _timer = null;
-                            }
+                                RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
+                                await ConfirmEvents();
 
-                            if (task.StartOrStop)
-                            {
-                                await GrainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(await _restClient.GetTaskDBAsync(task.TaskContent.TaskId));
-                                _timer = RegisterTimer(this.OnRunningTaskMonitorAsync, new Tuple<int, int, string, int, int, string>(taskid, (int)task.TaskContent.TaskType, task.TaskContent.Begin, chinfo.ChannelId, chinfo.ChannelIndex, chinfo.Ip), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
+                                if (_timer != null)
+                                {
+                                    _timer.Dispose();
+                                    _timer = null;
+                                }
+
+                                if (task.StartOrStop)
+                                {
+                                    await GrainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(await _restClient.GetTaskDBAsync(task.TaskContent.TaskId));
+                                    _timer = RegisterTimer(this.OnRunningTaskMonitorAsync, new Tuple<int, int, string, int, int, string>(taskid, (int)task.TaskContent.TaskType, task.TaskContent.Begin, chinfo.ChannelId, chinfo.ChannelIndex, chinfo.Ip), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
+                                }
+                                else
+                                {
+
+                                    await GrainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(taskid);
+                                }
                             }
                             else
                             {
-                                
-                                await GrainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(taskid);
+                                RaiseEvent(new TaskEvent() { OpType = opType.otReDispatch, TaskContentInfo = task.TaskContent });
+                                await ConfirmEvents();
                             }
                         }
                         else
-                        {
-                            RaiseEvent(new TaskEvent() { OpType = opType.otReDispatch, TaskContentInfo = task.TaskContent });
-                            await ConfirmEvents();
-                        }
+                            Logger.Error($"CreateInstance error {JsonHelper.ToJson(task)}");
+                        
                     }
                     else
                     {

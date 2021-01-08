@@ -31,8 +31,8 @@ namespace IngestTask.Client
                     .UseStaticClustering(new IPEndPoint[] { new IPEndPoint(IPAddress.Parse("172.16.135.116"), 30000) })
                     .Configure<ClusterOptions>(options =>
                     {
-                        options.ClusterId = "IngestTaskClusterId";
-                        options.ServiceId = "IngestTaskServiceId";
+                        options.ClusterId = Cluster.ClusterId;
+                        options.ServiceId = Cluster.ServiceId;
                     })
                     .ConfigureLogging(logging => logging.AddConsole())
                     .Build();

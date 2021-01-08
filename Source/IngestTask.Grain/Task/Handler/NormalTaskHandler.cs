@@ -45,7 +45,7 @@ namespace IngestTask.Grain
         {
             if (taskinfo.StartOrStop)
             {
-                if (DateTime.Now.AddSeconds(2) <=
+                if (DateTime.Now.AddSeconds(5) <=
                 DateTimeFormat.DateTimeFromString(taskinfo.TaskContent.End))
                 {
                     Logger.Error($"IsNeedRedispatchaskAsync start over {taskinfo.TaskContent.TaskId}");
@@ -65,7 +65,7 @@ namespace IngestTask.Grain
             }
         }
 
-        public override async Task<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public override async ValueTask<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
             Logger.Info($"NormalTaskHandler HandleTaskAsync retrytimes {task.RetryTimes}");
 
@@ -154,7 +154,7 @@ namespace IngestTask.Grain
             return 0;
         }
 
-        public override async Task<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public override async ValueTask<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
 
             var backinfo = await _msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
@@ -257,7 +257,7 @@ namespace IngestTask.Grain
             return 0;
         }
 
-        public override async Task<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public override async ValueTask<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
             int test = Configuration.GetSection("Task:TaskStopBehind").Get<int>();
 

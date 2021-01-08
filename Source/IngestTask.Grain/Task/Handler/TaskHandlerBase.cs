@@ -34,22 +34,22 @@ namespace IngestTask.Grain
          */
         //static public bool IsHandler(TaskFullInfo task)
 
-        public virtual Task<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public virtual ValueTask<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
             throw new NotImplementedException();
         }
 
-        public virtual Task<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public virtual ValueTask<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
             throw new NotImplementedException();
         }
 
-        public virtual Task<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public virtual ValueTask<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
             throw new NotImplementedException();
         }
 
-        public virtual async Task<bool> UnlockTaskAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
+        public virtual async ValueTask<bool> UnlockTaskAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
         {
             if (await RestClientApi.CompleteSynTasksAsync(taskid, tkstate, dpstate, systate))
             {
@@ -129,7 +129,7 @@ namespace IngestTask.Grain
             return 0;
         }
 
-        public virtual async Task<string> GetCaptureParmAsync(TaskFullInfo taskinfo, ChannelInfo channel)
+        public virtual async ValueTask<string> GetCaptureParmAsync(TaskFullInfo taskinfo, ChannelInfo channel)
         {
             string captureparam = taskinfo.CaptureMeta;
             var typeinfo = await _msvClient.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
@@ -260,5 +260,7 @@ namespace IngestTask.Grain
                 Logger.Error($"StartTaskAsync QuerySDIFormatAsync error {typeinfo?.SignalType}");
             return string.Empty;
         }
+
+        
     }
 }

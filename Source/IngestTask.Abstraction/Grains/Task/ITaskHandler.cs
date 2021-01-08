@@ -8,6 +8,6 @@ namespace IngestTask.Abstraction.Grains
 {
     public interface ITaskHandler
     {
-        Task<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel);
+        ValueTask<int> HandleTaskAsync(TaskFullInfo task, ChannelInfo channel);
     }
 }
