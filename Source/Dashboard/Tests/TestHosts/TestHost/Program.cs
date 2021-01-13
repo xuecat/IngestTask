@@ -8,6 +8,8 @@ using AutoMapper;
 using IngestTask.Abstraction.Constants;
 using IngestTask.Abstraction.Grains;
 using IngestTask.Abstraction.Service;
+using IngestTask.Grain;
+using IngestTask.Grain.Service;
 using IngestTask.Tool;
 using IngestTask.Tools;
 using IngestTask.Tools.Msv;
@@ -19,6 +21,7 @@ using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Runtime;
+using OrleansDashboard.Abstraction;
 using TestGrains;
 
 // ReSharper disable MethodSupportsCancellation
@@ -44,11 +47,7 @@ namespace TestHost
 
             var silo =
                 new SiloHostBuilder()
-                    .UseDashboard(options =>
-                    {
-                        options.HostSelf = true;
-                        options.HideTrace = false;
-                    })
+                    
                      .ConfigureServices((context, services) =>
                      {
                          services.RemoveAll<RestClient>();
@@ -56,10 +55,11 @@ namespace TestHost
                          services.AddScoped<MsvClientCtrlSDK>();
                          var client = new RestClient("http://172.16.0.205:9025", "http://172.16.0.205:10023");
                          services.AddSingleton<RestClient>(client);
-                         //services.AddSingleton<IScheduleService, ScheduleTaskService>();
-                         //services.AddSingleton<IScheduleClient, ScheduleTaskClient>();
+                         services.AddSingleton<IScheduleService, ScheduleTaskService>();
+                         services.AddSingleton<IScheduleClient, ScheduleTaskClient>();
 
-                         //services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
+                         services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
+                         services.AddSingleton<IGrainServiceDataBack, GrainServiceDataBack>();
                          services.AddAutoMapper(typeof(GlobalProfile));
 
                      })
@@ -114,8 +114,13 @@ namespace TestHost
                     })
                     .AddMemoryGrainStorageAsDefault()
                 .AddMemoryGrainStorage("PubSubStore")
-                //.AddGrainService<ScheduleTaskService>()
+                .AddGrainService<ScheduleTaskService>()
                 .AddSimpleMessageStreamProvider(StreamProviderName.Default)
+                .UseDashboard(options =>
+                {
+                    options.HostSelf = true;
+                    options.HideTrace = false;
+                })
                     .Build();
 
             silo.StartAsync().Wait();
@@ -142,7 +147,7 @@ namespace TestHost
 
             var cts = new CancellationTokenSource();
 
-            TestCalls.Make(client, cts);
+            //TestCalls.Make(client, cts);
             IngestTestGrain.TestCalls.Make(client, cts);
 
             Console.WriteLine("Press key to exit...");

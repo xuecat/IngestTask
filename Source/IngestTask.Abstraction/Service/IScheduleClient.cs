@@ -8,7 +8,8 @@ namespace IngestTask.Abstraction.Service
 {
     public interface IScheduleClient
     {
-        Task<int> AddScheduleTaskAsync(DispatchTask task);
+        Task<string> AddScheduleTaskAsync(DispatchTask task);
         Task<int> RemoveScheduleTaskAsync(DispatchTask task);
+        Task RefreshAsync(string parsableaddress);
     }
 }

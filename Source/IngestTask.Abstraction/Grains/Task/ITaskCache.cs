@@ -11,12 +11,13 @@ namespace IngestTask.Abstraction.Grains
 
     public interface ITaskCache : IGrainWithIntegerKey
     {
-        Task AddTaskAsync(DispatchTask task);
-        Task UpdateTaskAsync(DispatchTask task);
-        Task DeleteTaskAsync(int task);
+        Task AddTaskAsync(DispatchTask task, string parsableaddress);
+        Task<string> UpdateTaskAsync(DispatchTask task, string parsableaddress);
+        Task<string> DeleteTaskAsync(int task);
         Task<DispatchTask> GetTaskAsync(int taskid);
         Task<List<DispatchTask>> GetTaskListAsync(List<int> taskid);
         Task<List<DispatchTask>> GetTaskListAsync();
         Task CompleteTaskAsync(List<int> taskid);
+        Task<bool> IsCachedAsync(int taskid);
     }
 }

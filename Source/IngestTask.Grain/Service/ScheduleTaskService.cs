@@ -20,7 +20,7 @@ namespace IngestTask.Grain.Service
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading.Tasks;
-   
+
     public class ScheduleTaskService : GrainService, IScheduleService
     {
         readonly IGrainFactory _grainFactory;
@@ -32,6 +32,7 @@ namespace IngestTask.Grain.Service
         public IConfiguration Configuration { get; }
 
         private int _timerMinutesTimes;
+        private bool _refresh;
         public ScheduleTaskService(IServiceProvider services, IGrainIdentity id, Silo silo,
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory,
             IGrainFactory grainFactory, IMapper mapper, RestClient restClient, IConfiguration configuration)
@@ -45,11 +46,18 @@ namespace IngestTask.Grain.Service
             _restClient = restClient;
             Configuration = configuration;
             _timerMinutesTimes = 1;
+            _refresh = true;
         }
+
+        public List<DispatchTask> GetDataBack() => new List<DispatchTask>() { new DispatchTask() { Taskid = 11, Taskname = "qq", Starttime = DateTime.Now} }/*_lstScheduleTask*/;
        
         
-        public Task<int> AddScheduleTaskAsync(DispatchTask task)
+        public Task<string> AddScheduleTaskAsync(DispatchTask task)
         {
+            string extrakey = string.Empty;
+            var refgrain = GetGrainReference();
+            refgrain.GetPrimaryKey(out extrakey);
+            
             if (task != null && _lstScheduleTask.Find(x => x.Taskid == task.Taskid) == null)
             {
                 lock (_lstScheduleTask)
@@ -60,11 +68,11 @@ namespace IngestTask.Grain.Service
                         _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(_timerMinutesTimes));
                     }
                     
-                    return Task.FromResult(1);
+                    return Task.FromResult(refgrain.GrainServiceSiloAddress.ToParsableString()+";"+ refgrain.GrainIdentity.TypeCode.ToString() + ";" + extrakey);
                 }
             }
 
-            return Task.FromResult(0);
+            return Task.FromResult(refgrain.GrainServiceSiloAddress.ToParsableString() + ";" + refgrain.GrainIdentity.TypeCode.ToString() + ";" + extrakey);
         }
 
         public Task<int> RemoveScheduleTaskAsync(DispatchTask task)
@@ -85,6 +93,12 @@ namespace IngestTask.Grain.Service
             }
 
             return Task.FromResult(0);
+        }
+
+        public Task RefreshAsync()
+        {
+            _refresh = true;
+            return Task.CompletedTask;
         }
 
         public override Task Init(IServiceProvider serviceProvider)
@@ -126,7 +140,12 @@ namespace IngestTask.Grain.Service
             if (_lstScheduleTask.Count > 0)
             {
                 //获取最新缓存，保证中途修改，删除了也不会更新
-                var lsttask = await _grainFactory.GetGrain<ITaskCache>(0).GetTaskListAsync(_lstScheduleTask.Select(x => x.Taskid).ToList());
+                var lsttask = _lstScheduleTask;
+                if (_refresh)
+                {
+                    lsttask = await _grainFactory.GetGrain<ITaskCache>(0).GetTaskListAsync(_lstScheduleTask.Select(x => x.Taskid).ToList());
+                }
+                
                 if (lsttask != null && lsttask.Count > 0)
                 {
                     foreach (var task in lsttask)

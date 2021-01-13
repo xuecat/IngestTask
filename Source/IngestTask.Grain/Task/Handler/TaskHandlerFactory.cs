@@ -13,7 +13,7 @@ namespace IngestTask.Grain
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    public class TaskHandlerFactory : ITaskHandlerFactory
+    public class TaskHandlerFactory : ITaskHandlerFactory/*, ILifecycleParticipant<IGrainLifecycle>*/
     {
         public TaskHandlerFactory()
         {

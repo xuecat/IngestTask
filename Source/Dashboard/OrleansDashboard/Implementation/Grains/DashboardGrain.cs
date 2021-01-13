@@ -81,6 +81,17 @@ namespace OrleansDashboard
             // TODO - whatever max elapsed time
             var elapsedTime = Math.Min((DateTime.UtcNow - startTime).TotalSeconds, 100);
 
+            foreach (var item in counters.Hosts)
+            {
+                foreach (var item2 in hosts)
+                {
+                    if (item2.SiloAddress == item.SiloAddress)
+                    {
+                        item2.ExtraData = item.ExtraData;
+                    }
+                }
+            }
+
             counters.Hosts = hosts;
 
             var aggregatedTotals = history.GroupByGrainAndSilo().ToLookup(x => (x.Grain, x.SiloAddress));
@@ -213,9 +224,21 @@ namespace OrleansDashboard
             return Task.CompletedTask;
         }
 
-        public Task SubmitTracing(string siloAddress, Immutable<SiloGrainTraceEntry[]> grainTrace)
+        public Task SubmitTracing(string siloAddress, Immutable<SiloGrainTraceEntry[]> grainTrace, object extradata = null)
         {
             history.Add(DateTime.UtcNow, siloAddress, grainTrace.Value);
+            if (extradata != null)
+            {
+                foreach (var item in counters.Hosts)
+                {
+                    if (item.SiloAddress == siloAddress)
+                    {
+                        item.ExtraData = extradata;
+                        break;
+                    }
+                }
+                
+            }
 
             return Task.CompletedTask;
         }

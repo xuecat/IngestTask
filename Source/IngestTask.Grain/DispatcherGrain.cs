@@ -9,6 +9,7 @@ namespace IngestTask.Grain
     using Microsoft.Extensions.Configuration;
     using Orleans;
     using Orleans.Concurrency;
+    using Orleans.Internal;
     using System;
     using System.Collections.Generic;
     using System.Text;
@@ -37,30 +38,30 @@ namespace IngestTask.Grain
         {
             if (task != null)
             {
-                //记录缓存
-                await GrainFactory.GetGrain<ITaskCache>(0).AddTaskAsync(task);
+                string parsableaddress = string.Empty;
 
                 if ((task.Starttime - DateTime.Now).TotalSeconds >
                     _taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < _taskSchedulePrevious)
                 {
                     //提交开始监听
-                    await _scheduleClient.AddScheduleTaskAsync(task);
+                    parsableaddress = await _scheduleClient.AddScheduleTaskAsync(task);
                 }
                 else
                 {
                     var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
                     if (!add)
                     {
-                        await _scheduleClient.AddScheduleTaskAsync(task);
+                        parsableaddress = await _scheduleClient.AddScheduleTaskAsync(task);
                     }
                     else//添加结束的监听
                     {
                         task.SyncState = (int)syncState.ssSync;
-                        await _scheduleClient.AddScheduleTaskAsync(task);
+                        parsableaddress = await _scheduleClient.AddScheduleTaskAsync(task);
                     }
                 }
-                
 
+                //记录缓存
+                await GrainFactory.GetGrain<ITaskCache>(0).AddTaskAsync(task, parsableaddress);
             }
         }
 
@@ -69,26 +70,36 @@ namespace IngestTask.Grain
         {
             if (task != null)
             {
-                await GrainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(task);
+                string parsableaddress = string.Empty;
+                var cached = await GrainFactory.GetGrain<ITaskCache>(0).IsCachedAsync(task.Taskid);//如果缓存过了说明有分发的server监听了，不能再分发了
 
                 if ((task.Starttime - DateTime.Now).TotalSeconds >
                     _taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < _taskSchedulePrevious)
                 {
                     //提交开始监听
-                    await _scheduleClient.AddScheduleTaskAsync(task);
+                    if (!cached)
+                        parsableaddress = await _scheduleClient.AddScheduleTaskAsync(task);
                 }
                 else
                 {
                     var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
                     if (!add)
                     {
-                        await _scheduleClient.AddScheduleTaskAsync(task);
+                        if (!cached)
+                            parsableaddress = await _scheduleClient.AddScheduleTaskAsync(task);
                     }
                     else//添加结束的监听
                     {
                         task.SyncState = (int)syncState.ssSync;
-                        await _scheduleClient.AddScheduleTaskAsync(task);
+                        if (!cached)
+                            parsableaddress = await _scheduleClient.AddScheduleTaskAsync(task);
                     }
+                }
+
+                string bakcparsableaddress = await GrainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(task, parsableaddress);
+                if (!string.IsNullOrEmpty(bakcparsableaddress))
+                {
+                    await _scheduleClient.RefreshAsync(bakcparsableaddress);
                 }
             }
         }
@@ -97,7 +108,11 @@ namespace IngestTask.Grain
         {
             if (task != null)
             {
-                await GrainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(task.Taskid);
+                string bakcparsableaddress = await GrainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(task.Taskid);
+                if (!string.IsNullOrEmpty(bakcparsableaddress))
+                {
+                    await _scheduleClient.RefreshAsync(bakcparsableaddress);
+                }
                 var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).StopTaskAsync(_mapper.Map<TaskContent>(task));
             }
         }

@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using OrleansDashboard.Abstraction;
 
 namespace OrleansDashboard.Metrics
 {
@@ -22,14 +23,14 @@ namespace OrleansDashboard.Metrics
         private Timer timer;
         private string siloAddress;
         private IDashboardGrain dashboardGrain;
-
-        public GrainProfiler(IGrainFactory grainFactory, ILogger<GrainProfiler> logger, ILocalSiloDetails localSiloDetails)
+        private IGrainServiceDataBack grainseerviceDataBack;
+        public GrainProfiler(IGrainFactory grainFactory, ILogger<GrainProfiler> logger, ILocalSiloDetails localSiloDetails, IGrainServiceDataBack serviceback)
         {
             this.grainFactory = grainFactory;
 
             this.logger = logger;
             this.localSiloDetails = localSiloDetails;
-
+            grainseerviceDataBack = serviceback;
         }
 
         public void Participate(ISiloLifecycle lifecycle)
@@ -39,7 +40,7 @@ namespace OrleansDashboard.Metrics
 
         private Task OnStart()
         {
-            timer = new Timer(ProcessStats, null, 1 * 1000, 1 * 1000);
+            timer = new Timer(ProcessStats, null, 1 * 1000, 2 * 1000);
 
             return Task.CompletedTask;
         }
@@ -139,7 +140,12 @@ namespace OrleansDashboard.Metrics
                 {
                     dashboardGrain = dashboardGrain ?? grainFactory.GetGrain<IDashboardGrain>(0);
 
-                    dashboardGrain.SubmitTracing(siloAddress, items.AsImmutable()).Ignore();
+                    object extrainfo = null;
+                    if (grainseerviceDataBack != null)
+                    {
+                        extrainfo = grainseerviceDataBack.GetGrainServiceData();
+                    }
+                    dashboardGrain.SubmitTracing(siloAddress, items.AsImmutable(), extrainfo).Ignore();
                 }
                 catch (Exception ex)
                 {

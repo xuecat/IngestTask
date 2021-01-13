@@ -15,5 +15,6 @@ namespace OrleansDashboard.Model
         public string Status { get; set; }
         public int UpdateZone { get; set; }
         public SiloStatus SiloStatus { get; set; }
+        public object ExtraData { get; set; }
     }
 }

@@ -31,7 +31,7 @@ namespace IngestTestGrain
                     DispatchState = 2,
                     State = 1,
                     SyncState = 2
-                });
+                }, string.Empty);
 
                 var taskgrain = client.GetGrain<IDeviceInspections>(0);
                 await taskgrain.GetChannelInfosAsync();
