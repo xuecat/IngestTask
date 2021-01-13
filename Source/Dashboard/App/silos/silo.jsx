@@ -37,6 +37,97 @@ const SiloGraph = props => {
   )
 }
 
+
+const Taskinfo = props => {
+  const values = props.stats
+
+  const tasktypes = [
+    'TT_NORMAL','TT_PERIODIC','TT_OPENEND','TT_LOOP' ,'TT_TIEUP' ,'TT_MANUTASK','TT_VTRUPLOAD' ,'TT_OPENENDEX'
+  ];
+  
+  if (!values.length || values.length < 1) {
+    return null
+  }
+
+  return (
+    <Panel title='Task Infos:'>
+      <div>
+        <table className="table">
+        <tbody>
+          <tr>
+            <th style={{ textAlign: 'left' }}>TaskId</th>
+            <th style={{ textAlign: 'right' }}>Name</th>
+            <th style={{ textAlign: 'right' }}>Type</th>
+            <th style={{ textAlign: 'right' }}>Begin</th>
+            <th style={{ textAlign: 'right' }}>End</th>
+            <th style={{ textAlign: 'right' }}>State</th>
+            <th style={{ textAlign: 'right' }}>SyncState</th>
+            <th style={{ textAlign: 'right' }}>DispatchState</th>
+          </tr>
+          {values.map((item) =>{
+          
+              return (
+                <tr key={item.taskid}>
+                  <td style={{ textOverflow: 'ellipsis' }}>
+                      <strong>{item.taskid}</strong>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>{item.taskname}</strong>
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>{item.tasktype}</strong>:{tasktypes[item.tasktype]}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>
+                        {new Date(item.starttime).format("yyyy-MM-dd hh:mm:ss.S")}
+                      </strong>
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>
+                        {new Date(item.endtime).format("yyyy-MM-dd hh:mm:ss.S")}
+                      </strong>{' '}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>
+                        {item.state}
+                      </strong>{' '}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>
+                        {item.syncState}
+                      </strong>{' '}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="pull-right">
+                      <strong>
+                        {item.dispatchState}
+                      </strong>{' '}
+                    </span>
+                  </td>
+                </tr>
+              )
+            
+          })}
+        </tbody>
+      </table>
+      </div>
+    </Panel>
+    
+  )
+}
+
 module.exports = class Silo extends React.Component {
   hasData(value) {
     for (var i = 0; i < value.length; i++) {
@@ -209,6 +300,7 @@ module.exports = class Silo extends React.Component {
           </div>
         </Panel>
 
+        {silo.extraDtata != null? <Taskinfo stats={silo.extraDtata}></Taskinfo>:null}
         <Panel title="Silo Profiling">
           <div>
             <span>
