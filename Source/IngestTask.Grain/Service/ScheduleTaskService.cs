@@ -25,6 +25,7 @@ namespace IngestTask.Grain.Service
     {
         readonly IGrainFactory _grainFactory;
         private List<DispatchTask> _lstScheduleTask;
+        private List<DispatchTask> _lstTimerScheduleTask;
         private IDisposable _dispoScheduleTimer;
         private IMapper _mapper;
         private readonly RestClient _restClient;
@@ -42,6 +43,8 @@ namespace IngestTask.Grain.Service
             _dispoScheduleTimer = null;
             _grainFactory = grainFactory;
             _lstScheduleTask = new List<DispatchTask>();
+            _lstTimerScheduleTask = new List<DispatchTask>();
+
             _mapper = mapper;
             _restClient = restClient;
             Configuration = configuration;
@@ -99,6 +102,24 @@ namespace IngestTask.Grain.Service
         {
             _refresh = true;
             return Task.CompletedTask;
+        }
+
+        private List<DispatchTask> RecalculateReminder()
+        {
+            _lstScheduleTask.FindAll(x => {
+                if (x.Tasktype == (int)TaskType.TT_PERIODIC)
+                {
+
+                }
+                else
+                {
+                }
+                return false;
+            });
+            foreach (var item in _lstTimerScheduleTask)
+            {
+                
+            }
         }
 
         public override Task Init(IServiceProvider serviceProvider)

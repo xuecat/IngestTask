@@ -38,6 +38,7 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
                 .AddMemoryGrainStorageAsDefault()
                 .AddMemoryGrainStorage("PubSubStore")
                 .AddGrainService<ScheduleTaskService>()
+                .UseInMemoryReminderService()
                 .AddSimpleMessageStreamProvider(StreamProviderName.Default);
 
     }

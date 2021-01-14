@@ -50,7 +50,7 @@ const Taskinfo = props => {
   }
 
   return (
-    <Panel title='Task Infos:'>
+    <Panel title='Listen Task Infos:'>
       <div>
         <table className="table">
         <tbody>

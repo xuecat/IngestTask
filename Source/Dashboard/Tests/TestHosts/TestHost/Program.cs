@@ -116,6 +116,7 @@ namespace TestHost
                 .AddMemoryGrainStorage("PubSubStore")
                 .AddGrainService<ScheduleTaskService>()
                 .AddSimpleMessageStreamProvider(StreamProviderName.Default)
+                .UseInMemoryReminderService()
                 .UseDashboard(options =>
                 {
                     options.HostSelf = true;

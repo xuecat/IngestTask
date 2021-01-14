@@ -1,6 +1,7 @@
 ﻿using IngestTask.Dto;
 using Orleans;
 using Orleans.CodeGeneration;
+using Orleans.Concurrency;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,6 +16,8 @@ namespace IngestTask.Abstraction.Grains
         
         Task<bool> AddTaskAsync(TaskContent task);
         Task<bool> StopTaskAsync(TaskContent task);
+        
+        [OneWay]
         Task DeleteTaskAsync(TaskContent task);
 
         Task<bool> JudgeTaskPriorityAsync(TaskContent taskcurrent, TaskContent taskcompare);
