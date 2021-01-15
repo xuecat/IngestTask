@@ -1,34 +1,89 @@
-﻿using IngestTask.Abstraction.Grains;
-using IngestTask.Dto;
-using IngestTask.Tools;
-using Orleans;
-using Orleans.Concurrency;
-using Orleans.Providers;
-using OrleansDashboard.Abstraction;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace IngestTask.Grain
 {
+    using IngestTask.Abstraction.Grains;
+    using IngestTask.Dto;
+    using IngestTask.Tools;
+    using Microsoft.Extensions.Configuration;
+    using Orleans;
+    using Orleans.Concurrency;
+    using Orleans.Providers;
+    using Orleans.Runtime;
+    using OrleansDashboard.Abstraction;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Reflection;
+    using System.Text;
+    using System.Threading.Tasks;
+
     [TraceGrain("IngestTask.Grain.TaskCacheGrain", TaskTraceEnum.TaskCache)]
-    [Reentrant]
     //[StorageProvider(ProviderName = "MemoryStore")]
-    public class TaskCacheGrain : Grain<List<Tuple<DispatchTask, string>>>, ITaskCache
+    public class TaskCacheGrain : Grain<List<Tuple<DispatchTask, string>>>, ITaskCache, IRemindable
     {
-        public TaskCacheGrain()
+        private int _reminderTimerMinutes;
+        public TaskCacheGrain(IConfiguration configuration)
         {
-            
+            _reminderTimerMinutes = configuration.GetSection("Task:TaskSchedulePreviousTimer").Get<int>();
         }
         public override async Task OnActivateAsync()
         {
             await ReadStateAsync();
             await base.OnActivateAsync();
         }
-        
+
+        private List<DispatchTask> RecalculateReminder()
+        {
+            DateTime mintime = DateTime.MaxValue;
+            var lstTask = this.State;
+
+            List<DispatchTask> lstbacktask = new List<DispatchTask>();
+            for (int i = lstTask.Count - 1; i >= 0; i--)
+            {
+                bool bneddtimer = false;
+                if (string.IsNullOrEmpty(lstTask[i].Item2))
+                {
+                    if (lstTask[i].Item1.Tasktype == (int)TaskType.TT_PERIODIC)
+                    {
+                        if (lstTask[i].Item1.NewBegintime.AddMinutes(_reminderTimerMinutes) >= DateTime.Now)
+                        {
+                            bneddtimer = true;
+                        }
+                        else if (lstTask[i].Item1.NewBegintime < mintime)
+                        {
+                            mintime = lstTask[i].Item1.NewBegintime;
+                        }
+                    }
+                    else
+                    {
+                        if (lstTask[i].Item1.Starttime.AddMinutes(_reminderTimerMinutes) >= DateTime.Now)
+                        {
+                            bneddtimer = true;
+                        }
+                        else if (lstTask[i].Item1.Starttime < mintime)
+                        {
+                            mintime = lstTask[i].Item1.NewBegintime;
+                        }
+                    }
+
+                    if (bneddtimer)
+                    {
+                        lstbacktask.Add(lstTask[i].Item1);
+                        lstTask.Remove(lstTask[i]);
+                    }
+                }
+            }
+        }
+
+        public async Task ReceiveReminder(string reminderName, TickStatus status)
+        {
+            switch (reminderName)
+            {
+
+            }
+        }
+
         public async Task AddTaskAsync(DispatchTask task, string parsableaddress)
         {
             var tkitem = this.State.Find(x => x.Item1.Taskid == task.Taskid);

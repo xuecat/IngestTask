@@ -17,22 +17,26 @@ namespace IngestTask.Grain.Service
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading.Tasks;
 
+    [Reentrant]
     public class ScheduleTaskService : GrainService, IScheduleService
     {
         readonly IGrainFactory _grainFactory;
         private List<DispatchTask> _lstScheduleTask;
         private List<DispatchTask> _lstTimerScheduleTask;
-        private IDisposable _dispoScheduleTimer;
+        
         private IMapper _mapper;
         private readonly RestClient _restClient;
         private readonly Sobey.Core.Log.ILogger Logger;
-        public IConfiguration Configuration { get; }
 
-        private int _timerMinutesTimes;
+        private IGrainReminder _grinReminder;
+        private IDisposable _dispoScheduleTimer;
+
+        private int _taskSchedulePreviousSeconds;
         private bool _refresh;
         public ScheduleTaskService(IServiceProvider services, IGrainIdentity id, Silo silo,
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory,
@@ -47,8 +51,11 @@ namespace IngestTask.Grain.Service
 
             _mapper = mapper;
             _restClient = restClient;
-            Configuration = configuration;
-            _timerMinutesTimes = 1;
+
+            _grinReminder = null;
+
+            _taskSchedulePreviousSeconds = configuration.GetSection("Task:TaskSchedulePrevious").Get<int>();
+            
             _refresh = true;
         }
 
@@ -68,7 +75,7 @@ namespace IngestTask.Grain.Service
                     _lstScheduleTask.Add(task);
                     if (_dispoScheduleTimer == null)
                     {
-                        _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(_timerMinutesTimes));
+                        _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
                     }
                     
                     return Task.FromResult(refgrain.GrainServiceSiloAddress.ToParsableString()+";"+ refgrain.GrainIdentity.TypeCode.ToString() + ";" + extrakey);
@@ -104,23 +111,7 @@ namespace IngestTask.Grain.Service
             return Task.CompletedTask;
         }
 
-        private List<DispatchTask> RecalculateReminder()
-        {
-            _lstScheduleTask.FindAll(x => {
-                if (x.Tasktype == (int)TaskType.TT_PERIODIC)
-                {
-
-                }
-                else
-                {
-                }
-                return false;
-            });
-            foreach (var item in _lstTimerScheduleTask)
-            {
-                
-            }
-        }
+        
 
         public override Task Init(IServiceProvider serviceProvider)
         {
@@ -155,7 +146,6 @@ namespace IngestTask.Grain.Service
 
             //任务分发的时候要向请求通道是否存在，不存在提交一个自检请求
 
-            int test = Configuration.GetSection("Task:TaskSchedulePrevious").Get<int>();
             var _lstRemoveTask = new List<DispatchTask>();
 
             if (_lstScheduleTask.Count > 0)
@@ -180,7 +170,7 @@ namespace IngestTask.Grain.Service
                                 var nowdate = DateTime.Now;
                                 DateTime date = new DateTime(nowdate.Year, nowdate.Month, nowdate.Day, task.Starttime.Hour, task.Starttime.Minute, task.Starttime.Second);
                                 if ((task.Starttime - DateTime.Now).TotalSeconds <=
-                                    test)
+                                    _taskSchedulePreviousSeconds)
                                 {
                                     var info = await _restClient.CreatePeriodcTaskAsync(task.Taskid);
 
@@ -193,7 +183,7 @@ namespace IngestTask.Grain.Service
                             else
                             {
                                 if ((task.Starttime - DateTime.Now).TotalSeconds <=
-                                    test && task.Endtime > DateTime.Now)
+                                    _taskSchedulePreviousSeconds && task.Endtime > DateTime.Now)
                                 {
                                     await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task));
                                 }
@@ -202,7 +192,7 @@ namespace IngestTask.Grain.Service
                         else if (task.State == (int)taskState.tsExecuting || task.State == (int)taskState.tsManuexecuting)
                         {
                             var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
-                            if (spansecond > 0 && spansecond < test)
+                            if (spansecond > 0 && spansecond < _taskSchedulePreviousSeconds)
                             {
                                 if (await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.StopTaskAsync(_mapper.Map<TaskContent>(task)))
                                 {
