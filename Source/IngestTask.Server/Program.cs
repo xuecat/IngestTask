@@ -159,7 +159,7 @@ namespace IngestTask.Server
                         var client = new RestClient(context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
                         services.AddSingleton<RestClient>(client);
                         //services.AddSingleton<IScheduleService, ScheduleTaskService>();
-                        services.AddSingleton<IScheduleClient, ScheduleTaskClient>();
+                        services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
 
                         services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
 
@@ -207,7 +207,7 @@ namespace IngestTask.Server
                         options.ConfigureJsonSerializerSettings = ConfigureJsonSerializerSettings;
                         options.UseJsonFormat = true;
                     })
-                .AddGrainService<ScheduleTaskService>()
+                .AddGrainService<DeviceMonitorService>()
                 .UseIf(
                     RuntimeInformation.IsOSPlatform(OSPlatform.Linux),
                     x => x.UseLinuxEnvironmentStatistics())

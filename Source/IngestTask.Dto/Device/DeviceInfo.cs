@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace IngestTask.Dto
 {
+    [Serializable]
     /// <summary>采集设备详情</summary>
     public class DeviceInfo
     {
@@ -32,6 +33,7 @@ namespace IngestTask.Dto
         public int OrderCode { get; set; }
     }
 
+    [Serializable]
     public class ChannelInfo : DeviceInfo
     {
         public bool NeedStopFlag { get; set; }
@@ -44,13 +46,13 @@ namespace IngestTask.Dto
         public int VtrId { get; set; } = -1;
 
         /// <summary>当前用户Code</summary>
-        public string UserCode { get; set; } = string.Empty;
+        //public string UserCode { get; set; } = string.Empty;
 
         /// <summary>kamataki信息</summary>
-        public string KamatakiInfo { get; set; } = string.Empty;
+        //public string KamatakiInfo { get; set; } = string.Empty;
 
         /// <summary>上载模式</summary>
-        public Upload_Mode UploadMode { get; set; } = Upload_Mode.NOUPLOAD;
+        //public Upload_Mode UploadMode { get; set; } = Upload_Mode.NOUPLOAD;
 
     }
 }

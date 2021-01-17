@@ -10,11 +10,11 @@ namespace IngestTask.Abstraction.Grains
     using System.Text;
     using System.Threading.Tasks;
 
-    public interface ITaskCache : IGrainWithIntegerKey
+    public interface IReminderTask : IGrainWithIntegerKey
     {
-        Task AddTaskAsync(DispatchTask task, string parsableaddress);
-        Task<string> UpdateTaskAsync(DispatchTask task, string parsableaddress);
-        Task<string> DeleteTaskAsync(int task);
+        Task<int> AddTaskAsync(DispatchTask task);
+        Task<int> UpdateTaskAsync(DispatchTask task);
+        Task<int> DeleteTaskAsync(int task);
         Task<DispatchTask> GetTaskAsync(int taskid);
         Task<List<DispatchTask>> GetTaskListAsync(List<int> taskid);
         Task<List<DispatchTask>> GetTaskListAsync();

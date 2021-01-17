@@ -19,46 +19,35 @@ namespace IngestTask.Grain
     using IngestTask.Tools;
     using System.Linq;
     using OrleansDashboard.Abstraction;
+    using System.Reflection;
 
-    //[ProtoContract]
-    [Serializable]
-    public class DeviceState
-    {
-        //[ProtoMember(1)]
-        public int ActionType { get; set; }
-        //[ProtoMember(2)]
-        public List<ChannelInfo> ChannelInfos { get; set; }
-        
-    }
-
-    
     [Reentrant]
     [TraceGrain("IngestTask.Grain.DeviceInspectionGrain", TaskTraceEnum.Device)]
-    public class DeviceInspectionGrain : Grain<DeviceState>, IDeviceInspections
+    public class DeviceInspectionGrain : Grain<List<ChannelInfo>>, IDeviceInspections
     {
         private readonly ILogger Logger = LoggerManager.GetLogger("DeviceInfo");
-        private readonly MsvClientCtrlSDK _msvClient;
+        
         private readonly RestClient _restClient;
 
         private readonly IMapper Mapper;
         private IAsyncStream<ChannelInfo> _stream;
 
         private readonly List<int> _onlineMembers;
-        private IDisposable _timer;
-
-        public DeviceInspectionGrain(MsvClientCtrlSDK msv, RestClient client, IMapper mapper)
+        
+        private List<string> _monitorMember;
+        public DeviceInspectionGrain(RestClient client, IMapper mapper)
         {
-            _timer = null;
             Mapper = mapper;
             _restClient = client;
-            _msvClient = msv;
+            
             _onlineMembers = new List<int>();
+            _monitorMember = new List<string>();
         }
 
         public override async Task OnActivateAsync()
         {
             await InitLoadAsync();
-            _timer = RegisterTimer(this.OnCheckAllChannelsAsync, State.ActionType, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            
             Logger.Info(" DeviceInspectionGrain active");
 
             var streamProvider = GetStreamProvider(Abstraction.Constants.StreamProviderName.Default);
@@ -68,12 +57,6 @@ namespace IngestTask.Grain
         }
         public override Task OnDeactivateAsync()
         {
-            if (_timer != null)
-            {
-                _timer.Dispose();
-                _timer = null;
-            }
-            
             return base.OnDeactivateAsync();
         }
 
@@ -84,16 +67,14 @@ namespace IngestTask.Grain
                 var lstdevice = await _restClient.GetAllDeviceInfoAsync();
                 var channelstate = await _restClient.GetAllChannelStateAsync();
 
-                State.ChannelInfos = Mapper.Map<List<ChannelInfo>>(lstdevice);
+                State = Mapper.Map<List<ChannelInfo>>(lstdevice);
 
-                State.ChannelInfos.ForEach(x => {
+                State.ForEach(x => {
                     var info = channelstate.Find(y => y.ChannelId == x.ChannelId);
                     if (info != null)
                     {
                         x.CurrentDevState = info.DevState;
-                        x.KamatakiInfo = info.KamatakiInfo;
                         x.LastMsvMode = info.MsvMode;
-                        x.UploadMode = info.UploadMode;
                         x.VtrId = info.VtrId;
                     }
                 });
@@ -107,89 +88,7 @@ namespace IngestTask.Grain
             return true;
         }
         
-        private async Task OnCheckAllChannelsAsync(object type)
-        {
-
-            switch (State.ActionType)
-            {
-                case 0:
-                    {
-                        State.ActionType = 1;
-                    } break;
-                case 1:
-                    {
-                        if (State.ChannelInfos != null && State.ChannelInfos.Count >0)
-                        {
-                            foreach (var item in State.ChannelInfos)
-                            {
-                                var state = await _msvClient.QueryDeviceStateAsync(item.ChannelIndex, item.Ip, false, Logger);
-
-                                MSV_Mode msvmode = MSV_Mode.NETWORK;
-                                if (state == Device_State.DISCONNECTTED)
-                                {
-                                    msvmode = MSV_Mode.ERROR;
-                                    Logger.Warn($"QueryDeviceState {state}");
-                                }
-
-                                bool changedstate = false;
-                                if (item.CurrentDevState != state || msvmode != item.LastMsvMode)
-                                {
-                                    changedstate = true;
-                                    item.LastDevState = item.CurrentDevState;
-                                    item.LastMsvMode = msvmode;
-                                    item.CurrentDevState = state;
-
-                                    if (!await _restClient.UpdateMSVChannelStateAsync(item.ChannelId, item.LastMsvMode, item.CurrentDevState).ConfigureAwait(true))
-                                    {
-                                        Logger.Error("OnCheckAllChannelsAsync UpdateMSVChannelStateAsync error");
-                                    }
-                                }
-
-                                if (item.LastDevState == Device_State.DISCONNECTTED
-                                        && item.CurrentDevState == Device_State.CONNECTED
-                                        && item.NeedStopFlag)
-                                {
-                                    item.NeedStopFlag = false;
-                                }
-
-                                if (item.LastDevState == Device_State.DISCONNECTTED
-                                        && item.CurrentDevState == Device_State.WORKING
-                                        && changedstate
-                                        && item.NeedStopFlag)
-                                {
-                                    var taskinfo = await _msvClient.QueryTaskInfoAsync(item.ChannelIndex, item.Ip, Logger);
-                                    if (taskinfo != null && taskinfo.ulID > 0)
-                                    {
-                                        var cptaskinfo = await _restClient.GetChannelCapturingTaskInfoAsync(item.ChannelId);
-
-                                        bool needstop = true;
-                                        if (cptaskinfo != null && cptaskinfo.TaskId == taskinfo.ulID)
-                                        {
-                                            Logger.Info("OnCheckAllChannelsAsync not needstop");
-                                            needstop = false;
-                                        }
-
-                                        if (needstop)
-                                        {
-                                            /*
-                                                * flag 通知出去走正常流程stop，并任务complete状态
-                                                */
-                                            item.NeedStopFlag = true;
-                                        }
-                                        else
-                                            item.NeedStopFlag = false;
-                                    }
-                                }
-                            }
-                        }
-                        
-                    }
-                    break;
-                default:
-                    break;
-            }
-
-        }
+        
         public Task<Guid> JoinAsync(int nickname)
         {
             _onlineMembers.Add(nickname);
@@ -217,12 +116,12 @@ namespace IngestTask.Grain
 
         public Task<List<ChannelInfo>> GetChannelInfosAsync()
         {
-            return Task.FromResult(this.State.ChannelInfos);
+            return Task.FromResult(this.State);
         }
 
         public Task<bool> IsChannelInvalidAsync(int channelid)
         {
-            foreach (var item in State.ChannelInfos)
+            foreach (var item in State)
             {
                 if (item.ChannelId == channelid &&item.CurrentDevState == Device_State.CONNECTED)
                 {
@@ -234,7 +133,7 @@ namespace IngestTask.Grain
 
         public Task<ChannelInfo> GetChannelInfoAsync(int channelid)
         {
-            foreach (var item in State.ChannelInfos)
+            foreach (var item in State)
             {
                 if (item.ChannelId == channelid)
                 {
@@ -243,16 +142,51 @@ namespace IngestTask.Grain
             }
             return null;
         }
-        public async Task<int> QueryRunningTaskInChannelAsync(string ip, int index)
+        public Task<int> QueryRunningTaskInChannelAsync(string ip, int index)
         {
             //通道状态校验，
-            var backinfo = await  _msvClient.QueryTaskInfoAsync(index, ip, Logger);
-            if (backinfo != null)
+           
+
+            return Task.FromResult(0);
+        }
+
+        public async Task<int> SubmitChannelInfoAsync(ChannelInfo info, bool notify)
+        {
+            var item = State.Find(x => x.Id == info.Id);
+            if (item == null)
             {
-                return (int)backinfo.ulID;
+                State.Add(item);
+            }
+            else
+            {
+                ObjectTool.CopyObjectData(info, item, string.Empty, BindingFlags.Public | BindingFlags.Instance);
             }
 
-            return 0;
+            if (notify)//通知执行器
+            {
+                await _stream.OnNextAsync(info);
+            }
+
+
+            return _monitorMember.Count;
+        }
+
+        public Task<int> QuitServiceAsync(string serviceid)
+        {
+            _monitorMember.RemoveAll(x => x == serviceid);
+            return Task.FromResult(_monitorMember.Count);
+        }
+
+        public Task<List<ChannelInfo>> RequestChannelInfoAsync(string serverid)
+        {
+            var item = _monitorMember.Find(x => x == serverid);
+            if (item == null)
+            {
+                _monitorMember.Add(serverid);
+            }
+
+            var lst = State.FindAll(x => x.Id%_monitorMember.Count == 0);
+            return Task.FromResult(lst);
         }
 
         public Task<int> CheckChannelSatetAsync()

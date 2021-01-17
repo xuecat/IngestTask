@@ -43,7 +43,7 @@ namespace IngestTask.Grain
 
         public async Task<List<DispatchTask>> GetChacheTaskTraceAsync()
         {
-            var graininfo = GrainFactory.GetGrain<ITaskCache>(0);
+            var graininfo = GrainFactory.GetGrain<IReminderTask>(0);
             if (graininfo != null)
             {
                 return await graininfo.GetTaskListAsync();

@@ -4,6 +4,7 @@ namespace IngestTask.Abstraction.Grains
 {
     using IngestTask.Dto;
     using Orleans;
+    using Orleans.Concurrency;
     using System;
     using System.Collections.Generic;
     using System.Text;
@@ -17,5 +18,12 @@ namespace IngestTask.Abstraction.Grains
         Task<int> QueryRunningTaskInChannelAsync(string ip, int index);
         Task<Guid> JoinAsync(int nickname);
         Task<Guid> LeaveAsync(int nickname);
+
+        [OneWay]
+        Task<int> SubmitChannelInfoAsync(ChannelInfo info, bool notify);
+        Task<List<ChannelInfo>> RequestChannelInfoAsync(string serverid);
+
+        [OneWay]
+        Task<int> QuitServiceAsync(string serviceid);
     }
 }

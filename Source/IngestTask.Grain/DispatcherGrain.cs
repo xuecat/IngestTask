@@ -19,9 +19,9 @@ namespace IngestTask.Grain
     public class DispatcherGrain : Grain, IDispatcherGrain
     {
         public int _taskSchedulePrevious { get; }
-        private readonly IScheduleClient _scheduleClient;
+        private readonly IDeviceMonitorClient _scheduleClient;
         private IMapper _mapper;
-        public DispatcherGrain(IScheduleClient dataServiceClient,
+        public DispatcherGrain(IDeviceMonitorClient dataServiceClient,
             IConfiguration configuration, IMapper mapper)
         {
             //_mapper = new Mapper();
@@ -61,7 +61,7 @@ namespace IngestTask.Grain
                 }
 
                 //记录缓存
-                await GrainFactory.GetGrain<ITaskCache>(0).AddTaskAsync(task, parsableaddress);
+                await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(task, parsableaddress);
             }
         }
 
@@ -71,7 +71,7 @@ namespace IngestTask.Grain
             if (task != null)
             {
                 string parsableaddress = string.Empty;
-                var cached = await GrainFactory.GetGrain<ITaskCache>(0).IsCachedAsync(task.Taskid);//如果缓存过了说明有分发的server监听了，不能再分发了
+                var cached = await GrainFactory.GetGrain<IReminderTask>(0).IsCachedAsync(task.Taskid);//如果缓存过了说明有分发的server监听了，不能再分发了
 
                 if ((task.Starttime - DateTime.Now).TotalSeconds >
                     _taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < _taskSchedulePrevious)
@@ -96,7 +96,7 @@ namespace IngestTask.Grain
                     }
                 }
 
-                string bakcparsableaddress = await GrainFactory.GetGrain<ITaskCache>(0).UpdateTaskAsync(task, parsableaddress);
+                string bakcparsableaddress = await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(task, parsableaddress);
                 if (!string.IsNullOrEmpty(bakcparsableaddress))
                 {
                     await _scheduleClient.RefreshAsync(bakcparsableaddress);
@@ -108,7 +108,7 @@ namespace IngestTask.Grain
         {
             if (task != null)
             {
-                string bakcparsableaddress = await GrainFactory.GetGrain<ITaskCache>(0).DeleteTaskAsync(task.Taskid);
+                string bakcparsableaddress = await GrainFactory.GetGrain<IReminderTask>(0).DeleteTaskAsync(task.Taskid);
                 if (!string.IsNullOrEmpty(bakcparsableaddress))
                 {
                     await _scheduleClient.RefreshAsync(bakcparsableaddress);

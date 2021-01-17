@@ -1,73 +1,44 @@
 ﻿
 
-namespace IngestTask.Grain.Service
+namespace IngestTask.Grain
 {
     using AutoMapper;
     using IngestTask.Abstraction.Grains;
-    using IngestTask.Abstraction.Service;
     using IngestTask.Dto;
     using IngestTask.Tool;
     using IngestTask.Tools;
     using Microsoft.Extensions.Configuration;
-    using NLog;
     using Orleans;
     using Orleans.Concurrency;
-    using Orleans.Core;
-    using Orleans.Runtime;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading.Tasks;
 
     [Reentrant]
-    public class ScheduleTaskService : GrainService, IScheduleService
+    public class ScheduleTaskGrin : Grain<List<DispatchTask>>, IScheduleTaskGrain
     {
-        readonly IGrainFactory _grainFactory;
         private List<DispatchTask> _lstScheduleTask;
-        private List<DispatchTask> _lstTimerScheduleTask;
-        
-        private IMapper _mapper;
-        private readonly RestClient _restClient;
-        private readonly Sobey.Core.Log.ILogger Logger;
 
-        private IGrainReminder _grinReminder;
         private IDisposable _dispoScheduleTimer;
-
         private int _taskSchedulePreviousSeconds;
-        private bool _refresh;
-        public ScheduleTaskService(IServiceProvider services, IGrainIdentity id, Silo silo,
-            Microsoft.Extensions.Logging.ILoggerFactory loggerFactory,
-            IGrainFactory grainFactory, IMapper mapper, RestClient restClient, IConfiguration configuration)
-            : base(id, silo, loggerFactory)
+
+        private readonly Sobey.Core.Log.ILogger Logger;
+        private readonly RestClient _restClient;
+
+        private IMapper _mapper;
+
+        public ScheduleTaskGrin(IMapper mapper, RestClient restClient, IConfiguration configuration)
         {
-            Logger = Sobey.Core.Log.LoggerManager.GetLogger("ScheduleService");
-            _dispoScheduleTimer = null;
-            _grainFactory = grainFactory;
-            _lstScheduleTask = new List<DispatchTask>();
-            _lstTimerScheduleTask = new List<DispatchTask>();
-
-            _mapper = mapper;
-            _restClient = restClient;
-
-            _grinReminder = null;
-
+            Logger = Sobey.Core.Log.LoggerManager.GetLogger("ScheduleTask");
             _taskSchedulePreviousSeconds = configuration.GetSection("Task:TaskSchedulePrevious").Get<int>();
-            
-            _refresh = true;
+            _restClient = restClient;
+            _mapper = mapper;
         }
-
-        public List<DispatchTask> GetDataBack() => new List<DispatchTask>() { new DispatchTask() { Taskid = 11, Taskname = "qq", Starttime = DateTime.Now} }/*_lstScheduleTask*/;
-       
-        
-        public Task<string> AddScheduleTaskAsync(DispatchTask task)
+        public Task<int> AddScheduleTaskAsync(DispatchTask task)
         {
-            string extrakey = string.Empty;
-            var refgrain = GetGrainReference();
-            refgrain.GetPrimaryKey(out extrakey);
-            
             if (task != null && _lstScheduleTask.Find(x => x.Taskid == task.Taskid) == null)
             {
                 lock (_lstScheduleTask)
@@ -77,12 +48,48 @@ namespace IngestTask.Grain.Service
                     {
                         _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
                     }
-                    
-                    return Task.FromResult(refgrain.GrainServiceSiloAddress.ToParsableString()+";"+ refgrain.GrainIdentity.TypeCode.ToString() + ";" + extrakey);
+
+                    return Task.FromResult(task.Taskid);
                 }
             }
 
-            return Task.FromResult(refgrain.GrainServiceSiloAddress.ToParsableString() + ";" + refgrain.GrainIdentity.TypeCode.ToString() + ";" + extrakey);
+            return Task.FromResult(0);
+        }
+
+        public Task<int> UpdateScheduleTaskAsync(DispatchTask task)
+        {
+            if (task != null)
+            {
+                var finditem = _lstScheduleTask.Find(x => x.Taskid == task.Taskid);
+                if (finditem == null)
+                {
+                    lock (_lstScheduleTask)
+                    {
+                        _lstScheduleTask.Add(task);
+                        if (_dispoScheduleTimer == null)
+                        {
+                            _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
+                        }
+
+                        return Task.FromResult(task.Taskid);
+                    }
+                }
+                else
+                {
+                    lock (_lstScheduleTask)
+                    {
+                        ObjectTool.CopyObjectData(task, finditem, string.Empty, BindingFlags.Public | BindingFlags.Instance);
+
+                        if (_dispoScheduleTimer == null)
+                        {
+                            _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
+                        }
+
+                        return Task.FromResult(task.Taskid);
+                    }
+                }
+            }
+            return Task.FromResult(0);
         }
 
         public Task<int> RemoveScheduleTaskAsync(DispatchTask task)
@@ -92,7 +99,7 @@ namespace IngestTask.Grain.Service
                 lock (_lstScheduleTask)
                 {
                     _lstScheduleTask.RemoveAll(x => x.Taskid == task.Taskid);
-                    
+
                 }
                 if (_lstScheduleTask.Count == 0 && _dispoScheduleTimer != null)
                 {
@@ -104,40 +111,6 @@ namespace IngestTask.Grain.Service
 
             return Task.FromResult(0);
         }
-
-        public Task RefreshAsync()
-        {
-            _refresh = true;
-            return Task.CompletedTask;
-        }
-
-        
-
-        public override Task Init(IServiceProvider serviceProvider)
-        {
-            return base.Init(serviceProvider);
-        }
-
-        protected override async Task StartInBackground()
-        {
-           
-            var device = _grainFactory.GetGrain<IDeviceInspections>(0);
-            await device.CheckChannelSatetAsync();
-
-        }
-
-        public override async Task Start()
-        {
-            await base.Start();
-
-        }
-
-        public override Task Stop()
-        {
-            _lstScheduleTask.Clear();
-            return base.Stop();
-        }
-
 
         private async Task OnScheduleTaskAsync(object type)
         {
@@ -152,10 +125,6 @@ namespace IngestTask.Grain.Service
             {
                 //获取最新缓存，保证中途修改，删除了也不会更新
                 var lsttask = _lstScheduleTask;
-                if (_refresh)
-                {
-                    lsttask = await _grainFactory.GetGrain<ITaskCache>(0).GetTaskListAsync(_lstScheduleTask.Select(x => x.Taskid).ToList());
-                }
                 
                 if (lsttask != null && lsttask.Count > 0)
                 {
@@ -185,7 +154,7 @@ namespace IngestTask.Grain.Service
                                 if ((task.Starttime - DateTime.Now).TotalSeconds <=
                                     _taskSchedulePreviousSeconds && task.Endtime > DateTime.Now)
                                 {
-                                    await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task));
+                                    await GrainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task));
                                 }
                             }
                         }
@@ -194,7 +163,7 @@ namespace IngestTask.Grain.Service
                             var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
                             if (spansecond > 0 && spansecond < _taskSchedulePreviousSeconds)
                             {
-                                if (await _grainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.StopTaskAsync(_mapper.Map<TaskContent>(task)))
+                                if (await GrainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.StopTaskAsync(_mapper.Map<TaskContent>(task)))
                                 {
                                     _lstRemoveTask.Add(task);
                                 }
@@ -207,7 +176,7 @@ namespace IngestTask.Grain.Service
                     {
                         lock (_lstScheduleTask)
                         {
-                            if (_lstScheduleTask.Count >0)
+                            if (_lstScheduleTask.Count > 0)
                             {
                                 var lst = _lstRemoveTask.Select(x => x.Taskid).ToList();
                                 _lstScheduleTask.RemoveAll(x => lst.Contains(x.Taskid));
@@ -219,7 +188,7 @@ namespace IngestTask.Grain.Service
                             }
                         }
 
-                        await _grainFactory.GetGrain<ITaskCache>(0).CompleteTaskAsync(_lstRemoveTask.Select(x => x.Taskid).ToList());
+                        await GrainFactory.GetGrain<IReminderTask>(0).CompleteTaskAsync(_lstRemoveTask.Select(x => x.Taskid).ToList());
                     }
                 }
                 else
@@ -236,10 +205,10 @@ namespace IngestTask.Grain.Service
                         Logger.Info("clear all scheduletask");
                     }
                 }
-                
+
             }
 
-            
+
 
         }
     }

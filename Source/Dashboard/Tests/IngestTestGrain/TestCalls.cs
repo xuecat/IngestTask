@@ -18,7 +18,7 @@ namespace IngestTestGrain
         {
             return Task.Run(async () =>
             {
-                var devicegrain = client.GetGrain<ITaskCache>(0);
+                var devicegrain = client.GetGrain<IReminderTask>(0);
                 await devicegrain.AddTaskAsync(new IngestTask.Dto.DispatchTask() { 
                     Taskid = 11,
                     Taskguid = "wagnqiu",
