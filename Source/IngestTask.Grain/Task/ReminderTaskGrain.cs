@@ -112,7 +112,6 @@ namespace IngestTask.Grain
                         }
                     } break;
             }
-
         }
 
         public async Task<int> AddTaskAsync(DispatchTask task)

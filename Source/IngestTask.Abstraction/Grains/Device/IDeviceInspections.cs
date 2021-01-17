@@ -19,11 +19,9 @@ namespace IngestTask.Abstraction.Grains
         Task<Guid> JoinAsync(int nickname);
         Task<Guid> LeaveAsync(int nickname);
 
-        [OneWay]
         Task<int> SubmitChannelInfoAsync(ChannelInfo info, bool notify);
         Task<List<ChannelInfo>> RequestChannelInfoAsync(string serverid);
 
-        [OneWay]
         Task<int> QuitServiceAsync(string serviceid);
     }
 }
