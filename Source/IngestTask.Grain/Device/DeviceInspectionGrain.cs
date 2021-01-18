@@ -28,6 +28,7 @@ namespace IngestTask.Grain
         private readonly ILogger Logger = LoggerManager.GetLogger("DeviceInfo");
         
         private readonly RestClient _restClient;
+        private readonly MsvClientCtrlSDK _msvClient;
 
         private readonly IMapper Mapper;
         private IAsyncStream<ChannelInfo> _stream;
@@ -35,11 +36,12 @@ namespace IngestTask.Grain
         private readonly List<int> _onlineMembers;
         
         private List<string> _monitorMember;
-        public DeviceInspectionGrain(RestClient client, IMapper mapper)
+        public DeviceInspectionGrain(RestClient client, MsvClientCtrlSDK msv, IMapper mapper)
         {
             Mapper = mapper;
             _restClient = client;
-            
+            _msvClient = msv;
+
             _onlineMembers = new List<int>();
             _monitorMember = new List<string>();
         }
@@ -142,31 +144,37 @@ namespace IngestTask.Grain
             }
             return null;
         }
-        public Task<int> QueryRunningTaskInChannelAsync(string ip, int index)
+        public async Task<int> QueryRunningTaskInChannelAsync(string ip, int index)
         {
             //通道状态校验，
-           
+            var taskinfo = await _msvClient.QueryTaskInfoAsync(index, ip, Logger);
+            if (taskinfo != null)
+            {
+                return (int)taskinfo.ulID;
+            }
 
-            return Task.FromResult(0);
+            return 0;
         }
 
-        public async Task<int> SubmitChannelInfoAsync(ChannelInfo info, bool notify)
+        public async Task<int> SubmitChannelInfoAsync(List<ChannelInfo> infos, bool notify)
         {
-            var item = State.Find(x => x.Id == info.Id);
-            if (item == null)
+            foreach (var itm in infos)
             {
-                State.Add(item);
-            }
-            else
-            {
-                ObjectTool.CopyObjectData(info, item, string.Empty, BindingFlags.Public | BindingFlags.Instance);
-            }
+                var item = State.Find(x => x.Id == itm.Id);
+                if (item == null)
+                {
+                    State.Add(item);
+                }
+                else
+                {
+                    ObjectTool.CopyObjectData(itm, item, string.Empty, BindingFlags.Public | BindingFlags.Instance);
+                }
 
-            if (notify)//通知执行器
-            {
-                await _stream.OnNextAsync(info);
+                if (notify && itm.NeedStopFlag)//通知执行器
+                {
+                    await _stream.OnNextAsync(infos.First());
+                }
             }
-
 
             return _monitorMember.Count;
         }

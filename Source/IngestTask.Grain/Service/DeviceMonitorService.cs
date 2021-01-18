@@ -55,7 +55,6 @@ namespace IngestTask.Grain.Service
 
         public override Task Init(IServiceProvider serviceProvider)
         {
-            
             return base.Init(serviceProvider);
         }
 
@@ -65,7 +64,7 @@ namespace IngestTask.Grain.Service
         }
         protected override Task StartInBackground()
         {
-            _timer = RegisterTimer(this.OnCheckAllDeviceAsync, _lstTimerScheduleDevice, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            _timer = RegisterTimer(this.OnCheckAllDeviceAsync, _lstTimerScheduleDevice, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
             return Task.CompletedTask;
         }
 
@@ -163,6 +162,8 @@ namespace IngestTask.Grain.Service
                         }
                     }
                 }
+
+                await _grainFactory.GetGrain<IDeviceInspections>(0).SubmitChannelInfoAsync(_lstTimerScheduleDevice);
             }
         }
     }
