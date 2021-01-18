@@ -18,10 +18,9 @@ namespace IngestTask.Grain
     using System.Threading.Tasks;
 
     [Reentrant]
+    [ScheduleTaskPlacementStrategy]
     public class ScheduleTaskGrin : Grain<List<DispatchTask>>, IScheduleTaskGrain
     {
-        private List<DispatchTask> _lstScheduleTask;
-
         private IDisposable _dispoScheduleTimer;
         private int _taskSchedulePreviousSeconds;
 
@@ -36,47 +35,60 @@ namespace IngestTask.Grain
             _taskSchedulePreviousSeconds = configuration.GetSection("Task:TaskSchedulePrevious").Get<int>();
             _restClient = restClient;
             _mapper = mapper;
+            _dispoScheduleTimer = null;
         }
-        public Task<int> AddScheduleTaskAsync(DispatchTask task)
+
+        public override async Task OnActivateAsync()
         {
-            if (task != null && _lstScheduleTask.Find(x => x.Taskid == task.Taskid) == null)
+            await ReadStateAsync();
+            await base.OnActivateAsync();
+        }
+
+        public override async Task OnDeactivateAsync()
+        {
+            await base.OnDeactivateAsync();
+        }
+
+        public async Task<int> AddScheduleTaskAsync(DispatchTask task)
+        {
+            if (task != null && this.State.Find(x => x.Taskid == task.Taskid) == null)
             {
-                lock (_lstScheduleTask)
+                lock (this.State)
                 {
-                    _lstScheduleTask.Add(task);
+                    this.State.Add(task);
                     if (_dispoScheduleTimer == null)
                     {
-                        _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
+                        _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
                     }
-
-                    return Task.FromResult(task.Taskid);
                 }
+                await WriteStateAsync();
+                return task.Taskid;
             }
 
-            return Task.FromResult(0);
+            return 0;
         }
 
-        public Task<int> UpdateScheduleTaskAsync(DispatchTask task)
+        public async Task<int> UpdateScheduleTaskAsync(DispatchTask task)
         {
             if (task != null)
             {
-                var finditem = _lstScheduleTask.Find(x => x.Taskid == task.Taskid);
+                var finditem = this.State.Find(x => x.Taskid == task.Taskid);
                 if (finditem == null)
                 {
-                    lock (_lstScheduleTask)
+                    lock (this.State)
                     {
-                        _lstScheduleTask.Add(task);
+                        this.State.Add(task);
                         if (_dispoScheduleTimer == null)
                         {
                             _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
                         }
-
-                        return Task.FromResult(task.Taskid);
                     }
+                    await WriteStateAsync();
+                    return task.Taskid;
                 }
                 else
                 {
-                    lock (_lstScheduleTask)
+                    lock (this.State)
                     {
                         ObjectTool.CopyObjectData(task, finditem, string.Empty, BindingFlags.Public | BindingFlags.Instance);
 
@@ -84,32 +96,37 @@ namespace IngestTask.Grain
                         {
                             _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
                         }
-
-                        return Task.FromResult(task.Taskid);
                     }
+                    await WriteStateAsync();
+                    return task.Taskid;
                 }
             }
-            return Task.FromResult(0);
+            return 0;
         }
 
-        public Task<int> RemoveScheduleTaskAsync(DispatchTask task)
+        public async Task<int> RemoveScheduleTaskAsync(DispatchTask task)
         {
             if (task != null)
             {
-                lock (_lstScheduleTask)
+                int removecount = 0;
+                lock (this.State)
                 {
-                    _lstScheduleTask.RemoveAll(x => x.Taskid == task.Taskid);
-
+                    removecount = this.State.RemoveAll(x => x.Taskid == task.Taskid);
                 }
-                if (_lstScheduleTask.Count == 0 && _dispoScheduleTimer != null)
+                if (this.State.Count == 0 && _dispoScheduleTimer != null)
                 {
                     _dispoScheduleTimer.Dispose();
                     _dispoScheduleTimer = null;
                 }
-                return Task.FromResult(1);
+                if (removecount > 0)
+                {
+                    await WriteStateAsync();
+                }
+
+                return task.Taskid;
             }
 
-            return Task.FromResult(0);
+            return 0;
         }
 
         private async Task OnScheduleTaskAsync(object type)
@@ -121,10 +138,9 @@ namespace IngestTask.Grain
 
             var _lstRemoveTask = new List<DispatchTask>();
 
-            if (_lstScheduleTask.Count > 0)
+            if (this.State.Count > 0)
             {
-                //获取最新缓存，保证中途修改，删除了也不会更新
-                var lsttask = _lstScheduleTask;
+                var lsttask = this.State;
                 
                 if (lsttask != null && lsttask.Count > 0)
                 {
@@ -136,16 +152,22 @@ namespace IngestTask.Grain
                                 && task.State == (int)taskState.tsReady
                                 && task.OldChannelid == 0)
                             {
-                                var nowdate = DateTime.Now;
-                                DateTime date = new DateTime(nowdate.Year, nowdate.Month, nowdate.Day, task.Starttime.Hour, task.Starttime.Minute, task.Starttime.Second);
-                                if ((task.Starttime - DateTime.Now).TotalSeconds <=
+                                if ((task.NewBegintime - DateTime.Now).TotalSeconds <=
                                     _taskSchedulePreviousSeconds)
                                 {
                                     var info = await _restClient.CreatePeriodcTaskAsync(task.Taskid);
 
+                                    Logger.Info($"create period task {task.Taskid}");
                                     if (info != null)
                                     {
                                         _lstRemoveTask.Add(task);
+
+                                        //周期母任务更新后，再加进去，进行下一个周期
+                                        var taskperiod = await _restClient.GetTaskDBAsync(task.Taskid);
+                                        if (taskperiod.Endtime > DateTime.Now && taskperiod.NewBegintime > DateTime.Now)
+                                        {
+                                            await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(taskperiod);
+                                        }
                                     }
                                 }
                             }
@@ -155,6 +177,7 @@ namespace IngestTask.Grain
                                     _taskSchedulePreviousSeconds && task.Endtime > DateTime.Now)
                                 {
                                     await GrainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task));
+                                    Logger.Info($"add task excuter {task.Taskid}");
                                 }
                             }
                         }
@@ -166,6 +189,7 @@ namespace IngestTask.Grain
                                 if (await GrainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.StopTaskAsync(_mapper.Map<TaskContent>(task)))
                                 {
                                     _lstRemoveTask.Add(task);
+                                    Logger.Info($"stop task {task.Taskid}");
                                 }
                             }
                         }
@@ -174,30 +198,29 @@ namespace IngestTask.Grain
 
                     if (_lstRemoveTask.Count > 0)
                     {
-                        lock (_lstScheduleTask)
+                        lock (this.State)
                         {
-                            if (_lstScheduleTask.Count > 0)
+                            if (this.State.Count > 0)
                             {
                                 var lst = _lstRemoveTask.Select(x => x.Taskid).ToList();
-                                _lstScheduleTask.RemoveAll(x => lst.Contains(x.Taskid));
+                                this.State.RemoveAll(x => lst.Contains(x.Taskid));
                             }
-                            if (_lstScheduleTask.Count == 0 && _dispoScheduleTimer != null)
+                            if (this.State.Count == 0 && _dispoScheduleTimer != null)
                             {
                                 _dispoScheduleTimer.Dispose();
                                 _dispoScheduleTimer = null;
                             }
                         }
 
-                        await GrainFactory.GetGrain<IReminderTask>(0).CompleteTaskAsync(_lstRemoveTask.Select(x => x.Taskid).ToList());
                     }
                 }
                 else
                 {
-                    lock (_lstScheduleTask)
+                    lock (this.State)
                     {
-                        _lstScheduleTask.Clear();
+                        this.State.Clear();
 
-                        if (_lstScheduleTask.Count == 0 && _dispoScheduleTimer != null)
+                        if (this.State.Count == 0 && _dispoScheduleTimer != null)
                         {
                             _dispoScheduleTimer.Dispose();
                             _dispoScheduleTimer = null;

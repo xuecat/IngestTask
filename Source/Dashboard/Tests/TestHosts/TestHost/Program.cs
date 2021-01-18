@@ -7,7 +7,6 @@ using System.Xml.Linq;
 using AutoMapper;
 using IngestTask.Abstraction.Constants;
 using IngestTask.Abstraction.Grains;
-using IngestTask.Abstraction.Service;
 using IngestTask.Grain;
 using IngestTask.Grain.Service;
 using IngestTask.Tool;
@@ -61,6 +60,8 @@ namespace TestHost
                          services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
                          services.AddSingleton<IGrainServiceDataBack, GrainServiceDataBack>();
                          services.AddAutoMapper(typeof(GlobalProfile));
+                         services.AddSingletonNamedService<PlacementStrategy, ScheduleTaskPlacementStrategy>(nameof(ScheduleTaskPlacementStrategy));
+                         services.AddSingletonKeyedService<Type, IPlacementDirector, ScheduleTaskPlacementSiloDirector>(typeof(ScheduleTaskPlacementStrategy));
 
                      })
                     .UseDevelopmentClustering(options => options.PrimarySiloEndpoint = new IPEndPoint(siloAddress, siloPort))

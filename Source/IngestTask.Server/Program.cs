@@ -26,13 +26,13 @@ namespace IngestTask.Server
     using IngestTask.Tool;
     using Orleans.Serialization.ProtobufNet;
     using IngestTask.Grain.Service;
-    using IngestTask.Abstraction.Service;
     using IngestTask.Abstraction.Grains;
     using System.Collections.Generic;
     using System.Xml.Linq;
     using System.Threading;
     using System.Runtime.Loader;
     using OrleansDashboard;
+    using Orleans.Runtime.Placement;
 
     public static class Program
     {
@@ -165,7 +165,8 @@ namespace IngestTask.Server
 
                         services.Configure<ApplicationOptions>(context.Configuration);
                         services.Configure<ClusterOptions>(opt => { opt.ClusterId = Cluster.ClusterId; opt.ServiceId = Cluster.ServiceId; });
-                        
+                        services.AddSingletonNamedService<PlacementStrategy, ScheduleTaskPlacementStrategy>(nameof(ScheduleTaskPlacementStrategy));
+                        services.AddSingletonKeyedService<Type, IPlacementDirector, ScheduleTaskPlacementSiloDirector>(typeof(ScheduleTaskPlacementStrategy));
                         //services.BuildServiceProvider();
                     })
                 .UseSiloUnobservedExceptionsHandler()

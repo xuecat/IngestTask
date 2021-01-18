@@ -25,10 +25,12 @@ namespace IngestTask.Grain
     {
         private readonly int _reminderTimerMinutes;
 
+        private TimeSpan _reminderCurPeriod;
         private IGrainReminder _grainReminder;
 
         public ReminderTaskGrain(IConfiguration configuration)
         {
+            _reminderCurPeriod = TimeSpan.MaxValue;
             _grainReminder = null;
             _reminderTimerMinutes = configuration.GetSection("Task:TaskSchedulePreviousTimer").Get<int>();
         }
@@ -47,7 +49,7 @@ namespace IngestTask.Grain
             await base.OnDeactivateAsync();
         }
 
-        private async Task<List<DispatchTask>> RecalculateReminderAsync()
+        private async Task RecalculateReminderAsync()
         {
             DateTime mintime = DateTime.MaxValue;
             var lstTask = this.State;
@@ -59,7 +61,7 @@ namespace IngestTask.Grain
                 
                 if (lstTask[i].Tasktype == (int)TaskType.TT_PERIODIC)
                 {
-                    if (lstTask[i].NewBegintime.AddMinutes(_reminderTimerMinutes) >= DateTime.Now)
+                    if (lstTask[i].NewBegintime >= DateTime.Now.AddMinutes(_reminderTimerMinutes))
                     {
                         bneddtimer = true;
                     }
@@ -70,7 +72,7 @@ namespace IngestTask.Grain
                 }
                 else
                 {
-                    if (lstTask[i].Starttime.AddMinutes(_reminderTimerMinutes) >= DateTime.Now)
+                    if (lstTask[i].Starttime >= DateTime.Now.AddMinutes(_reminderTimerMinutes))
                     {
                         bneddtimer = true;
                     }
@@ -83,16 +85,31 @@ namespace IngestTask.Grain
                 if (bneddtimer)
                 {
                     lstbacktask.Add(lstTask[i]);
-                    lstTask.Remove(lstTask[i]);
+                    lock (this.State)
+                    {
+                        this.State.Remove(lstTask[i]);
+                    }
+                    
                 }
             }
 
             if (mintime != DateTime.MaxValue)
             {
                 var minspan = DateTime.Now - mintime.AddMinutes(-1 * _reminderTimerMinutes);
-                _grainReminder = await RegisterOrUpdateReminder(Cluster.TaskReminder, TimeSpan.FromSeconds(1), minspan);
+                if (minspan != _reminderCurPeriod)
+                {
+                    _grainReminder = await RegisterOrUpdateReminder(Cluster.TaskReminder, TimeSpan.FromSeconds(1), minspan);
+                }
             }
-            return lstbacktask;
+            
+            if (lstbacktask != null && lstbacktask.Count > 0)
+            {
+                var membership = await GrainFactory.GetGrain<IManagementGrain>(0).GetHosts(true);
+                foreach (var item in lstbacktask)
+                {
+                    await GrainFactory.GetGrain<IScheduleTaskGrain>(item.Taskid % membership.Count).AddScheduleTaskAsync(item);
+                }
+            }
         }
 
         public async Task ReceiveReminder(string reminderName, TickStatus status)
@@ -101,15 +118,8 @@ namespace IngestTask.Grain
             {
                 case Cluster.TaskReminder:
                     {
-                        var membership = await GrainFactory.GetGrain<IManagementGrain>(0).GetHosts(true);
-                        var lsttimer = await RecalculateReminderAsync();
-                        if (lsttimer != null && lsttimer.Count > 0)
-                        {
-                            foreach (var item in lsttimer)
-                            {
-                                await GrainFactory.GetGrain<IScheduleTaskGrain>(item.Taskid % membership.Count).AddScheduleTaskAsync(item);
-                            }
-                        }
+                        _reminderCurPeriod = status.Period;
+                        await RecalculateReminderAsync();
                     } break;
             }
         }
@@ -119,13 +129,20 @@ namespace IngestTask.Grain
             var tkitem = this.State.Find(x => x.Taskid == task.Taskid);
             if (tkitem == null)
             {
-                this.State.Add(task);
+                lock (this.State)
+                {
+                    this.State.Add(task);
+                }
+                await RecalculateReminderAsync();
                 await WriteStateAsync();
             }
             else
             {
-                ObjectTool.CopyObjectData(task, tkitem, "", BindingFlags.Public | BindingFlags.Instance);
-
+                lock (this.State)
+                {
+                    ObjectTool.CopyObjectData(task, tkitem, "", BindingFlags.Public | BindingFlags.Instance);
+                }
+                await RecalculateReminderAsync();
                 await WriteStateAsync();
             }
 
@@ -137,10 +154,15 @@ namespace IngestTask.Grain
             if (task > 0)
             {
                 string parsableaddress = string.Empty;
-                int ncount =this.State.RemoveAll(x =>x.Taskid == task);
+                int ncount = 0;
+                lock (this.State)
+                {
+                    ncount = this.State.RemoveAll(x => x.Taskid == task);
+                }
 
                 if (ncount > 0)
                 {
+                    await RecalculateReminderAsync();
                     await WriteStateAsync();
                     return task;
                 }
@@ -156,23 +178,28 @@ namespace IngestTask.Grain
                 var tkitem = this.State.Find(x => x.Taskid == task.Taskid);
                 if (tkitem != null)
                 {
-                    ObjectTool.CopyObjectData(task, tkitem, "", BindingFlags.Public | BindingFlags.Instance);
+                    lock (this.State)
+                    {
+                        ObjectTool.CopyObjectData(task, tkitem, "", BindingFlags.Public | BindingFlags.Instance);
+                    }
+                    await RecalculateReminderAsync();
                     await WriteStateAsync();
                     return tkitem.Taskid;
                 }
                 else
                 {
-                    this.State.Add(task);
+                    lock (this.State)
+                    {
+                        this.State.Add(task);
+                    }
+                    await RecalculateReminderAsync();
                     await WriteStateAsync();
                 }
             }
             return 0;
         }
-        public Task CompleteTaskAsync(List<int> taskid)
-        {
-            this.State.RemoveAll(x => taskid.Contains(x.Taskid));
-            return Task.CompletedTask;
-        }
+
+        
         public Task<DispatchTask> GetTaskAsync(int taskid)
         {
             var tkitem = this.State.Find(x => x.Taskid == taskid);

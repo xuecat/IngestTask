@@ -277,7 +277,7 @@ namespace IngestTask.Grain
 
                                 if (task.StartOrStop)
                                 {
-                                    await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(await _restClient.GetTaskDBAsync(task.TaskContent.TaskId), string.Empty);
+                                    await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(await _restClient.GetTaskDBAsync(task.TaskContent.TaskId));
                                     _timer = RegisterTimer(this.OnRunningTaskMonitorAsync, new Tuple<int, int, string, int, int, string>(taskid, (int)task.TaskContent.TaskType, task.TaskContent.Begin, chinfo.ChannelId, chinfo.ChannelIndex, chinfo.Ip), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
                                 }
                                 else
@@ -420,11 +420,6 @@ namespace IngestTask.Grain
            
         }
 
-
-        public Task DeleteTaskAsync(TaskContent task)
-        {
-            throw new NotImplementedException();
-        }
 
     }
 }

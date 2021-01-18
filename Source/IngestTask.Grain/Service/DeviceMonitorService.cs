@@ -55,13 +55,7 @@ namespace IngestTask.Grain.Service
 
         public override Task Init(IServiceProvider serviceProvider)
         {
-            string extrakey = string.Empty;
-
-            var refgrain = GetGrainReference();
-            refgrain.GetPrimaryKey(out extrakey);
-
-            _grainKey = refgrain.GrainServiceSiloAddress.ToParsableString() + ";" + refgrain.GrainIdentity.TypeCode.ToString() + ";" + extrakey;
-
+            
             return base.Init(serviceProvider);
         }
 
@@ -77,6 +71,13 @@ namespace IngestTask.Grain.Service
 
         public override async Task Start()
         {
+            string extrakey = string.Empty;
+
+            var refgrain = GetGrainReference();
+            refgrain.GetPrimaryKey(out extrakey);
+
+            _grainKey = refgrain.GrainServiceSiloAddress.ToParsableString() + ";" + refgrain.GrainIdentity.TypeCode.ToString() + ";" + extrakey;
+
             _lstTimerScheduleDevice = await _grainFactory.GetGrain<IDeviceInspections>(0).RequestChannelInfoAsync(_grainKey);
             await base.Start();
         }

@@ -7,13 +7,15 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
     using IngestTask.Abstraction.Constants;
     using IngestTask.Tools.Msv;
     using IngestTask.Tool;
-    using IngestTask.Abstraction.Service;
     using IngestTask.Abstraction.Grains;
     using IngestTask.Grain.Service;
     using IngestTask.Grain;
     using AutoMapper;
     using IngestTask.Tools;
     using Microsoft.Extensions.DependencyInjection.Extensions;
+    using Orleans.Runtime;
+    using System;
+    using Orleans.Runtime.Placement;
 
     public class TestSiloConfigurator : ISiloConfigurator
     {
@@ -33,6 +35,8 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
 
                     services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
                     services.AddAutoMapper(typeof(GlobalProfile));
+                    services.AddSingletonNamedService<PlacementStrategy, ScheduleTaskPlacementStrategy>(nameof(ScheduleTaskPlacementStrategy));
+                    services.AddSingletonKeyedService<Type, IPlacementDirector, ScheduleTaskPlacementSiloDirector>(typeof(ScheduleTaskPlacementStrategy));
 
                 }/*services.AddSingleton<ILoggerFactory>(x => new SerilogLoggerFactory())*/)
                 .AddMemoryGrainStorageAsDefault()
