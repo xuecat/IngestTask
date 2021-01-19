@@ -29,10 +29,10 @@ namespace IngestTask.Tool
         private string CmServerUrl { get; set; }
 
         private bool _disposed;
-        public RestClient(string ingesturl, string cmurl)
+        public RestClient(HttpClient httpClient, string ingesturl, string cmurl)
         {
             _disposed = false;
-            _httpClient = new HttpClient();
+            _httpClient = httpClient != null? httpClient : new HttpClient();
             _httpClient.DefaultRequestHeaders.Connection.Clear();
             _httpClient.DefaultRequestHeaders.ConnectionClose = false;
             _httpClient.Timeout = TimeSpan.FromSeconds(15);

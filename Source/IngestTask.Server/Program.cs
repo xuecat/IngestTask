@@ -155,9 +155,26 @@ namespace IngestTask.Server
                 .ConfigureServices(
                     (context, services) =>
                     {
+                        var CircuitBreakerOpenTriggerCount = Convert.ToInt32(Configuration["PollySetting:CircuitBreakerOpenTriggerCount"]);
+                        //通用策略
+                        services.AddHttpClientPolly("ApiClient", options =>
+                        {
+                            options.TimeoutTime = Convert.ToInt32(Configuration["PollySetting:TimeoutTime"]);
+                            options.RetryCount = Convert.ToInt32(Configuration["PollySetting:RetryCount"]);
+                            options.CircuitBreakerOpenFallCount = Convert.ToInt32(Configuration["PollySetting:CircuitBreakerOpenFallCount"]);
+                            options.CircuitBreakerDownTime = Convert.ToInt32(Configuration["PollySetting:CircuitBreakerDownTime"]);
+                            options.CircuitBreakerAction = (p =>
+                            {
+                                int rcount = (int)p;
+                                if (rcount == CircuitBreakerOpenTriggerCount)
+                                    Environment.Exit(0);//断路器触发超过CircuitBreakerOpenTriggerCount次-退出程序
+                            });
+                        });
+
                         services.AddScoped<MsvClientCtrlSDK>();
                         var client = new RestClient(context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
                         services.AddSingleton<RestClient>(client);
+                        
                         services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                         services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
 
