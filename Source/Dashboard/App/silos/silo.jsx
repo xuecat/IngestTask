@@ -38,11 +38,11 @@ const SiloGraph = props => {
 }
 
 
-const Taskinfo = props => {
+const Deviceinfo = props => {
   const values = props.stats
 
-  const tasktypes = [
-    'TT_NORMAL','TT_PERIODIC','TT_OPENEND','TT_LOOP' ,'TT_TIEUP' ,'TT_MANUTASK','TT_VTRUPLOAD' ,'TT_OPENENDEX'
+  const devicestates = [
+    'DISCONNECTTED','CONNECTED','WORKING'
   ];
   
   if (!values.length || values.length < 1) {
@@ -50,69 +50,69 @@ const Taskinfo = props => {
   }
 
   return (
-    <Panel title='Listen Task Infos:'>
+    <Panel title='Listen Device Infos:'>
       <div>
         <table className="table">
         <tbody>
           <tr>
-            <th style={{ textAlign: 'left' }}>TaskId</th>
-            <th style={{ textAlign: 'right' }}>Name</th>
-            <th style={{ textAlign: 'right' }}>Type</th>
-            <th style={{ textAlign: 'right' }}>Begin</th>
-            <th style={{ textAlign: 'right' }}>End</th>
-            <th style={{ textAlign: 'right' }}>State</th>
-            <th style={{ textAlign: 'right' }}>SyncState</th>
-            <th style={{ textAlign: 'right' }}>DispatchState</th>
+            <th style={{ textAlign: 'left' }}>ChannelId</th>
+            <th style={{ textAlign: 'right' }}>DeviceName</th>
+            <th style={{ textAlign: 'right' }}>Ip</th>
+            <th style={{ textAlign: 'right' }}>Port</th>
+            <th style={{ textAlign: 'right' }}>CurrentDevState</th>
+            <th style={{ textAlign: 'right' }}>LastDevState</th>
+            <th style={{ textAlign: 'right' }}>LastMsvMode</th>
+            <th style={{ textAlign: 'right' }}>DeviceName/DeviceType</th>
           </tr>
           {values.map((item) =>{
           
               return (
-                <tr key={item.taskid}>
+                <tr key={item.channelId}>
                   <td style={{ textOverflow: 'ellipsis' }}>
-                      <strong>{item.taskid}</strong>
+                      <strong>{item.channelId}</strong>
                   </td>
                   <td>
                     <span className="pull-right">
-                      <strong>{item.taskname}</strong>
+                      <strong>{item.channelName}</strong>
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
-                      <strong>{item.tasktype}</strong>:{tasktypes[item.tasktype]}
+                      <strong>{item.ip}</strong>
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {new Date(item.starttime).format("yyyy-MM-dd hh:mm:ss.S")}
+                        {item.channelIndex}
                       </strong>
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {new Date(item.endtime).format("yyyy-MM-dd hh:mm:ss.S")}
+                        {item.currentDevState+':'+devicestates[item.currentDevState]}
                       </strong>{' '}
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {item.state}
+                        {item.lastDevState}
                       </strong>{' '}
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {item.syncState}
+                        {item.lastMsvMode}
                       </strong>{' '}
                     </span>
                   </td>
                   <td>
                     <span className="pull-right">
                       <strong>
-                        {item.dispatchState}
+                        {item.deviceName+'/'+item.deviceTypeId}
                       </strong>{' '}
                     </span>
                   </td>
@@ -300,7 +300,7 @@ module.exports = class Silo extends React.Component {
           </div>
         </Panel>
 
-        {silo.extraDtata != null? <Taskinfo stats={silo.extraDtata}></Taskinfo>:null}
+        {silo.extraDtata != null? <Deviceinfo stats={silo.extraDtata}></Deviceinfo>:null}
         <Panel title="Silo Profiling">
           <div>
             <span>

@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using IngestTask.Abstraction.Grains;
-using IngestTask.Abstraction.Service;
 using IngestTask.Dto;
 using IngestTask.Tool;
 using IngestTask.Tools;

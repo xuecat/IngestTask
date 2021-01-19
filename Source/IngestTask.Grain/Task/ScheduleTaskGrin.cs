@@ -10,6 +10,7 @@ namespace IngestTask.Grain
     using Microsoft.Extensions.Configuration;
     using Orleans;
     using Orleans.Concurrency;
+    using OrleansDashboard.Abstraction;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -19,6 +20,8 @@ namespace IngestTask.Grain
 
     [Reentrant]
     [ScheduleTaskPlacementStrategy]
+    [MultiGrain("IngestTask.Grain.ScheduleTaskGrin")]
+    [TraceGrain("IngestTask.Grain.ScheduleTaskGrin", TaskTraceEnum.TaskSchedule)]
     public class ScheduleTaskGrin : Grain<List<DispatchTask>>, IScheduleTaskGrain
     {
         private IDisposable _dispoScheduleTimer;
@@ -49,6 +52,10 @@ namespace IngestTask.Grain
             await base.OnDeactivateAsync();
         }
 
+        public Task<List<DispatchTask>> GetTaskListAsync()
+        {
+            return Task.FromResult(this.State);
+        }
         public async Task<int> AddScheduleTaskAsync(DispatchTask task)
         {
             if (task != null && this.State.Find(x => x.Taskid == task.Taskid) == null)

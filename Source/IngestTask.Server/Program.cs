@@ -158,7 +158,7 @@ namespace IngestTask.Server
                         services.AddScoped<MsvClientCtrlSDK>();
                         var client = new RestClient(context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
                         services.AddSingleton<RestClient>(client);
-                        //services.AddSingleton<IScheduleService, ScheduleTaskService>();
+                        services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                         services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
 
                         services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();

@@ -20,6 +20,7 @@ namespace IngestTask.Grain
     using System.Linq;
     using OrleansDashboard.Abstraction;
     using System.Reflection;
+    using AutoMapper.Internal;
 
     [Reentrant]
     [TraceGrain("IngestTask.Grain.DeviceInspectionGrain", TaskTraceEnum.Device)]
@@ -35,7 +36,7 @@ namespace IngestTask.Grain
 
         private readonly List<int> _onlineMembers;
         
-        private List<string> _monitorMember;
+        private Dictionary<string, int> _monitorMember;
         public DeviceInspectionGrain(RestClient client, MsvClientCtrlSDK msv, IMapper mapper)
         {
             Mapper = mapper;
@@ -43,7 +44,7 @@ namespace IngestTask.Grain
             _msvClient = msv;
 
             _onlineMembers = new List<int>();
-            _monitorMember = new List<string>();
+            _monitorMember = new Dictionary<string, int>();
         }
 
         public override async Task OnActivateAsync()
@@ -106,15 +107,6 @@ namespace IngestTask.Grain
             return Task.FromResult(_stream.Guid);
         }
 
-        public async Task<int> OnDeviceChangeAsync(ChannelInfo info)
-        {
-            /*
-             * flag 重新更新内存数据并通知外面
-             */
-            await _stream.OnNextAsync( info);
-
-            return 0;
-        }
 
         public Task<List<ChannelInfo>> GetChannelInfosAsync()
         {
@@ -156,7 +148,7 @@ namespace IngestTask.Grain
             return 0;
         }
 
-        public async Task<int> SubmitChannelInfoAsync(List<ChannelInfo> infos, bool notify)
+        public async Task<bool> SubmitChannelInfoAsync(string serverid, List<ChannelInfo> infos, bool notify)
         {
             foreach (var itm in infos)
             {
@@ -176,32 +168,52 @@ namespace IngestTask.Grain
                 }
             }
 
-            return _monitorMember.Count;
+            int count = 0;
+            if (!_monitorMember.TryGetValue(serverid, out count))
+            {
+                return true;
+            }
+            else
+            {
+                if (count != _monitorMember.Count)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public Task<int> QuitServiceAsync(string serviceid)
         {
-            _monitorMember.RemoveAll(x => x == serviceid);
+            _monitorMember.Remove(serviceid);
+
+            //其它的service强制更新，这样他们会重新申请
+            if (_monitorMember.Count > 0)
+            {
+                foreach (var item in _monitorMember)
+                {
+                    _monitorMember[item.Key] = 0;
+                }
+            }
             return Task.FromResult(_monitorMember.Count);
         }
 
         public Task<List<ChannelInfo>> RequestChannelInfoAsync(string serverid)
         {
-            var item = _monitorMember.Find(x => x == serverid);
-            if (item == null)
+            int count = 0;
+            if (!_monitorMember.TryGetValue(serverid, out count))
             {
-                _monitorMember.Add(serverid);
+                _monitorMember.Add(serverid, _monitorMember.Count);
+            }
+            else
+            {
+                _monitorMember[serverid] = _monitorMember.Count;
             }
 
             var lst = State.FindAll(x => x.Id%_monitorMember.Count == 0);
             return Task.FromResult(lst);
         }
 
-        public Task<int> CheckChannelSatetAsync()
-        {
-            //throw new NotImplementedException();
-            return Task.FromResult(0);
-        }
 
        
     }

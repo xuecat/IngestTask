@@ -11,7 +11,6 @@ namespace IngestTask.Abstraction.Grains
     using System.Threading.Tasks;
     public interface IDeviceInspections : IGrainWithIntegerKey
     {
-        Task<int> CheckChannelSatetAsync();
         Task<List<ChannelInfo>> GetChannelInfosAsync();
         Task<bool> IsChannelInvalidAsync(int channelid);
         Task<ChannelInfo> GetChannelInfoAsync(int channelid);
@@ -19,7 +18,7 @@ namespace IngestTask.Abstraction.Grains
         Task<Guid> JoinAsync(int nickname);
         Task<Guid> LeaveAsync(int nickname);
 
-        Task<int> SubmitChannelInfoAsync(List<ChannelInfo> infos, bool notify);
+        Task<bool> SubmitChannelInfoAsync(string serverid, List<ChannelInfo> infos, bool notify);
         Task<List<ChannelInfo>> RequestChannelInfoAsync(string serverid);
 
         Task<int> QuitServiceAsync(string serviceid);

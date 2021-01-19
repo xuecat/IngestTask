@@ -13,6 +13,8 @@ namespace IngestTask.Abstraction.Grains
         Task<int> AddScheduleTaskAsync(DispatchTask task);
         Task<int> UpdateScheduleTaskAsync(DispatchTask task);
         Task<int> RemoveScheduleTaskAsync(DispatchTask task);
+
+        Task<List<DispatchTask>> GetTaskListAsync();
     }
 
    

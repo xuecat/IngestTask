@@ -20,6 +20,7 @@ using Orleans;
 using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Runtime;
+using Orleans.Runtime.Placement;
 using OrleansDashboard.Abstraction;
 using TestGrains;
 
@@ -54,7 +55,7 @@ namespace TestHost
                          services.AddScoped<MsvClientCtrlSDK>();
                          var client = new RestClient("http://172.16.0.205:9025", "http://172.16.0.205:10023");
                          services.AddSingleton<RestClient>(client);
-                         services.AddSingleton<IScheduleTaskGrain, DeviceMonitorService>();
+                         services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                          services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
 
                          services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();

@@ -12,6 +12,7 @@ namespace OrleansDashboard.Abstraction
         No,
         TaskExec,
         TaskCache,
+        TaskSchedule,
         Device,
     }
     public interface IDashboardTaskGrain : IGrainWithIntegerKey

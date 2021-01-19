@@ -34,7 +34,6 @@ namespace IngestTask.Grain.Service
         private readonly MsvClientCtrlSDK _msvClient;
         private readonly RestClient _restClient;
 
-        private int _monitorCount;
         private readonly IGrainFactory _grainFactory;
         private string _grainKey;
 
@@ -48,7 +47,6 @@ namespace IngestTask.Grain.Service
             _timer = null;
             _msvClient = msv;
             _restClient = client;
-            _monitorCount = 0;
             _grainFactory = grainFactory;
             _grainKey = string.Empty;
         }
@@ -92,6 +90,9 @@ namespace IngestTask.Grain.Service
             await base.Stop();
         }
 
+        /*
+         * 主动更新暂时没想到场景
+         */
         public Task RefreshMonnitorDeviceAsync(List<DeviceInfo> info)
         {
             throw new NotImplementedException();
@@ -99,6 +100,7 @@ namespace IngestTask.Grain.Service
 
         private async Task OnCheckAllDeviceAsync(object type)
         {
+            bool request = false;
             if (_lstTimerScheduleDevice.Count > 0)
             {
                 foreach (var item in _lstTimerScheduleDevice)
@@ -135,8 +137,7 @@ namespace IngestTask.Grain.Service
 
                     if (item.LastDevState == Device_State.DISCONNECTTED
                             && item.CurrentDevState == Device_State.WORKING
-                            && changedstate
-                            && item.NeedStopFlag)
+                            && changedstate)
                     {
                         var taskinfo = await _msvClient.QueryTaskInfoAsync(item.ChannelIndex, item.Ip, Logger);
                         if (taskinfo != null && taskinfo.ulID > 0)
@@ -153,9 +154,11 @@ namespace IngestTask.Grain.Service
                             if (needstop)
                             {
                                 /*
-                                    * flag 通知出去走正常流程stop，并任务complete状态
+                                    * 应该不用通知出去，任务那边监听可以管理
                                     */
                                 item.NeedStopFlag = true;
+
+                                await _msvClient.StopAsync(item.ChannelIndex, item.Ip, cptaskinfo.TaskId, Logger);
                             }
                             else
                                 item.NeedStopFlag = false;
@@ -163,7 +166,13 @@ namespace IngestTask.Grain.Service
                     }
                 }
 
-                await _grainFactory.GetGrain<IDeviceInspections>(0).SubmitChannelInfoAsync(_lstTimerScheduleDevice);
+                request = await _grainFactory.GetGrain<IDeviceInspections>(0).SubmitChannelInfoAsync(_grainKey, _lstTimerScheduleDevice, false);
+                
+            }
+
+            if (request)
+            {
+                _lstTimerScheduleDevice = await _grainFactory.GetGrain<IDeviceInspections>(0).RequestChannelInfoAsync(_grainKey);
             }
         }
     }
