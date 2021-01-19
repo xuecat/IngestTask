@@ -69,7 +69,9 @@ namespace IngestTask.Server
         /// <typeparam name="T">参数类型</typeparam>
         /// <param name="ac">执行方法体</param>
         /// <param name="inputParam">参数</param>
+#pragma warning disable CA1822 // 将成员标记为 static
         public void ActionAchieve<T>(Action<T> ac, T inputParam)
+#pragma warning restore CA1822 // 将成员标记为 static
         {
             if (ac != null)
             {
@@ -85,6 +87,8 @@ namespace IngestTask.Server
     /// </summary>
     public static class PollyHttpClientServiceCollectionExtensions
     {
+        public const string HttpclientName = "ApiClient";
+
         /// <summary>
         /// Httpclient扩展方法
         /// </summary>

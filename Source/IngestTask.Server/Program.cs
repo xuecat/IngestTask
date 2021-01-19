@@ -33,6 +33,7 @@ namespace IngestTask.Server
     using System.Runtime.Loader;
     using OrleansDashboard;
     using Orleans.Runtime.Placement;
+    using System.Net.Http;
 
     public static class Program
     {
@@ -155,14 +156,14 @@ namespace IngestTask.Server
                 .ConfigureServices(
                     (context, services) =>
                     {
-                        var CircuitBreakerOpenTriggerCount = Convert.ToInt32(Configuration["PollySetting:CircuitBreakerOpenTriggerCount"]);
+                        var CircuitBreakerOpenTriggerCount = context.Configuration.GetSection("PollySetting:CircuitBreakerOpenTriggerCount").Get<int>();
                         //Í¨ÓÃ²ßÂÔ
-                        services.AddHttpClientPolly("ApiClient", options =>
+                        services.AddHttpClientPolly(PollyHttpClientServiceCollectionExtensions.HttpclientName, options =>
                         {
-                            options.TimeoutTime = Convert.ToInt32(Configuration["PollySetting:TimeoutTime"]);
-                            options.RetryCount = Convert.ToInt32(Configuration["PollySetting:RetryCount"]);
-                            options.CircuitBreakerOpenFallCount = Convert.ToInt32(Configuration["PollySetting:CircuitBreakerOpenFallCount"]);
-                            options.CircuitBreakerDownTime = Convert.ToInt32(Configuration["PollySetting:CircuitBreakerDownTime"]);
+                            options.TimeoutTime = context.Configuration.GetSection("PollySetting:TimeoutTime").Get<int>();
+                            options.RetryCount = context.Configuration.GetSection("PollySetting:RetryCount").Get<int>();
+                            options.CircuitBreakerOpenFallCount = context.Configuration.GetSection("PollySetting:CircuitBreakerOpenFallCount").Get<int>();
+                            options.CircuitBreakerDownTime = context.Configuration.GetSection("PollySetting:CircuitBreakerDownTime").Get<int>();
                             options.CircuitBreakerAction = (p =>
                             {
                                 int rcount = (int)p;
@@ -172,8 +173,10 @@ namespace IngestTask.Server
                         });
 
                         services.AddScoped<MsvClientCtrlSDK>();
-                        var client = new RestClient(context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
-                        services.AddSingleton<RestClient>(client);
+                        services.AddSingleton<RestClient>(pd => {
+                            return new RestClient(pd.GetService<IHttpClientFactory>().CreateClient(PollyHttpClientServiceCollectionExtensions.HttpclientName), 
+                                context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
+                        });
                         
                         services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                         services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
