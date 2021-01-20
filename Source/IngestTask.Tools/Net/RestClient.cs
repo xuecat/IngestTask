@@ -19,10 +19,10 @@ namespace IngestTask.Tool
 
         private HttpClient _httpClient = null;
         const string TASKAPI20 = "api/v2/task";
-        const string TASKAPI21 = "api/v2.1/task";
+        const string TASKAPI30 = "api/v3/task";
         const string MATRIXAPI20 = "api/v2/matrix";
         const string USERAPI20 = "api/v2/user";
-        const string DEVICEAPI21 = "api/v2.1/device";
+        const string DEVICEAPI30 = "api/v3/device";
         const string DEVICEAPI20 = "api/v2/device";
 
         private string IngestDbUrl { get; set; }
@@ -608,7 +608,7 @@ namespace IngestTask.Tool
         public async Task<DispatchTask> GetTaskDBAsync(int taskid)
         {
             var back = await GetAsync<ResponseMessage<DispatchTask>>(
-                    $"{IngestDbUrl}/{TASKAPI21}/db/{taskid}", null, GetIngestHeader()
+                    $"{IngestDbUrl}/{TASKAPI30}/db/{taskid}", null, GetIngestHeader()
                     ).ConfigureAwait(true);
 
             if (back != null)
@@ -623,7 +623,7 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<TaskFullInfo>>(() =>
             {
                 return GetAsync<ResponseMessage<TaskFullInfo>>(
-                    $"{IngestDbUrl}/{TASKAPI21}/{taskid}",
+                    $"{IngestDbUrl}/{TASKAPI30}/{taskid}",
                     null, GetIngestHeader());
             }).ConfigureAwait(true);
 
@@ -718,7 +718,7 @@ namespace IngestTask.Tool
             {
 
                 return PostAsync<ResponseMessage<TaskContent>>(
-                    $"{IngestDbUrl}/{TASKAPI21}/schedule/{oldtaskid}", null,
+                    $"{IngestDbUrl}/{TASKAPI30}/schedule/{oldtaskid}", null,
                     GetIngestHeader());
             }).ConfigureAwait(true);
 
@@ -735,7 +735,7 @@ namespace IngestTask.Tool
             {
 
                 return PutAsync<ResponseMessage<TaskContent>>(
-                    $"{IngestDbUrl}/{TASKAPI21}/reschedule/channel/{oldtaskid}", null,
+                    $"{IngestDbUrl}/{TASKAPI30}/reschedule/channel/{oldtaskid}", null,
                     GetIngestHeader());
             }).ConfigureAwait(true);
 
@@ -832,7 +832,6 @@ namespace IngestTask.Tool
         #endregion
 
         #region Device
-
         public async Task<List<CaptureChannelInfo>> GetAllCaptureChannelAsync()
         {
             var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureChannelInfo>>>(() =>
@@ -917,7 +916,7 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<DeviceInfo>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<DeviceInfo>>>(
-                    $"{IngestDbUrl}/{DEVICEAPI21}/allocdevice", null, GetIngestHeader());
+                    $"{IngestDbUrl}/{DEVICEAPI30}/allocdevice", null, GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null)

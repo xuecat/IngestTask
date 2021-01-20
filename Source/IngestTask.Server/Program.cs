@@ -34,6 +34,7 @@ namespace IngestTask.Server
     using OrleansDashboard;
     using Orleans.Runtime.Placement;
     using System.Net.Http;
+    using OrleansDashboard.Abstraction;
 
     public static class Program
     {
@@ -172,15 +173,15 @@ namespace IngestTask.Server
                             });
                         });
 
-                        services.AddScoped<MsvClientCtrlSDK>();
+                        services.AddSingleton<MsvClientCtrlSDK>();
                         services.AddSingleton<RestClient>(pd => {
                             return new RestClient(pd.GetService<IHttpClientFactory>().CreateClient(PollyHttpClientServiceCollectionExtensions.HttpclientName), 
                                 context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
                         });
                         
-                        services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
+                        //services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                         services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
-
+                        services.AddSingleton<IGrainServiceDataBack, GrainServiceDataBack>();
                         services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
 
                         services.Configure<ApplicationOptions>(context.Configuration);

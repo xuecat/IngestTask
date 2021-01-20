@@ -53,7 +53,7 @@ namespace TestHost
                          services.RemoveAll<RestClient>();
 
                          services.AddScoped<MsvClientCtrlSDK>();
-                         var client = new RestClient("http://172.16.0.205:9025", "http://172.16.0.205:10023");
+                         var client = new RestClient(null, "http://172.16.0.205:9025", "http://172.16.0.205:10023");
                          services.AddSingleton<RestClient>(client);
                          services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                          services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
