@@ -834,7 +834,6 @@ namespace IngestTask.Tools.Msv
 
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -914,6 +913,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1041,6 +1041,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1053,7 +1054,6 @@ namespace IngestTask.Tools.Msv
 
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -1128,6 +1128,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1140,7 +1141,6 @@ namespace IngestTask.Tools.Msv
 
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -1217,6 +1217,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1229,7 +1230,6 @@ namespace IngestTask.Tools.Msv
 
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -1301,6 +1301,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1313,7 +1314,6 @@ namespace IngestTask.Tools.Msv
 
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -1393,6 +1393,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1405,7 +1406,6 @@ namespace IngestTask.Tools.Msv
 
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -1484,6 +1484,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1495,7 +1496,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                     {
-                        _xml.LoadXml(strRet);
                         XmlElement _root = _xml.DocumentElement;
                         if (_root != null && _root.Name == "std_reply")
                         {
@@ -1566,6 +1566,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1577,7 +1578,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -1655,6 +1655,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1666,7 +1667,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -1752,7 +1752,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -1836,6 +1835,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1847,7 +1847,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -1932,6 +1931,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1946,7 +1946,6 @@ namespace IngestTask.Tools.Msv
                     logger.Info(string.Format("taskID:{0}, MSVStartTaskNew strRet:{1}", param.taskParam.ulID, strRet));
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -2018,6 +2017,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2033,7 +2033,6 @@ namespace IngestTask.Tools.Msv
                     logger.Info(string.Format("{0}, MSVStopTask ", strRet));
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -2109,6 +2108,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2120,7 +2120,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -2266,7 +2265,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -2349,7 +2347,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -2423,6 +2420,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2435,7 +2433,6 @@ namespace IngestTask.Tools.Msv
 
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -2580,6 +2577,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2591,7 +2589,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -2666,6 +2663,7 @@ namespace IngestTask.Tools.Msv
 
                         try
                         {
+                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2678,7 +2676,6 @@ namespace IngestTask.Tools.Msv
 
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -2821,7 +2818,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -2903,7 +2899,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -3011,7 +3006,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -3188,7 +3182,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -3271,7 +3264,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -3469,7 +3461,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -3551,7 +3542,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -3651,7 +3641,6 @@ namespace IngestTask.Tools.Msv
                     }).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {
@@ -3734,7 +3723,6 @@ namespace IngestTask.Tools.Msv
                 //string strRet = await m_udpMsv.SendMsvCommandAsync(logger, "", m_iCtrlPort, ip, m_iCtrlPort, cmd).ConfigureAwait(true);
                 if (!string.IsNullOrEmpty(strRet))
                 {
-                    _xml.LoadXml(strRet);
                     XmlElement _root = _xml.DocumentElement;
                     if (_root != null && _root.Name == "std_reply")
                     {

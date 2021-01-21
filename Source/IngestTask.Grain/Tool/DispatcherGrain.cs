@@ -32,9 +32,27 @@ namespace IngestTask.Grain
             return Task.CompletedTask;
         }
 
+        private bool TaskIsInvalid(DispatchTask task)
+        {
+            if (task != null && task.Tasktype != null 
+                && task.Taskid >0 && task.State != null && task.Endtime != null 
+                && task.Starttime != null && task.Endtime > task.Starttime)
+            {
+                if (task.Tasktype != (int)TaskType.TT_PERIODIC)
+                {
+                    if (task.Endtime == null || task.Endtime < DateTime.Now)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return true;
+        }
+
         public async Task AddTaskAsync(DispatchTask task)
         {
-            if (task != null)
+            if (!TaskIsInvalid(task))
             {
                 if ((task.Starttime - DateTime.Now).TotalSeconds >
                     taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < taskSchedulePrevious)//开始时间之前，结束时间之后，有效范围外的
@@ -62,7 +80,7 @@ namespace IngestTask.Grain
         //修改或者stop
         public async Task UpdateTaskAsync(DispatchTask task)
         {
-            if (task != null)
+            if (!TaskIsInvalid(task))
             {
                
                 if ((task.Starttime - DateTime.Now).TotalSeconds >
@@ -89,10 +107,10 @@ namespace IngestTask.Grain
 
         public async Task DeleteTaskAsync(DispatchTask task)
         {
-            if (task != null)
+            if (!TaskIsInvalid(task))
             {
                 await GrainFactory.GetGrain<IReminderTask>(0).DeleteTaskAsync(task.Taskid);
-                await GrainFactory.GetGrain<ITask>((long)task.Channelid).StopTaskAsync(_mapper.Map<TaskContent>(task));
+                await GrainFactory.GetGrain<ITask>((long)task.Channelid).StopTaskAsync(task.Taskid);
             }
         }
 

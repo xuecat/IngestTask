@@ -336,6 +336,18 @@ namespace IngestTask.Grain
             return false;
         }
 
+        public async Task<bool> StopTaskAsync(int taskid)
+        {
+            if (taskid > 0)
+            {
+                //归档
+                RaiseEvent(new TaskEvent() { OpType = opType.otStop, TaskContentInfo = new TaskContent() { TaskId = taskid} });
+                await ConfirmEvents();
+                return true;
+            }
+            return false;
+        }
+
         public async Task<bool> StopTaskAsync(TaskContent task)
         {
             if (task != null)

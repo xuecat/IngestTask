@@ -52,7 +52,7 @@ const Taskinfo = props => {
 
   var taskordevice = values[0].hasOwnProperty('taskid');
 
-  var title = taskordevice?'Task Infos:':'Device Infos:';
+  var title = taskordevice?'Task Infos':'Device Infos';
   return (
     <Panel title={title + props.address}>
       <div>

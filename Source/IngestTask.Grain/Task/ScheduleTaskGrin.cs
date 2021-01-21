@@ -56,6 +56,23 @@ namespace IngestTask.Grain
         {
             return Task.FromResult(this.State);
         }
+
+        private bool TaskIsInvalid(DispatchTask task)
+        {
+            if (task != null && task.Tasktype != null
+                && task.Taskid > 0 && task.State != null && task.Endtime != null
+                && task.Starttime != null && task.Endtime > task.Starttime)
+            {
+                if ( task.Endtime < DateTime.Now)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+            return true;
+        }
+
         public async Task<int> AddScheduleTaskAsync(DispatchTask task)
         {
             if (task != null && this.State.Find(x => x.Taskid == task.Taskid) == null)
@@ -67,7 +84,10 @@ namespace IngestTask.Grain
                     {
                         _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
                     }
+
+                    this.State.RemoveAll(x => TaskIsInvalid(x));
                 }
+
                 await WriteStateAsync();
                 return task.Taskid;
             }
@@ -89,6 +109,7 @@ namespace IngestTask.Grain
                         {
                             _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
                         }
+                        this.State.RemoveAll(x => TaskIsInvalid(x));
                     }
                     await WriteStateAsync();
                     return task.Taskid;
@@ -103,6 +124,7 @@ namespace IngestTask.Grain
                         {
                             _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
                         }
+                        this.State.RemoveAll(x => TaskIsInvalid(x));
                     }
                     await WriteStateAsync();
                     return task.Taskid;
@@ -184,6 +206,7 @@ namespace IngestTask.Grain
                                     _taskSchedulePreviousSeconds && task.Endtime > DateTime.Now)
                                 {
                                     await GrainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task));
+                                    task.State = (int)taskState.tsExecuting;
                                     Logger.Info($"add task excuter {task.Taskid}");
                                 }
                             }

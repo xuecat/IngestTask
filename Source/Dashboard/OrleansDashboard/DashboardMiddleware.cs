@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using Orleans;
 using OrleansDashboard.Implementation;
 using OrleansDashboard.Model;
@@ -30,6 +31,7 @@ namespace OrleansDashboard
         private readonly DashboardLogger logger;
         private readonly RequestDelegate next;
         private readonly IDashboardClient client;
+        private readonly string session;
 
         public DashboardMiddleware(RequestDelegate next,
             IGrainFactory grainFactory,
@@ -40,6 +42,7 @@ namespace OrleansDashboard
             this.logger = logger;
             this.next = next;
             client = new DashboardClient(grainFactory);
+            session = Guid.NewGuid().ToString("N");
         }
 
         public async Task Invoke(HttpContext context)
@@ -121,9 +124,18 @@ namespace OrleansDashboard
 
             if (request.Path == "/version")
             {
-                await WriteJson(context, new { version = typeof (DashboardMiddleware).Assembly.GetName().Version.ToString() });
+                await WriteJson(context, new { version = typeof (DashboardMiddleware).Assembly.GetName().Version.ToString(), session = session });
 
                 return;
+            }
+
+            StringValues sessionitem = string.Empty;
+            if (request.Headers.TryGetValue("ingesttasksession", out sessionitem))
+            {
+                if (sessionitem != session)
+                {
+                    return;
+                }
             }
 
             if (request.Path == "/DashboardCounters")

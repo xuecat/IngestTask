@@ -37,11 +37,16 @@ namespace IngestTask.Grain
                     return await GetDeviceTraceAsync();
                 case TaskTraceEnum.TaskSchedule:
                     {
-                        var graininfo = GrainFactory.GetGrain<IScheduleTaskGrain>(0);
-                        if (graininfo != null)
+                        var info = grain.Split(":");
+                        if (info.Length > 1 && GrainFactory != null)
                         {
-                            return await graininfo.GetTaskListAsync();
+                            var graininfo = GrainFactory.GetGrain<IScheduleTaskGrain>(int.Parse(info.ElementAt(1)));
+                            if (graininfo != null)
+                            {
+                                return await graininfo.GetTaskListAsync();
+                            }
                         }
+                        
                     } break;
                 default:
                     break;
