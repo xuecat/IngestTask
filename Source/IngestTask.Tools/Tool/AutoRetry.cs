@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IngestTask.Tools
+namespace IngestTask.Tool
 {
     public static class AutoRetry
     {

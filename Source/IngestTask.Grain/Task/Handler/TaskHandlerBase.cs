@@ -5,13 +5,10 @@ namespace IngestTask.Grain
     using IngestTask.Abstraction.Grains;
     using IngestTask.Dto;
     using IngestTask.Tool;
-    using IngestTask.Tools;
-    using IngestTask.Tools.Msv;
+    using IngestTask.Tool.Msv;
     using Sobey.Core.Log;
     using System;
-    using System.Collections.Generic;
     using System.Linq;
-    using System.Net.NetworkInformation;
     using System.Text;
     using System.Threading.Tasks;
     using System.Xml.Linq;
@@ -19,14 +16,14 @@ namespace IngestTask.Grain
     public class TaskHandlerBase : ITaskHandler
     {
         protected ILogger Logger { get; set; }
-        protected RestClient RestClientApi { get; set; }
+        protected RestClient restClient { get; set; }
 
-        protected MsvClientCtrlSDK _msvClient { get; set; }
+        protected MsvClientCtrlSDK msvClient { get; set; }
         public TaskHandlerBase(RestClient rest, MsvClientCtrlSDK msv)
         {
             Logger = LoggerManager.GetLogger("TaskHandlerBase");
-            RestClientApi = rest;
-            _msvClient = msv;
+            restClient = rest;
+            msvClient = msv;
         }
 
         /*
@@ -51,7 +48,7 @@ namespace IngestTask.Grain
 
         public virtual async ValueTask<bool> UnlockTaskAsync(int taskid, taskState tkstate, dispatchState dpstate, syncState systate)
         {
-            if (await RestClientApi.CompleteSynTasksAsync(taskid, tkstate, dpstate, systate))
+            if (await restClient.CompleteSynTasksAsync(taskid, tkstate, dpstate, systate))
             {
                 Logger.Info($"taskbase UnlockTaskAsync success {taskid} {tkstate} {dpstate} {systate}");
             }
@@ -74,10 +71,10 @@ namespace IngestTask.Grain
         public virtual async Task<bool> HandleTieupTaskAsync(TaskContent info)
         {
             await UnlockTaskAsync(info.TaskId, taskState.tsNo, dispatchState.tsNo, syncState.ssSync);
-            var lsttask = await RestClientApi.GetChannelCapturingTaskInfoAsync(info.ChannelId);
+            var lsttask = await restClient.GetChannelCapturingTaskInfoAsync(info.ChannelId);
             if (lsttask != null && lsttask.TaskType == TaskType.TT_MANUTASK)
             {
-                await RestClientApi.DeleteTaskAsync(info.TaskId).ConfigureAwait(true);
+                await restClient.DeleteTaskAsync(info.TaskId).ConfigureAwait(true);
 
                 //同步planing的状态为 PlanState.emPlanDeleted
                 //但是现在代码没有可以先不用写
@@ -126,13 +123,13 @@ namespace IngestTask.Grain
 
         public virtual int IsNeedRedispatchask(TaskFullInfo taskinfo)
         {
-            return 0;
+            throw new NotImplementedException();
         }
 
         public virtual async ValueTask<string> GetCaptureParmAsync(TaskFullInfo taskinfo, ChannelInfo channel)
         {
             string captureparam = taskinfo.CaptureMeta;
-            var typeinfo = await _msvClient.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
+            var typeinfo = await msvClient.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
 
             if (typeinfo != null && typeinfo.SignalType < 254)
             {

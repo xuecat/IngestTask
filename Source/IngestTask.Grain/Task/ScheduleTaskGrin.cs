@@ -6,7 +6,6 @@ namespace IngestTask.Grain
     using IngestTask.Abstraction.Grains;
     using IngestTask.Dto;
     using IngestTask.Tool;
-    using IngestTask.Tools;
     using Microsoft.Extensions.Configuration;
     using Orleans;
     using Orleans.Concurrency;
@@ -44,6 +43,13 @@ namespace IngestTask.Grain
         public override async Task OnActivateAsync()
         {
             await ReadStateAsync();
+            if (State.Count > 0)
+            {
+                if (_dispoScheduleTimer == null)
+                {
+                    _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+                }
+            }
             await base.OnActivateAsync();
         }
 
@@ -63,10 +69,7 @@ namespace IngestTask.Grain
                 && task.Taskid > 0 && task.State != null && task.Endtime != null
                 && task.Starttime != null && task.Endtime > task.Starttime)
             {
-                if ( task.Endtime < DateTime.Now)
-                {
-                    return true;
-                }
+               
 
                 return false;
             }
@@ -75,7 +78,8 @@ namespace IngestTask.Grain
 
         public async Task<int> AddScheduleTaskAsync(DispatchTask task)
         {
-            if (task != null && this.State.Find(x => x.Taskid == task.Taskid) == null)
+            var finditem = this.State.Find(x => x.Taskid == task.Taskid);
+            if (task != null && finditem == null)
             {
                 lock (this.State)
                 {
@@ -91,8 +95,21 @@ namespace IngestTask.Grain
                 await WriteStateAsync();
                 return task.Taskid;
             }
+            else
+            {
+                lock (this.State)
+                {
+                    ObjectTool.CopyObjectData(task, finditem, string.Empty, BindingFlags.Public | BindingFlags.Instance);
 
-            return 0;
+                    if (_dispoScheduleTimer == null)
+                    {
+                        _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
+                    }
+                    this.State.RemoveAll(x => TaskIsInvalid(x));
+                }
+                await WriteStateAsync();
+                return task.Taskid;
+            }
         }
 
         public async Task<int> UpdateScheduleTaskAsync(DispatchTask task)
@@ -175,7 +192,7 @@ namespace IngestTask.Grain
                 {
                     foreach (var task in lsttask)
                     {
-                        if (task.State == (int)taskState.tsReady)
+                        if (task.State == (int)taskState.tsReady && task.Tasktype != (int)TaskType.TT_TIEUP)
                         {
                             if (task.Tasktype == (int)TaskType.TT_PERIODIC
                                 && task.State == (int)taskState.tsReady
@@ -203,18 +220,24 @@ namespace IngestTask.Grain
                             else
                             {
                                 if ((task.Starttime - DateTime.Now).TotalSeconds <=
-                                    _taskSchedulePreviousSeconds && task.Endtime > DateTime.Now)
+                                    _taskSchedulePreviousSeconds)
                                 {
-                                    await GrainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task));
-                                    task.State = (int)taskState.tsExecuting;
-                                    Logger.Info($"add task excuter {task.Taskid}");
+                                    if (task.Endtime > DateTime.Now)
+                                    {
+                                        await GrainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.AddTaskAsync(_mapper.Map<TaskContent>(task));
+                                        task.State = (int)taskState.tsExecuting;
+                                        Logger.Info($"add task excuter {task.Taskid}");
+                                    }
+                                    else
+                                        _lstRemoveTask.Add(task);
+
                                 }
                             }
                         }
                         else if (task.State == (int)taskState.tsExecuting || task.State == (int)taskState.tsManuexecuting)
                         {
                             var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
-                            if (spansecond > 0 && spansecond < _taskSchedulePreviousSeconds)
+                            if (spansecond < _taskSchedulePreviousSeconds)
                             {
                                 if (await GrainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.StopTaskAsync(_mapper.Map<TaskContent>(task)))
                                 {

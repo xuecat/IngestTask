@@ -1,5 +1,4 @@
 ﻿
-using ProtoBuf;
 
 namespace IngestTask.Grain
 {
@@ -7,7 +6,8 @@ namespace IngestTask.Grain
     using IngestTask.Abstraction.Grains;
     using IngestTask.Dto;
     using IngestTask.Tool;
-    using IngestTask.Tools;
+    using IngestTask.Tool.Msv;
+    using Microsoft.Extensions.DependencyInjection;
     using Orleans;
     using Orleans.Concurrency;
     using Orleans.EventSourcing;
@@ -26,18 +26,25 @@ namespace IngestTask.Grain
     using System.Threading.Tasks;
     //using Orleans.Streams;
     //[ProtoContract]
+
+    [Serializable]
+    public class TimerTask
+    {
+        public int TaskId { get; set; }
+        public TaskType TaskType { get; set; }
+        public string BeginTime { get; set; }
+        public int ChannelId { get; set; }
+        public int DevicePort { get; set; }
+        public string DeviceIp { get; set; }
+        public int RetryTimes { get; set; }
+        public int Timers { get; set; }
+    }
+    
     [Serializable]
     public class TaskEvent
     {
         public TaskContent TaskContentInfo { get; set; }
         public opType OpType { get; set; }
-
-    }
-
-    [Serializable]
-    public class DeviceEvent
-    {
-        public DeviceType DeviceType { get; set; }
 
     }
 
@@ -277,13 +284,19 @@ namespace IngestTask.Grain
 
                                 if (task.StartOrStop)
                                 {
-                                    await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(await _restClient.GetTaskDBAsync(task.TaskContent.TaskId));
-                                    _timer = RegisterTimer(this.OnRunningTaskMonitorAsync, new Tuple<int, int, string, int, int, string>(taskid, (int)task.TaskContent.TaskType, task.TaskContent.Begin, chinfo.ChannelId, chinfo.ChannelIndex, chinfo.Ip), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
-                                }
-                                else
-                                {
-
-                                    await GrainFactory.GetGrain<IReminderTask>(0).DeleteTaskAsync(taskid);
+                                    _timer = RegisterTimer(this.OnRunningTaskMonitorAsync,
+                                                            new TimerTask()
+                                                            {
+                                                                TaskId = taskid,
+                                                                TaskType = task.TaskContent.TaskType,
+                                                                BeginTime = task.TaskContent.Begin,
+                                                                ChannelId = chinfo.ChannelId,
+                                                                DeviceIp = chinfo.Ip,
+                                                                DevicePort = chinfo.ChannelIndex,
+                                                                RetryTimes = task.RetryTimes,
+                                                                Timers = 0
+                                                            },
+                                                           TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
                                 }
                             }
                             else
@@ -326,11 +339,7 @@ namespace IngestTask.Grain
                 //归档
                 RaiseEvent(new TaskEvent() { OpType = opType.otAdd, TaskContentInfo = task });
                 await ConfirmEvents();
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                    _timer = null;
-                }
+                
                 return true;
             }
             return false;
@@ -376,52 +385,84 @@ namespace IngestTask.Grain
          */
         private async Task OnRunningTaskMonitorAsync(object type)
         {
-            Tuple<int, int, string, int, int, string> param = (Tuple<int, int, string, int, int, string>)type;
+            //    taskid,
+            //    (int)task.TaskContent.TaskType,
+            //    task.TaskContent.Begin,
+            //    chinfo.ChannelId,
+            //    chinfo.ChannelIndex,
+            //    chinfo.Ip,
+            //   task.RetryTimes
+            TimerTask param = (TimerTask)type;
 
-            var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync(param.Item4);
-
+            var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync(param.ChannelId);
+            bool runningtask = true;
             if (taskinfolst != null)
             {
-                var devicegrain = GrainFactory.GetGrain<IDeviceInspections>(0);
+                if (taskinfolst.TaskId != param.TaskId)
+                {
+                    Logger.Info($"OnRunningTaskMonitorAsync not runningtask error {taskinfolst.TaskId} {param.TaskId}");
+                    runningtask = false;
+                }
+                var devicegrain = _services.GetRequiredService<MsvClientCtrlSDK>();
                 if (devicegrain != null)
                 {
-                    int msvtaskid = await devicegrain.QueryRunningTaskInChannelAsync(param.Item6, param.Item5);
-                    if (msvtaskid != param.Item1)
+                    var msvtask = await devicegrain.QueryTaskInfoAsync(param.DevicePort, param.DeviceIp, Logger);
+                    if (msvtask == null || msvtask.ulID < 1)//说明msv出问题了查不到任务了,采集中剩下部分要跳转, 3次重试后才移动通道 
                     {
-                        Logger.Info("OnRunningTaskMonitorAsync task need to check");
-
-                        if (param.Item2 == (int)TaskType.TT_VTRUPLOAD)
+                        Logger.Info($"OnRunningTaskMonitorAsync task need to check {taskinfolst.TaskId}");
+                        if (param.Timers > 2)
                         {
-
-                        }
-                        else
-                        {
-                            bool needCreateNewTask = false;
-                            if (param.Item2 == (int)TaskType.TT_MANUTASK || param.Item2 == (int)TaskType.TT_OPENEND ||
-                                param.Item2 == (int)TaskType.TT_OPENENDEX)
+                            if (param.TaskType == TaskType.TT_VTRUPLOAD)
                             {
-                                needCreateNewTask = true;
+
                             }
                             else
                             {
-                                // 其它类型的任务，需要检查任务结束时间
-                                // 时间都过去了的任务，就不用再创建了
-                                if (DateTimeFormat.DateTimeFromString(param.Item3) < DateTime.Now.AddSeconds(5))
+                                bool needCreateNewTask = false;
+                                if (param.TaskType == TaskType.TT_MANUTASK || param.TaskType == TaskType.TT_OPENEND ||
+                                    param.TaskType == TaskType.TT_OPENENDEX)
                                 {
                                     needCreateNewTask = true;
                                 }
                                 else
                                 {
-                                    // 其它类型的任务，需要检查是否过时，如果已经过时，则需处理该任务
-                                    // 已经过时，则需将任务置为无效状态
-                                    await _restClient.SetTaskStateAsync(param.Item1, taskState.tsInvaild);
+                                    // 其它类型的任务，需要检查任务结束时间
+                                    // 时间都过去了的任务，就不用再创建了
+                                    if (DateTimeFormat.DateTimeFromString(param.BeginTime) < DateTime.Now.AddSeconds(5))
+                                    {
+                                        needCreateNewTask = true;
+                                    }
+                                    else
+                                    {
+                                        // 其它类型的任务，需要检查是否过时，如果已经过时，则需处理该任务
+                                        // 已经过时，则需将任务置为无效状态
+                                        await _restClient.SetTaskStateAsync(param.TaskId, taskState.tsInvaild);
+                                    }
+                                }
+
+                                if (needCreateNewTask)
+                                {
+                                    await _restClient.SetTaskStateAsync(param.TaskId, taskState.tsInvaild);
+                                    await _restClient.AddReScheduleTaskAsync(param.TaskId);
+
+                                    if (_timer != null)
+                                    {
+                                        _timer.Dispose();
+                                        _timer = null;
+                                    }
                                 }
                             }
-
-                            if (needCreateNewTask)
+                        }
+                    }
+                    else
+                    {
+                        if (msvtask.ulID >0 && param.TaskId > 0 && msvtask.ulID != param.TaskId)
+                        {
+                            Logger.Warn("OnRunningTaskMonitorAsync quit different task");
+                            if (_timer != null)
                             {
-                                await _restClient.SetTaskStateAsync(param.Item1, taskState.tsInvaild);
-                                await _restClient.AddReScheduleTaskAsync(param.Item1);
+                                _timer.Dispose();
+                                _timer = null;
                             }
                         }
                     }
@@ -429,7 +470,28 @@ namespace IngestTask.Grain
                 else
                     Logger.Error("OnRunningTaskMonitorAsync devicegrain null");
             }
-           
+            else
+            {
+                Logger.Info($"OnRunningTaskMonitorAsync not runningtask {param.TaskId}");
+                runningtask = false;
+            }
+
+            if (!runningtask && param.RetryTimes > 0)//任务都没开始起，说明重试过，直接换任务通道吧
+            {
+                var info = await _restClient.ReScheduleTaskChannelAsync(param.TaskId);
+                if (info == null)//重新分配任务到其它通道或者啥的
+                {
+                    await _restClient.CompleteSynTasksAsync(param.TaskId, taskState.tsInvaild, dispatchState.dpsDispatched, syncState.ssSync);
+                }
+
+                if (_timer != null)
+                {
+                    _timer.Dispose();
+                    _timer = null;
+                }
+            }
+
+            param.Timers++;
         }
 
 

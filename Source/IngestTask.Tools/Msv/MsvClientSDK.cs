@@ -7,7 +7,7 @@ using System.Collections;
 using System.Xml;
 using IngestTask.Dto;
 
-namespace IngestTask.Tools.Msv
+namespace IngestTask.Tool.Msv
 {
     public class MsvClientCtrlSDK
     {

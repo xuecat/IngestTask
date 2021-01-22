@@ -1,27 +1,25 @@
-﻿using AutoMapper;
-using IngestTask.Abstraction.Grains;
-using IngestTask.Dto;
-using IngestTask.Tool;
-using IngestTask.Tools;
-using IngestTask.Tools.Msv;
+﻿
 
-using Orleans.Runtime;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace IngestTask.Grain
 {
+    using IngestTask.Dto;
+    using IngestTask.Tool;
+    using IngestTask.Tool.Msv;
+
+    using System;
+    using System.Threading.Tasks;
+    using System.Xml.Linq;
     using Microsoft.Extensions.Configuration;
     public class NormalTaskHandler : TaskHandlerBase
     {
-        public IConfiguration Configuration { get; }
+        private int taskStartPrevious;
+        private int taskStopBehind;
         public NormalTaskHandler(RestClient rest, MsvClientCtrlSDK msv, IConfiguration configuration)
             : base(rest, msv)
         {
-            Configuration = configuration;
+            taskStartPrevious = configuration.GetSection("Task:TaskStartPrevious").Get<int>();
+            taskStopBehind = configuration.GetSection("Task:TaskStopBehind").Get<int>();
         }
 
         /*
@@ -50,6 +48,7 @@ namespace IngestTask.Grain
                     Logger.Error($"IsNeedRedispatchaskAsync start over {taskinfo.TaskContent.TaskId}");
                     return 0;
                 }
+
                 return taskinfo.TaskContent.TaskId;
             }
             else
@@ -90,8 +89,9 @@ namespace IngestTask.Grain
 
                 if (channel.CurrentDevState == Device_State.DISCONNECTTED)
                 {
-                    return await UnlockTaskAsync(taskid,
-                        taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync) ? 1 : 0;
+                    await UnlockTaskAsync(taskid,
+                        taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
+                    return IsNeedRedispatchask(task);
                 }
 
                 if (await StartTaskAsync(task, channel) > 0)
@@ -118,12 +118,9 @@ namespace IngestTask.Grain
                     }
 
                     //重调度还失败，要看看是否超过了，超过就从列表去了
-                    if (task.RetryTimes > 0)
-                    {
-                        return IsNeedRedispatchask(task);
-                    }
+                    
+                    return IsNeedRedispatchask(task);
 
-                    return 0;
                 }
                 
                 
@@ -133,11 +130,12 @@ namespace IngestTask.Grain
                 Logger.Info($"task stop timespan {(DateTimeFormat.DateTimeFromString(task.TaskContent.End) - DateTime.Now).TotalSeconds}");
                 task.TaskContent.End = DateTimeFormat.DateTimeToString(DateTime.Now);
 
-
                 
                 if (task.TaskContent.TaskType != TaskType.TT_MANUTASK || 
                     (task.TaskContent.TaskType == TaskType.TT_MANUTASK && task.OpType == opType.otDel))
                 {
+
+                    //里面有IsNeedRedispatchask(task);
                     var backinfo = await StopTaskAsync(task, channel);
 
                     //所有的删除都让入库去做,这里不删除
@@ -156,7 +154,7 @@ namespace IngestTask.Grain
         public override async ValueTask<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
 
-            var backinfo = await _msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
+            var backinfo = await msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
 
 
             if (backinfo != null)
@@ -184,7 +182,7 @@ namespace IngestTask.Grain
                 {
                     case TaskSource.emMSVUploadTask:
                         {
-                            if (!await RestClientApi.SwitchMatrixSignalChannelAsync(task.TaskContent.SignalId, channel.ChannelId))
+                            if (!await restClient.SwitchMatrixSignalChannelAsync(task.TaskContent.SignalId, channel.ChannelId))
                             {
                                 Logger.Error($"Switchsignalchannel error {task.TaskContent.SignalId} {channel.ChannelId}");
                             }
@@ -192,7 +190,7 @@ namespace IngestTask.Grain
                         break;
                     case TaskSource.emRtmpSwitchTask:
                         {
-                            if (!await RestClientApi.SwitchMatrixChannelRtmpAsync(channel.ChannelId, task.ContentMeta.SignalRtmpUrl))
+                            if (!await restClient.SwitchMatrixChannelRtmpAsync(channel.ChannelId, task.ContentMeta.SignalRtmpUrl))
                             {
                                 Logger.Error($"Switchsignalchannel error {task.TaskContent.SignalId} {channel.ChannelId}");
                             }
@@ -215,24 +213,22 @@ namespace IngestTask.Grain
 
                 string capparam = await GetCaptureParmAsync(task, channel);
 
-                int test = Configuration.GetSection("Task:TaskStartPrevious").Get<int>();
-
                 DateTime dtcurrent;
                 DateTime dtbegin = (task.RetryTimes > 0 && task.NewBeginTime != DateTime.MinValue)?task.NewBeginTime :
-                    DateTimeFormat.DateTimeFromString(task.TaskContent.Begin).AddSeconds(-1* test);
+                    DateTimeFormat.DateTimeFromString(task.TaskContent.Begin).AddSeconds(-1* taskStartPrevious);
 
                 while(true)
                 {
                     dtcurrent = DateTime.Now;
                     if (dtcurrent >= dtbegin)
                     {
-                        _msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", capparam, Logger);
+                        msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", capparam, Logger);
 
-                        bool backrecord = await _msvClient.RecordAsync(channel.ChannelIndex, channel.Ip, Logger);
+                        bool backrecord = await msvClient.RecordAsync(channel.ChannelIndex, channel.Ip, Logger);
 
                         if (backrecord)
                         {
-                            var state = await _msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger);
+                            var state = await msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger);
 
                             if (state == Device_State.WORKING)
                             {
@@ -258,26 +254,24 @@ namespace IngestTask.Grain
 
         public override async ValueTask<int> StopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
-            int test = Configuration.GetSection("Task:TaskStopBehind").Get<int>();
-
             DateTime end = (task.RetryTimes > 0 && task.NewEndTime != DateTime.MinValue) ? task.NewEndTime
-                : DateTimeFormat.DateTimeFromString(task.TaskContent.End).AddSeconds(test);
+                : DateTimeFormat.DateTimeFromString(task.TaskContent.End).AddSeconds(taskStopBehind);
 
             while (true)
             {
                 if (DateTime.Now >= end)
                 {
-                    var msvtaskinfo = await _msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
+                    var msvtaskinfo = await msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, Logger);
 
                     if (msvtaskinfo != null)
                     {
                         if (msvtaskinfo.ulID == task.TaskContent.TaskId)
                         {
-                            var stopback = await _msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
+                            var stopback = await msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
 
                             if (stopback > 0)
                             {
-                                await RestClientApi.SetTaskStateAsync(task.TaskContent.TaskId, taskState.tsComplete);
+                                await restClient.SetTaskStateAsync(task.TaskContent.TaskId, taskState.tsComplete);
                                 await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsNo, dispatchState.dpsDispatched, syncState.ssSync);
                                 return task.TaskContent.TaskId;
                             }
@@ -288,10 +282,14 @@ namespace IngestTask.Grain
                         }
                         else
                         {
-                            // 停止的任务不是MSV当前正在采集的任务
-                            // 需要将该任务标记为无效任务
-                            await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsInvaild,
-                                dispatchState.dpsDispatched, syncState.ssSync);
+                            if (msvtaskinfo.ulID >0)
+                            {
+                                // 停止的任务不是MSV当前正在采集的任务
+                                // 需要将该任务标记为无效任务
+                                await UnlockTaskAsync(task.TaskContent.TaskId, taskState.tsInvaild,
+                                    dispatchState.dpsDispatched, syncState.ssSync);
+                            }
+                            
                             Logger.Error($"stop task not same {msvtaskinfo.ulID} {task.TaskContent.TaskId}");
                             return task.TaskContent.TaskId;
                         }
@@ -310,7 +308,7 @@ namespace IngestTask.Grain
 
         public async Task<int> ForceStopTaskAsync(TaskFullInfo task, ChannelInfo channel)
         {
-            var stopback = await _msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
+            var stopback = await msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
 
             if (stopback > 0)
             {

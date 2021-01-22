@@ -40,7 +40,7 @@ namespace IngestTask.Grain
             {
                 if (task.Tasktype != (int)TaskType.TT_PERIODIC)
                 {
-                    if (task.Endtime == null || task.Endtime < DateTime.Now)
+                    if (task.Endtime == null)
                     {
                         return true;
                     }

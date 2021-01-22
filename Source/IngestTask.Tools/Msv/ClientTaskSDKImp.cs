@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace IngestTask.Tools.Msv
+namespace IngestTask.Tool.Msv
 {
     public class CClientTaskSDKImp
     {

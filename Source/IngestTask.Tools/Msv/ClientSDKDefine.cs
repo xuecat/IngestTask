@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IngestTask.Tools.Msv
+namespace IngestTask.Tool.Msv
 {
 
 
@@ -172,10 +172,11 @@ namespace IngestTask.Tools.Msv
             MG_WRITETYPE_ISMV = 191,
             MG_WRITETYPE_DONOTWRITEFILE = 0XFF
         }
-        /// <summary>
-        /// 写音频文件类型
-        /// </summary>
-        public enum MG_AudioWriteType
+    /// <summary>
+    /// 写音频文件类型
+    /// </summary>
+ #pragma warning disable CA1712 // 不要对枚举值使用类名作为前缀
+    public enum MG_AudioWriteType
         {
             MG_AUDIOWRITETYPE_UNKNOWN = 0,
             MG_AUDIOWRITETYPE_WAV = 21,
@@ -187,10 +188,13 @@ namespace IngestTask.Tools.Msv
             MG_AUDIOWRITETYPE_DBE = 27,
             MG_AUDIOWRITETYPE_HEAAC = 28
         }
+#pragma warning restore CA1712 // 不要对枚举值使用类名作为前缀
 
-        //ts signal 
-        public struct TS_Signal_Info
-        {
+    //ts signal 
+#pragma warning disable CA1815 // 重写值类型上的 Equals 和相等运算符
+    public struct TS_Signal_Info
+#pragma warning restore CA1815 // 重写值类型上的 Equals 和相等运算符
+    {
             public int nAudioType { get; set; }
             public int nAudioCount { get; set; }
             public ulong dwBitsPerSample { get; set; }//
@@ -256,8 +260,10 @@ namespace IngestTask.Tools.Msv
             public int dwDataChannel_ID { get; set; }
             public string strDataChannel_Name { get; set; }
             public int nPgmCount { get; set; }         //此信号源的 节目个数,表示 pTS_PgmInfo的个数
-            public Dictionary<int, TS_PgmInfo> pTS_PgmInfo { get; set; }
-            public TS_DataChannelInfoEx()
+#pragma warning disable CA2227 // 集合属性应为只读
+        public Dictionary<int, TS_PgmInfo> pTS_PgmInfo { get; set; }
+#pragma warning restore CA2227 // 集合属性应为只读
+        public TS_DataChannelInfoEx()
             {
                 dwDataChannel_ID = -1;
                 pTS_PgmInfo = null;
@@ -296,8 +302,10 @@ namespace IngestTask.Tools.Msv
             public ulong dwPgmID { get; set; }                //nSingleType 1: 有效
             public int bNeedDecode { get; set; } //标示是否需要转码操作. 0:不转码 1:转码高质量 2:高质量原码+低质量
             public TS_Signal_Info tsSignalInfo { get; set; }    //nSingleType 1: 有效
+#pragma warning disable CA1819 // 属性不应返回数组
             public ulong[] dwRev { get; set; } = new ulong[8];
-            }
+#pragma warning restore CA1819 // 属性不应返回数组
+    }
 
 
         //采集控制参数,接口参数
@@ -425,11 +433,13 @@ namespace IngestTask.Tools.Msv
             public bool bRetrospect { get; set; } //是否回朔采集  
 
             public int nInOutCount { get; set; }//任务中入点出点的对数。最多支持100对
+#pragma warning disable CA1819 // 属性不应返回数组
             public ulong[] dwInFrame { get; set; } = new ulong[100];//开始帧 如果为0 ，立即开始. （该帧是需要采集的）
+
             public ulong[] dwOutFrame { get; set; } = new ulong[100];//任务总帧数 当任务采集的帧数到达此值 任务自动关闭，  如果不需要中层自动结束 设为0xfffffffe
             public ulong[] dwTotalFrame { get; set; } = new ulong[100];
-
-            public TASK_PARAM()
+#pragma warning restore CA1819 // 属性不应返回数组
+        public TASK_PARAM()
             {
                 ulID = -1;
                 TaskMode = TASK_MODE.TM_MANUAL;
@@ -514,8 +524,10 @@ namespace IngestTask.Tools.Msv
             public int nSubEncodeParam { get; set; }
             public int nFileParam { get; set; }
         }
-        public struct check_rest
-        {
+#pragma warning disable CA1815 // 重写值类型上的 Equals 和相等运算符
+    public struct check_rest
+#pragma warning restore CA1815 // 重写值类型上的 Equals 和相等运算符
+    {
             public string strEncodeDesc { get; set; }
             public string strSubEncodeDesc { get; set; }
             public string strFileDesc { get; set; }
@@ -528,8 +540,10 @@ namespace IngestTask.Tools.Msv
             public float nFreeSize { get; set; } //(GB) 剩余大小
         }
 
-        public struct SignalSourceFormat
-        {
+#pragma warning disable CA1815 // 重写值类型上的 Equals 和相等运算符
+    public struct SignalSourceFormat
+#pragma warning restore CA1815 // 重写值类型上的 Equals 和相等运算符
+    {
             public int width { get; set; }
             public int height { get; set; }
             public int framerate { get; set; }
@@ -570,8 +584,10 @@ namespace IngestTask.Tools.Msv
                 pPicData = "";
             }
         }
-        public struct UploadInfo
-        {
+#pragma warning disable CA1815 // 重写值类型上的 Equals 和相等运算符
+    public struct UploadInfo
+#pragma warning restore CA1815 // 重写值类型上的 Equals 和相等运算符
+    {
             public string strTaskName { get; set; }    //上载任务名称
             public int nTaskID { get; set; }            //上载任务ID	
             public int nTrimIn { get; set; }            //任务入点	

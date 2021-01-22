@@ -8,14 +8,7 @@ namespace IngestTask.Server
     /// </summary>
     public static class SiloBuilderExtensions
     {
-        /// <summary>
-        /// Executes the specified action if the specified <paramref name="condition"/> is <c>true</c> which can be
-        /// used to conditionally add to the silo builder.
-        /// </summary>
-        /// <param name="siloBuilder">The silo builder.</param>
-        /// <param name="condition">If set to <c>true</c> the action is executed.</param>
-        /// <param name="action">The action used to add to the silo builder.</param>
-        /// <returns>The same silo builder.</returns>
+       
         public static ISiloBuilder UseIf(
             this ISiloBuilder siloBuilder,
             bool condition,
@@ -39,14 +32,7 @@ namespace IngestTask.Server
             return siloBuilder;
         }
 
-        /// <summary>
-        /// Executes the specified action if the specified <paramref name="condition"/> is <c>true</c> which can be
-        /// used to conditionally add to the silo builder.
-        /// </summary>
-        /// <param name="siloBuilder">The silo builder.</param>
-        /// <param name="condition">If <c>true</c> is returned the action is executed.</param>
-        /// <param name="action">The action used to add to the silo builder.</param>
-        /// <returns>The same silo builder.</returns>
+       
         public static ISiloBuilder UseIf(
             this ISiloBuilder siloBuilder,
             Func<ISiloBuilder, bool> condition,

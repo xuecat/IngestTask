@@ -5,13 +5,12 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
     using Orleans.Hosting;
     using Orleans.TestingHost;
     using IngestTask.Abstraction.Constants;
-    using IngestTask.Tools.Msv;
+    using IngestTask.Tool.Msv;
     using IngestTask.Tool;
     using IngestTask.Abstraction.Grains;
     using IngestTask.Grain.Service;
     using IngestTask.Grain;
     using AutoMapper;
-    using IngestTask.Tools;
     using Microsoft.Extensions.DependencyInjection.Extensions;
     using Orleans.Runtime;
     using System;

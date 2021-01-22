@@ -5,7 +5,7 @@ namespace IngestTask.Grain
     using IngestTask.Abstraction.Constants;
     using IngestTask.Abstraction.Grains;
     using IngestTask.Dto;
-    using IngestTask.Tools;
+    using IngestTask.Tool;
     using Microsoft.Extensions.Configuration;
     using Orleans;
     using Orleans.Concurrency;
