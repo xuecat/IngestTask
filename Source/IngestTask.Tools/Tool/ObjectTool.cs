@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
-namespace IngestTask.Tools
+namespace IngestTask.Tool
 {
     public static class ObjectTool
     {

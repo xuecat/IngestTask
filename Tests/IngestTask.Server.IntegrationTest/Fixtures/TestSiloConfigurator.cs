@@ -5,13 +5,12 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
     using Orleans.Hosting;
     using Orleans.TestingHost;
     using IngestTask.Abstraction.Constants;
-    using IngestTask.Tools.Msv;
+    using IngestTask.Tool.Msv;
     using IngestTask.Tool;
     using IngestTask.Abstraction.Grains;
     using IngestTask.Grain.Service;
     using IngestTask.Grain;
     using AutoMapper;
-    using IngestTask.Tools;
     using Microsoft.Extensions.DependencyInjection.Extensions;
     using Orleans.Runtime;
     using System;
@@ -28,7 +27,7 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
                     services.RemoveAll<RestClient>();
 
                     services.AddScoped<MsvClientCtrlSDK>();
-                    var client = new RestClient("http://172.16.0.205:9025", "http://172.16.0.205:10023");
+                    var client = new RestClient(null, "http://172.16.0.205:9025", "http://172.16.0.205:10023");
                     services.AddSingleton<RestClient>(client);
                     //services.AddSingleton<IScheduleService, ScheduleTaskService>();
                     services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();

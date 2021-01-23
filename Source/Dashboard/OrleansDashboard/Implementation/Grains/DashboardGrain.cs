@@ -152,19 +152,29 @@ namespace OrleansDashboard
             counters.SimpleGrainStats = grainstatts;
         }
 
-        private async Task RecalculateTask()
+        private async Task RecalculateTask(string grain)
         {
             foreach (var item in counters.SimpleGrainStats)
             {
-                var type = TraceGrainAttribute.GetRecordTrace(item.GrainType);
-                if (type != TaskTraceEnum.No)
+                if (item.GrainType == grain)
                 {
-                    var grin = GrainFactory.GetGrain<IDashboardTaskGrain>(0);
-                    if (grin != null)
+                    string grainname = item.GrainType;
+                    var grainsinfo = grain.Split(":");
+                    if (grainsinfo.Length > 1)
                     {
-                        item.ExtraData = await grin.GetTaskTrace(item.GrainType, type);
+                        grainname = grainsinfo[0];
+                    }
+                    var type = TraceGrainAttribute.GetRecordTrace(grainname);
+                    if (type != TaskTraceEnum.No)
+                    {
+                        var grin = GrainFactory.GetGrain<IDashboardTaskGrain>(0);
+                        if (grin != null)
+                        {
+                            item.ExtraData = await grin.GetTaskTrace(item.GrainType, type);
+                        }
                     }
                 }
+                
             }
         }
 
@@ -185,7 +195,7 @@ namespace OrleansDashboard
         public async Task<Immutable<Dictionary<string, Dictionary<string, GrainTraceEntry>>>> GetGrainTracing(string grain)
         {
             await EnsureCountersAreUpToDate();
-            await RecalculateTask();
+            await RecalculateTask(grain);
             return history.QueryGrain(grain).AsImmutable();
         }
 

@@ -50,7 +50,7 @@ const Deviceinfo = props => {
   }
 
   return (
-    <Panel title='Listen Device Infos:'>
+    <Panel title='Listen Device Infos'>
       <div>
         <table className="table">
         <tbody>
@@ -300,7 +300,7 @@ module.exports = class Silo extends React.Component {
           </div>
         </Panel>
 
-        {silo.extraDtata != null? <Deviceinfo stats={silo.extraDtata}></Deviceinfo>:null}
+        {silo.extraData != null? <Deviceinfo stats={silo.extraData}></Deviceinfo>:null}
         <Panel title="Silo Profiling">
           <div>
             <span>

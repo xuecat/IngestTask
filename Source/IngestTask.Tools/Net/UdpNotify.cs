@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IngestTask.Tools.Net
+namespace IngestTask.Tool.Net
 {
     public class UdpNotify : IDisposable
     {

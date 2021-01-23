@@ -1,5 +1,5 @@
 ﻿
-namespace IngestTask.Tools
+namespace IngestTask.Tool
 {
     using AutoMapper;
     using IngestTask.Dto;

@@ -12,8 +12,10 @@ function makeRequest(method, uri, body, cb) {
       (xhr.status || 'NO_CONNECTION')
     errorHandlers.forEach(x => x(errorMessage))
   }
+  
   xhr.setRequestHeader('Content-Type', 'application/json')
   xhr.setRequestHeader('Accept', 'application/json')
+  xhr.setRequestHeader('ingesttasksession', window.sessionStorage.getItem("ingesttasksession"))
   xhr.send(body)
 }
 

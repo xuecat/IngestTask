@@ -122,6 +122,7 @@ function getVersion() {
   var loadData = function(cb) {
     http.get('version', function(err, data) {
       version = data.version
+      window.sessionStorage.setItem('ingesttasksession', data.session);
       renderVersion()
     })
   }

@@ -2,12 +2,10 @@
 
 namespace IngestTask.Grain.Service
 {
-    using AutoMapper;
     using IngestTask.Abstraction.Grains;
     using IngestTask.Dto;
     using IngestTask.Tool;
-    using IngestTask.Tools;
-    using IngestTask.Tools.Msv;
+    using IngestTask.Tool.Msv;
     using Microsoft.Extensions.Configuration;
     using NLog;
     using Orleans;
@@ -22,7 +20,7 @@ namespace IngestTask.Grain.Service
     using System.Text;
     using System.Threading.Tasks;
 
-    
+    [Reentrant]
     public class DeviceMonitorService : GrainService, IDeviceMonitorService
     {
         private List<ChannelInfo> _lstTimerScheduleDevice;

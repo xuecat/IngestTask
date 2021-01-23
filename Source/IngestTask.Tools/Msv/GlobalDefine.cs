@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace IngestTask.Tools.Msv
+namespace IngestTask.Tool.Msv
 {
     //SDI信号源的详细信息
     public class SDISignalDetails

@@ -10,8 +10,7 @@ using IngestTask.Abstraction.Grains;
 using IngestTask.Grain;
 using IngestTask.Grain.Service;
 using IngestTask.Tool;
-using IngestTask.Tools;
-using IngestTask.Tools.Msv;
+using IngestTask.Tool.Msv;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -53,7 +52,7 @@ namespace TestHost
                          services.RemoveAll<RestClient>();
 
                          services.AddScoped<MsvClientCtrlSDK>();
-                         var client = new RestClient("http://172.16.0.205:9025", "http://172.16.0.205:10023");
+                         var client = new RestClient(null, "http://172.16.135.116:9024", "http://172.16.0.205:10023");
                          services.AddSingleton<RestClient>(client);
                          services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                          services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();

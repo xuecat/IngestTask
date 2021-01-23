@@ -10,7 +10,7 @@ using System.Net.Sockets;
 using Sobey.Core.Log;
 using System.Reflection;
 
-namespace IngestTask.Tools.Msv
+namespace IngestTask.Tool.Msv
 { 
     public class G2UdpMsvCtrl
     {

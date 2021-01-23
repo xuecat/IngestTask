@@ -35,3 +35,6 @@ dotnet_diagnostic.CA1305.severity = none
 
 # CA1062: 验证公共方法的参数
 dotnet_diagnostic.CA1062.severity = silent
+
+# IDE0055: 修正格式
+dotnet_diagnostic.IDE0055.severity = none

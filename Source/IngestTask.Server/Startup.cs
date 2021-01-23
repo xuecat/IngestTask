@@ -6,7 +6,7 @@ namespace IngestTask.Server
     using IngestTask.Server.HealthChecks;
     using Microsoft.Extensions.Logging;
     using AutoMapper;
-    using IngestTask.Tools;
+    using IngestTask.Tool;
     using Microsoft.Extensions.Diagnostics.HealthChecks;
     using System;
 #pragma warning disable CA1724 // The type name conflicts with the namespace name 'Orleans.Runtime.Startup'

@@ -6,7 +6,7 @@ namespace IngestTask.Grain
     using IngestTask.Dto;
     using IngestTask.Grain;
     using IngestTask.Tool;
-    using IngestTask.Tools.Msv;
+    using IngestTask.Tool.Msv;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using System;

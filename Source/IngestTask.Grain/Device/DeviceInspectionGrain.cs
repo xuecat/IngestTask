@@ -11,12 +11,11 @@ namespace IngestTask.Grain
     using Orleans;
     using IngestTask.Dto;
     using Sobey.Core.Log;
-    using IngestTask.Tools.Msv;
+    using IngestTask.Tool.Msv;
     using IngestTask.Tool;
     using AutoMapper;
     using ProtoBuf;
     using Orleans.Streams;
-    using IngestTask.Tools;
     using System.Linq;
     using OrleansDashboard.Abstraction;
     using System.Reflection;
@@ -95,7 +94,6 @@ namespace IngestTask.Grain
         public Task<Guid> JoinAsync(int nickname)
         {
             _onlineMembers.Add(nickname);
-
            
             return Task.FromResult(_stream.Guid);
         }

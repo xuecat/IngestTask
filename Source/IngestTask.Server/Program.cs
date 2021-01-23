@@ -22,7 +22,7 @@ namespace IngestTask.Server
     using Sobey.Core.Log;
     using System.Globalization;
     using IngestTask.Grain;
-    using IngestTask.Tools.Msv;
+    using IngestTask.Tool.Msv;
     using IngestTask.Tool;
     using Orleans.Serialization.ProtobufNet;
     using IngestTask.Grain.Service;
@@ -34,6 +34,7 @@ namespace IngestTask.Server
     using OrleansDashboard;
     using Orleans.Runtime.Placement;
     using System.Net.Http;
+    using OrleansDashboard.Abstraction;
 
     public static class Program
     {
@@ -172,15 +173,15 @@ namespace IngestTask.Server
                             });
                         });
 
-                        services.AddScoped<MsvClientCtrlSDK>();
+                        services.AddSingleton<MsvClientCtrlSDK>();
                         services.AddSingleton<RestClient>(pd => {
                             return new RestClient(pd.GetService<IHttpClientFactory>().CreateClient(PollyHttpClientServiceCollectionExtensions.HttpclientName), 
                                 context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
                         });
                         
-                        services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
+                        //services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                         services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
-
+                        services.AddSingleton<IGrainServiceDataBack, GrainServiceDataBack>();
                         services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
 
                         services.Configure<ApplicationOptions>(context.Configuration);
@@ -255,26 +256,12 @@ namespace IngestTask.Server
             string[] args) =>
             configurationBuilder
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-                // Add configuration from an optional appsettings.development.json, appsettings.staging.json or
-                // appsettings.production.json file, depending on the environment. These settings override the ones in
-                // the appsettings.json file.
                 .AddJsonFile($"appsettings.{hostEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: false)
-                // Add configuration from files in the specified directory. The name of the file is the key and the
-                // contents the value.
-                //.AddXmlFile("publicsetting.xml",optional: false)
                 .AddInMemoryCollection(GetMemoryOptions())
                 .AddKeyPerFile(Path.Combine(Directory.GetCurrentDirectory(), "configuration"), optional: true)
-                // This reads the configuration keys from the secret store. This allows you to store connection strings
-                // and other sensitive settings, so you don't have to check them into your source control provider.
-                // Only use this in Development, it is not intended for Production use. See
-                // http://docs.asp.net/en/latest/security/app-secrets.html
                 .AddIf(
                     hostEnvironment.IsDevelopment() && !string.IsNullOrEmpty(hostEnvironment.ApplicationName),
                     x => x.AddUserSecrets(Assembly.GetExecutingAssembly(), optional: true))
-                // Add configuration specific to the Development, Staging or Production environments. This config can
-                // be stored on the machine being deployed to or if you are using Azure, in the cloud. These settings
-                // override the ones in all of the above config files. See
-                // http://docs.asp.net/en/latest/security/app-secrets.html
                 .AddEnvironmentVariables()
                 // Add command line options. These take the highest priority.
                 .AddIf(
