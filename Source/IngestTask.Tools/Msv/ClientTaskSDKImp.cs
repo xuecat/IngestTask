@@ -9,15 +9,13 @@ using System.Xml;
 
 namespace IngestTask.Tool.Msv
 {
-    public class CClientTaskSDKImp
+    public partial class CClientTaskSDKImp
     {
         private int m_nTimeOut;
         private int m_nComtype;
         private int m_iCtrlPort;
         private string m_error_desc;
         private string m_iCtrlIp;
-        private XmlDocument _xml = null;
-        private G2UdpMsvCtrl m_udpMsv = null;
         public CClientTaskSDKImp(int nTimeOut = 5000, int iPort = 3100, int nComType = 0)
         {
 
@@ -25,8 +23,6 @@ namespace IngestTask.Tool.Msv
             m_error_desc = "";
             m_iCtrlPort = iPort;
             m_nComtype = nComType;
-            m_udpMsv = new G2UdpMsvCtrl();
-            _xml = new XmlDocument();
         }
         public CClientTaskSDKImp(string ip, int iPort /*= 3100*/, int nTimeOut /*= 5000*/, int nComType /*= 0*/)
         {
@@ -36,8 +32,6 @@ namespace IngestTask.Tool.Msv
             m_iCtrlIp = ip;
             m_iCtrlPort = iPort;
             m_nComtype = nComType;
-            m_udpMsv = new G2UdpMsvCtrl();
-            _xml = new XmlDocument();
         }
 
         /************************************************************************/
@@ -812,7 +806,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -903,7 +898,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return null;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -913,7 +909,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1031,7 +1026,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1041,7 +1037,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1118,7 +1113,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return BATCH_STATE.BS_ERROR;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1128,7 +1124,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1207,7 +1202,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1217,7 +1213,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1291,7 +1286,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1301,7 +1297,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1383,7 +1378,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1393,7 +1389,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1474,7 +1469,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1484,7 +1480,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1556,7 +1551,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1566,7 +1562,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1645,7 +1640,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1655,7 +1651,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1731,7 +1726,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1825,7 +1821,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1835,7 +1832,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -1921,7 +1917,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -1931,7 +1928,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2007,7 +2003,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return -1;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -2017,7 +2014,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2098,7 +2094,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return null;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -2108,7 +2105,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2244,7 +2240,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -2326,7 +2323,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -2410,7 +2408,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return null;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -2420,7 +2419,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2567,7 +2565,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return TASK_STATE.TS_ERROR;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -2577,7 +2576,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2653,7 +2651,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return null;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -2663,7 +2662,6 @@ namespace IngestTask.Tool.Msv
 
                         try
                         {
-                            _xml.RemoveAll();
                             _xml.LoadXml(e);
                         }
                         catch (Exception ex)
@@ -2797,7 +2795,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -2878,7 +2877,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return null;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -2985,7 +2985,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -3161,7 +3162,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return false;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -3243,7 +3245,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return 0;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -3440,7 +3443,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nPort, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nPort, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -3521,7 +3525,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return 0;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nTSPort, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nTSPort, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -3620,7 +3625,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, nChannel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))
@@ -3700,7 +3706,8 @@ namespace IngestTask.Tool.Msv
                 {
                     return MSV_RET.MSV_FAILED;
                 }
-                string strRet = await AutoRetry.RunSyncAsync(() => m_udpMsv.SendMsvCommandAsync(logger, ipaddress, ip, channel, cmd),
+                var _xml = new XmlDocument();
+                string strRet = await AutoRetry.RunSyncAsync(() => SendMsvCommandAsync(logger, ipaddress, ip, channel, cmd),
                     (e) =>
                     {
                         if (string.IsNullOrEmpty(e))

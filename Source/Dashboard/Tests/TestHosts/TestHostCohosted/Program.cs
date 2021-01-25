@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Hosting;
+using OrleansDashboard.Abstraction;
 
 namespace TestHostCohosted
 {
@@ -24,6 +25,7 @@ namespace TestHostCohosted
                     services.AddSingleton<SiloHost>();
                     services.AddSingleton<IHostedService>(c => c.GetRequiredService<SiloHost>());
                     services.AddSingleton(c => c.GetRequiredService<SiloHost>().GrainFactory);
+                    services.AddSingleton<IGrainServiceDataBack, ServiceDataBackTest>();
                 })
                 .ConfigureLogging(builder =>
                 {

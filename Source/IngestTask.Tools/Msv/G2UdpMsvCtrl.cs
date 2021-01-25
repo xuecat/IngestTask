@@ -17,6 +17,10 @@ namespace IngestTask.Tool.Msv
         public G2UdpMsvCtrl()
         {
         }
+    }
+
+    public partial class CClientTaskSDKImp
+    {
         public async Task<string> SendMsvCommandAsync(
             ILogger logger, IPAddress ipaddress, string strmsvip,
             int nmsvchport, string strcmd)
@@ -108,7 +112,7 @@ namespace IngestTask.Tool.Msv
                                             break;
                                         }
                                     }
-                                    
+
                                 }
                             }
                             else
@@ -191,10 +195,9 @@ namespace IngestTask.Tool.Msv
 
                 }
             }
-            
-           
+
+
             return strret;
         }
-
     }
 }

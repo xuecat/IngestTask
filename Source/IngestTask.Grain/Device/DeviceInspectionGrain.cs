@@ -90,7 +90,23 @@ namespace IngestTask.Grain
             return true;
         }
         
-        
+        public async Task NotifyDeviceChangeAsync()
+        {
+            await InitLoadAsync();
+        }
+
+        public Task NotifyDeviceChangeAsync(ChannelInfo info)
+        {
+            var iteminfo = State.Find(x => x.Id == info.Id);
+            if (iteminfo != null)
+            {
+                ObjectTool.CopyObjectData(info, iteminfo, string.Empty, BindingFlags.Public | BindingFlags.Instance);
+            }
+            else
+                State.Add(info);
+
+            return Task.CompletedTask;
+        }
         public Task<Guid> JoinAsync(int nickname)
         {
             _onlineMembers.Add(nickname);
