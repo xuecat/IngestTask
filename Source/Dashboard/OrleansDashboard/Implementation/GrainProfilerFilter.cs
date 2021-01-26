@@ -73,27 +73,26 @@ namespace OrleansDashboard.Metrics
                 //必须要这个
                 if (context.Grain.GetType().GetCustomAttribute<TraceGrainAttribute>() != null)
                 {
-
-                }
-                if (context.Grain.GetType().GetCustomAttribute<MultiGrainAttribute>() == null)
-                {
-                    profiler.Track(elapsedMs, context.Grain.GetType(), string.Empty, grainMethodName, isException);
-                }
-                else
-                {
-                    
-
-                    string identity = string.Empty;
-                    if (context.Grain.GetPrimaryKeyString() == null)
+                    if (context.Grain.GetType().GetCustomAttribute<MultiGrainAttribute>() == null)
                     {
-                        identity = context.Grain.GetPrimaryKeyLong().ToString();
+                        profiler.Track(elapsedMs, context.Grain.GetType(), string.Empty, grainMethodName, isException);
                     }
                     else
-                        identity = context.Grain.GetPrimaryKeyString();
+                    {
+                        string identity = string.Empty;
+                        if (context.Grain.GetPrimaryKeyString() == null)
+                        {
+                            identity = context.Grain.GetPrimaryKeyLong().ToString();
+                        }
+                        else
+                            identity = context.Grain.GetPrimaryKeyString();
 
-                    profiler.Track(elapsedMs, context.Grain.GetType(), identity, grainMethodName, isException);
+                        profiler.Track(elapsedMs, context.Grain.GetType(), identity, grainMethodName, isException);
+                    }
                 }
-                    
+                else
+                    profiler.Track(elapsedMs, context.Grain.GetType(), string.Empty, grainMethodName, isException);
+                
             }
             catch (Exception ex)
             {
