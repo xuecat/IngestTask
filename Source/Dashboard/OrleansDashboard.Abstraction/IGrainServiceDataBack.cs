@@ -9,4 +9,15 @@ namespace OrleansDashboard.Abstraction
     {
         object GetGrainServiceData();
     }
+
+    public class ServiceDataBackTest : IGrainServiceDataBack
+    {
+        public ServiceDataBackTest()
+        { }
+
+        public object GetGrainServiceData()
+        {
+            return 1;
+        }
+    }
 }

@@ -7,9 +7,9 @@ namespace IngestTask.Server.IntegrationTest
     using Xunit;
     using Xunit.Abstractions;
 
-    public class AddTaskGrainTest : ClusterFixture
+    public class TaskGrainTest : ClusterFixture
     {
-        public AddTaskGrainTest(ITestOutputHelper testOutputHelper)
+        public TaskGrainTest(ITestOutputHelper testOutputHelper)
             : base(testOutputHelper)
         {
         }

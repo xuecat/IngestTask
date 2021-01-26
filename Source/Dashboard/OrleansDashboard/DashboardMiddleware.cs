@@ -323,14 +323,7 @@ namespace OrleansDashboard
                 using (var writer = new TraceWriter(logger, context))
                 {
                     await writer.WriteAsync(@"
-   ____       _                        _____            _     _                         _
-  / __ \     | |                      |  __ \          | |   | |                       | |
- | |  | |_ __| | ___  __ _ _ __  ___  | |  | | __ _ ___| |__ | |__   ___   __ _ _ __ __| |
- | |  | | '__| |/ _ \/ _` | '_ \/ __| | |  | |/ _` / __| '_ \| '_ \ / _ \ / _` | '__/ _` |
- | |__| | |  | |  __/ (_| | | | \__ \ | |__| | (_| \__ \ | | | |_) | (_) | (_| | | | (_| |
-  \____/|_|  |_|\___|\__,_|_| |_|___/ |_____/ \__,_|___/_| |_|_.__/ \___/ \__,_|_|  \__,_|
-
-You are connected to the Orleans Dashboard log streaming service
+You are connected to the Dashboard log streaming service
 ").ConfigureAwait(false);
 
                     await Task.Delay(TimeSpan.FromMinutes(60), token).ConfigureAwait(false);

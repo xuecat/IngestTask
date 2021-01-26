@@ -22,5 +22,10 @@ namespace IngestTask.Abstraction.Grains
         Task<List<ChannelInfo>> RequestChannelInfoAsync(string serverid);
 
         Task<int> QuitServiceAsync(string serviceid);
+
+        [OneWay]
+        Task NotifyDeviceChangeAsync();
+        [OneWay]
+        Task NotifyDeviceChangeAsync(ChannelInfo info);
     }
 }
