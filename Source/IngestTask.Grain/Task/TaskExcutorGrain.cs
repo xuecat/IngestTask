@@ -217,7 +217,7 @@ namespace IngestTask.Grain
                 var orleansts = TaskScheduler.Current;
                 foreach (var item in State.TaskLists)
                 {
-                    if (!item.HandleTask)
+                    if (!item.HandleTask && item.TaskContent != null && item.TaskContent.TaskId > 0)
                     {
                         item.HandleTask = true;
                         _ = Task.Factory.StartNew(async () =>
@@ -258,6 +258,12 @@ namespace IngestTask.Grain
                     }
                 }
 
+                if (_timer != null)
+                {
+                    _timer.Dispose();
+                    _timer = null;
+                }
+
                 /*
                 * flag katamaki任务检测
                 */
@@ -275,12 +281,6 @@ namespace IngestTask.Grain
                             {
                                 RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
                                 await ConfirmEvents();
-
-                                if (_timer != null)
-                                {
-                                    _timer.Dispose();
-                                    _timer = null;
-                                }
 
                                 if (task.StartOrStop)
                                 {
@@ -374,6 +374,7 @@ namespace IngestTask.Grain
             throw new NotImplementedException();
         }
 
+
         public bool OnNextStream(ChannelInfo info)
         {
             //start成功，stop失败，去timer
@@ -394,6 +395,11 @@ namespace IngestTask.Grain
             //   task.RetryTimes
             TimerTask param = (TimerTask)type;
 
+            if (_timer == null)
+            {
+                return;
+            }
+
             var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync(param.ChannelId);
             bool runningtask = true;
             if (taskinfolst != null)
@@ -410,8 +416,13 @@ namespace IngestTask.Grain
                     if (msvtask == null || msvtask.ulID < 1)//说明msv出问题了查不到任务了,采集中剩下部分要跳转, 3次重试后才移动通道 
                     {
                         Logger.Info($"OnRunningTaskMonitorAsync task need to check {taskinfolst.TaskId}");
-                        if (param.Timers > 2)
+                        if (++param.Timers > 3)
                         {
+                            if (_timer == null)
+                            {
+                                return;
+                            }
+
                             if (param.TaskType == TaskType.TT_VTRUPLOAD)
                             {
 
@@ -491,7 +502,6 @@ namespace IngestTask.Grain
                 }
             }
 
-            param.Timers++;
         }
 
 

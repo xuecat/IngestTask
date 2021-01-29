@@ -9,6 +9,7 @@ namespace IngestTask.Grain
     using Orleans;
     using Orleans.Concurrency;
     using Orleans.Internal;
+    using Orleans.Runtime;
     using System;
     using System.Collections.Generic;
     using System.Text;
@@ -18,6 +19,7 @@ namespace IngestTask.Grain
     public class DispatcherGrain : Grain, IDispatcherGrain
     {
         public int taskSchedulePrevious { get; }
+        private int reminderTimerMinutes { get; }
 
         private IMapper _mapper;
         public DispatcherGrain(
@@ -26,6 +28,7 @@ namespace IngestTask.Grain
             //_mapper = new Mapper();
             _mapper = mapper;
             taskSchedulePrevious = configuration.GetSection("Task:TaskSchedulePrevious").Get<int>();
+            reminderTimerMinutes = configuration.GetSection("Task:TaskSchedulePreviousTimer").Get<int>();
         }
         public Task SendAsync(Tuple<int, string>[] messages)
         {
@@ -82,12 +85,21 @@ namespace IngestTask.Grain
         {
             if (!TaskIsInvalid(task))
             {
-               
                 if ((task.Starttime - DateTime.Now).TotalSeconds >
                     taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < taskSchedulePrevious)
                 {
                     //提交开始监听
                     await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(task);
+
+                    //向远修改任务,要把准备调度里面的清空
+                    if ((task.Starttime - DateTime.Now).TotalMinutes > reminderTimerMinutes)
+                    {
+                        var membership = await GrainFactory.GetGrain<IManagementGrain>(0).GetHosts(true);
+                        if (membership != null && membership.Count > 0)
+                        {
+                            await GrainFactory.GetGrain<IScheduleTaskGrain>(task.Taskid % membership.Count).RemoveScheduleTaskAsync(task);
+                        }
+                    }
                 }
                 else
                 {

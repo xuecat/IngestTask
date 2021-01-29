@@ -95,18 +95,15 @@ namespace IngestTask.Grain
 
             if (mintime != DateTime.MaxValue)
             {
-
+                var nowtime = DateTime.Now;
                 TimeSpan minspan ;
-                if (DateTime.Now > mintime.AddMinutes(-1 * _reminderTimerMinutes))
+                if (nowtime < mintime.AddMinutes(-1 * _reminderTimerMinutes))
                 {
-                    minspan = DateTime.Now - mintime.AddMinutes(-1 * _reminderTimerMinutes);
-                }
-                else
-                    minspan = mintime.AddMinutes(-1 * _reminderTimerMinutes) - DateTime.Now;
-
-                if (minspan != _reminderCurPeriod)
-                {
-                    _grainReminder = await RegisterOrUpdateReminder(Cluster.TaskReminder, TimeSpan.FromSeconds(1), minspan);
+                    minspan = mintime.AddMinutes(-1 * (_reminderTimerMinutes-1)) - nowtime;
+                    if (minspan != _reminderCurPeriod)
+                    {
+                        _grainReminder = await RegisterOrUpdateReminder(Cluster.TaskReminder, TimeSpan.FromSeconds(1), minspan);
+                    }
                 }
             }
             

@@ -17,7 +17,6 @@ namespace IngestTask.Tool.Msv
         private TASK_PARAM m_taskParam;
         private TASK_ALL_PARAM_NEW m_taskAllParam;
         private string m_strCaptureParam = "";
-        private XmlDocument _xml = new XmlDocument();
         private CClientTaskSDKImp _clientSdk;
         public MsvClientCtrlSDK()
         {
@@ -167,7 +166,7 @@ namespace IngestTask.Tool.Msv
             int nMsvRet = 0;
             try
             {
-
+                var _xml = new XmlDocument();
                 _xml.LoadXml(m_strCaptureParam);
                 XmlElement _root = _xml.DocumentElement;
                 XmlNode pathNode = _root.SelectSingleNode("multiDest");
