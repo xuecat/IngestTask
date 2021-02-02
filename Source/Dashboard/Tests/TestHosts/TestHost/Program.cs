@@ -57,7 +57,7 @@ namespace TestHost
                          services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                          services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
 
-                         services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
+                         services.AddTransient<ITaskHandlerFactory, TaskHandlerFactory>(sp => TaskHandlerFactory.Create(sp));
                          services.AddSingleton<IGrainServiceDataBack, GrainServiceDataBack>();
                          services.AddAutoMapper(typeof(GlobalProfile));
                          services.AddSingletonNamedService<PlacementStrategy, ScheduleTaskPlacementStrategy>(nameof(ScheduleTaskPlacementStrategy));

@@ -32,7 +32,7 @@ namespace IngestTask.Server.IntegrationTest.Fixtures
                     //services.AddSingleton<IScheduleService, ScheduleTaskService>();
                     services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
 
-                    services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
+                    services.AddTransient<ITaskHandlerFactory, TaskHandlerFactory>(sp => TaskHandlerFactory.Create(sp));
                     services.AddAutoMapper(typeof(GlobalProfile));
                     services.AddSingletonNamedService<PlacementStrategy, ScheduleTaskPlacementStrategy>(nameof(ScheduleTaskPlacementStrategy));
                     services.AddSingletonKeyedService<Type, IPlacementDirector, ScheduleTaskPlacementSiloDirector>(typeof(ScheduleTaskPlacementStrategy));

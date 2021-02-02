@@ -273,7 +273,7 @@ namespace IngestTask.Grain
                     var chinfo = await devicegrain.GetChannelInfoAsync(task.TaskContent.ChannelId);
                     if (chinfo != null)
                     {
-                        var handle = _handlerFactory.CreateInstance(task, _services);
+                        var handle = _handlerFactory.CreateInstance(task);
                         if (handle != null)
                         {
                             var taskid = await handle.HandleTaskAsync(task, chinfo);

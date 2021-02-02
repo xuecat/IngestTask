@@ -9,31 +9,37 @@ namespace IngestTask.Grain
     using IngestTask.Tool.Msv;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Orleans;
+    using Orleans.Runtime;
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
-    public class TaskHandlerFactory : ITaskHandlerFactory/*, ILifecycleParticipant<IGrainLifecycle>*/
+    public class TaskHandlerFactory : ITaskHandlerFactory, ILifecycleParticipant<IGrainLifecycle>
     {
-        public TaskHandlerFactory()
+        private IServiceProvider _serviceProvider;
+        private List<Type> _taskHandlerList = new List<Type>();
+
+        public static TaskHandlerFactory Create(IServiceProvider services)
         {
-            RegisterHandler<NormalTaskHandler>();
-            RegisterHandler<VtrBatchTaskHandler>();
+            var taskfactory = new TaskHandlerFactory();
+            taskfactory.Participate(services.GetRequiredService<IGrainActivationContext>().ObservableLifecycle);
+            taskfactory._serviceProvider = services;
+            return taskfactory;
         }
 
-        private List<Type> _taskHandlerList = new List<Type>();
-        public ITaskHandler CreateInstance(TaskFullInfo task, IServiceProvider services)
+        public ITaskHandler CreateInstance(TaskFullInfo task)
         {
             foreach (var item in _taskHandlerList)
             {
                 var obj = item.GetMethod("IsHandler")?.Invoke(null, new object[] { task });
                 if (obj != null && (bool)obj)
                 {
-                    
-                    return Activator.CreateInstance(item, new object[] { 
-                        services.GetRequiredService<RestClient>(),
-                        services.GetRequiredService<MsvClientCtrlSDK>(),
-                        services.GetRequiredService<IConfiguration>() }) as ITaskHandler;
+                    return Activator.CreateInstance(item, new object[] {
+                        _serviceProvider.GetRequiredService<RestClient>(),
+                        _serviceProvider.GetRequiredService<MsvClientCtrlSDK>(),
+                        _serviceProvider.GetRequiredService<IConfiguration>() }) as ITaskHandler;
                 }
                
             }
@@ -48,6 +54,17 @@ namespace IngestTask.Grain
                 return true;
             }
             return false;
+        }
+        private Task OnActivateAsync(CancellationToken ct)
+        {
+            RegisterHandler<NormalTaskHandler>();
+            RegisterHandler<VtrBatchTaskHandler>();
+            return Task.CompletedTask;
+            // Do stuff
+        }
+        public void Participate(IGrainLifecycle lifecycle)
+        {
+            lifecycle.Subscribe<TaskHandlerFactory>(GrainLifecycleStage.Activate, OnActivateAsync);
         }
     }
 }

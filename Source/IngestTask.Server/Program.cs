@@ -182,7 +182,7 @@ namespace IngestTask.Server
                         //services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                         services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
                         services.AddSingleton<IGrainServiceDataBack, GrainServiceDataBack>();
-                        services.AddSingleton<ITaskHandlerFactory, TaskHandlerFactory>();
+                        services.AddTransient<ITaskHandlerFactory, TaskHandlerFactory>(sp => TaskHandlerFactory.Create(sp));
 
                         services.Configure<ApplicationOptions>(context.Configuration);
                         services.Configure<ClusterOptions>(opt => { opt.ClusterId = Cluster.ClusterId; opt.ServiceId = Cluster.ServiceId; });
