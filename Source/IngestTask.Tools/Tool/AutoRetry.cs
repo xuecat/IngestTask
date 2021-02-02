@@ -168,7 +168,7 @@ namespace IngestTask.Tool
             }
         }
 
-        public static async Task<TResult> RunSyncAsync<TResult>(Func<Task<TResult>> proc, Func<TResult,bool> judge, int retryCount = 3, int delay = 1000, bool throwError = true)
+        public static async Task<TResult> RunSyncAsync<TResult>(Func<Task<TResult>> proc, Func<TResult,bool> judge, int retryCount = 3, int delay = 500, bool throwError = true)
         {
             TResult r = default(TResult);
             for (int i = 0; i < retryCount; i++)

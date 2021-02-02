@@ -13,17 +13,15 @@ namespace IngestTask.Tool.Msv
     {
         //private string m_msvUdpIp = "127.0.0.1";
         //private int m_msvUdpPort;
-        //private CClientTaskSDK SDK;
-        private TASK_PARAM m_taskParam;
-        private TASK_ALL_PARAM_NEW m_taskAllParam;
-        private string m_strCaptureParam = "";
+        ////private CClientTaskSDK SDK;
+        //private TASK_PARAM m_taskParam;
+        //private TASK_ALL_PARAM_NEW m_taskAllParam;
+        //private string m_strCaptureParam = "";
         private CClientTaskSDKImp _clientSdk;
         public MsvClientCtrlSDK()
         {
             //m_msvUdpIp = strMsvIp;
             //m_msvUdpPort = msvPort;
-            m_taskParam = new TASK_PARAM();
-            m_taskAllParam = new TASK_ALL_PARAM_NEW();
             _clientSdk = new CClientTaskSDKImp();
         }
         
@@ -158,7 +156,7 @@ namespace IngestTask.Tool.Msv
             }
         }
 
-        public async Task<bool> RecordAsync(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
+        public async Task<bool> RecordAsync(TASK_ALL_PARAM_NEW allparam, int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
         {
             MSV_RET ret;
             string strMutPath = "";
@@ -167,26 +165,26 @@ namespace IngestTask.Tool.Msv
             try
             {
                 var _xml = new XmlDocument();
-                _xml.LoadXml(m_strCaptureParam);
+                _xml.LoadXml(allparam.captureParam);
                 XmlElement _root = _xml.DocumentElement;
                 XmlNode pathNode = _root.SelectSingleNode("multiDest");
                 if (pathNode != null)
                 {
                     strPath = pathNode.InnerText;
-                    strMutPath = string.Format("<multiDest><taskid>{0}</taskid>{1}</multiDest>", m_taskParam.ulID, strPath);
+                    strMutPath = string.Format("<multiDest><taskid>{0}</taskid>{1}</multiDest>", allparam.taskParam.ulID, strPath);
                     //ret = _clientSdk.MSVSetMulDestPath(strMsvIP, strMutPath, logger);
                     ret = await _clientSdk.MSVSetMulDestPathAsync(strMsvIP, nChPort, strMutPath, logger).ConfigureAwait(true);
                     if (ret == MSV_RET.MSV_NETERROR)
                     {
-                        logger.Error($"MSVSetMulDestPath::taskName={m_taskParam.strName};Error:{_clientSdk.MSVGetLastErrorString()}!");
+                        logger.Error($"MSVSetMulDestPath::taskName={allparam.taskParam.strName};Error:{_clientSdk.MSVGetLastErrorString()}!");
                     }
                 }
 
-                m_taskAllParam.nCutLen = 10;
-                logger.Info($"MsvSDK Record Prepare Cast MSVStartTaskNew Function ip={strMsvIP} port={nChPort} cutlen={m_taskAllParam.nCutLen}");
+                allparam.nCutLen = 10;
+                logger.Info($"MsvSDK Record Prepare Cast MSVStartTaskNew Function ip={strMsvIP} port={nChPort} cutlen={allparam.nCutLen}");
 
                 //ret = _clientSdk.MSVStartTaskNew(strMsvIP, m_taskAllParam, nChPort, logger);
-                ret = await _clientSdk.MSVStartTaskNewAsync(strMsvIP, m_taskAllParam, nChPort, logger).ConfigureAwait(true); ;
+                ret = await _clientSdk.MSVStartTaskNewAsync(strMsvIP, allparam, nChPort, logger).ConfigureAwait(true); ;
                 nMsvRet = Convert.ToInt32(ret);
                 if (ret == MSV_RET.MSV_NETERROR)
                 {
@@ -207,14 +205,16 @@ namespace IngestTask.Tool.Msv
             }
         }
 
-        public bool RecordReady(int nChPort, string strMsvIP, TaskParam pTaskparam, string strTaskName, string pCaptureparam, Sobey.Core.Log.ILogger logger)
+        public TASK_ALL_PARAM_NEW RecordReady(int nChPort, string strMsvIP, TaskParam pTaskparam, string strTaskName, string pCaptureparam, Sobey.Core.Log.ILogger logger)
         {
             if (pTaskparam == null)
             {
                 logger.Error("RecordReady: pTaskparam is null!");
-                return false;
+                return null;
             }
             TASK_PARAM param = new TASK_PARAM();
+            TASK_PARAM taskParam = new TASK_PARAM();
+
             try
             {
                 logger.Info($"MsvSDK Record Ready!,taskID:{pTaskparam.taskID},pCaptureparam:{pCaptureparam} ");
@@ -274,46 +274,44 @@ namespace IngestTask.Tool.Msv
                 pCaptureparam = doc.InnerXml;
                 logger.Info($"MsvSDK Record Ready!, taskID:{pTaskparam.taskID}, lastCapture:{pCaptureparam}...........RecordReady");
                 ClientParam2MSVTskParam(pTaskparam, ref param);
-                m_taskParam.bRetrospect = param.bRetrospect;
-                m_taskParam.bUseTime = param.bUseTime;
-                m_taskParam.channel = param.channel;
-                m_taskParam.dwCutClipFrame = param.dwCutClipFrame;
-                m_taskParam.nInOutCount = param.nInOutCount;
-                m_taskParam.strName = param.strName;
-                for (int i = 0; i < m_taskParam.nInOutCount; i++)
+                taskParam.bRetrospect = param.bRetrospect;
+                taskParam.bUseTime = param.bUseTime;
+                taskParam.channel = param.channel;
+                taskParam.dwCutClipFrame = param.dwCutClipFrame;
+                taskParam.nInOutCount = param.nInOutCount;
+                taskParam.strName = param.strName;
+                for (int i = 0; i < taskParam.nInOutCount; i++)
                 {
-                    m_taskParam.dwInFrame[i] = param.dwInFrame[i];
-                    m_taskParam.dwOutFrame[i] = param.dwOutFrame[i];
-                    m_taskParam.dwTotalFrame[i] = param.dwTotalFrame[i];
+                    taskParam.dwInFrame[i] = param.dwInFrame[i];
+                    taskParam.dwOutFrame[i] = param.dwOutFrame[i];
+                    taskParam.dwTotalFrame[i] = param.dwTotalFrame[i];
                 }
 
 
-                m_taskParam.nSignalID = param.nSignalID;
-                m_taskParam.nTimeCode = param.nTimeCode;
+                taskParam.nSignalID = param.nSignalID;
+                taskParam.nTimeCode = param.nTimeCode;
                 //m_taskparam.strDesc.Format(_T("%s"),pTaskparam->strDesc);
                 //m_taskParam.strName = strTaskName;
 
-                m_taskParam.tmBeg = DateTime.Now;
-                m_taskParam.tmEnd = DateTime.Now;
-                m_taskParam.ulID = param.ulID;
-                m_taskParam.TaskMode = (TASK_MODE)param.TaskMode;
-                m_taskParam.TaskState = (TASK_STATE)param.TaskState;
+                taskParam.tmBeg = DateTime.Now;
+                taskParam.tmEnd = DateTime.Now;
+                taskParam.ulID = param.ulID;
+                taskParam.TaskMode = (TASK_MODE)param.TaskMode;
+                taskParam.TaskState = (TASK_STATE)param.TaskState;
 
-
-                m_taskAllParam.captureParam = pCaptureparam;
-                m_taskAllParam.nCutLen = 10;
-                m_taskAllParam.taskParam = m_taskParam;
+                //m_taskAllParam.captureParam = pCaptureparam;
+                //m_taskAllParam.nCutLen = 10;
+                //m_taskAllParam.taskParam = m_taskParam;
                 //m_taskAllParam.taskParam.strName = strTaskName;
-                m_strCaptureParam = "";
-                m_strCaptureParam = pCaptureparam;
                 logger.Info($"curent strTaskName: {strTaskName}");
+
+                return new TASK_ALL_PARAM_NEW() { captureParam = pCaptureparam, nCutLen = 10, taskParam = taskParam};
             }
             catch (Exception e)
             {
                 logger.Error($"MsvUdpClientCtrlSDK::RecordReady, Exception:{e.Message}");
-                return false;
+                return null;
             }
-            return true;
         }
 
         public async Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)

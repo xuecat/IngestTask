@@ -222,13 +222,23 @@ namespace IngestTask.Grain
                     dtcurrent = DateTime.Now;
                     if (dtcurrent >= dtbegin)
                     {
-                        msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", capparam, Logger);
+                        var recordinfo = msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", capparam, Logger);
 
-                        bool backrecord = await msvClient.RecordAsync(channel.ChannelIndex, channel.Ip, Logger);
+                        bool backrecord = await msvClient.RecordAsync(recordinfo, channel.ChannelIndex, channel.Ip, Logger);
 
                         if (backrecord)
                         {
-                            var state = await msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger);
+                           
+                            var state = await AutoRetry.RunSyncAsync(() =>
+                                                            msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger),
+                                                                                            (e) =>
+                                                                                            {
+                                                                                                if (e == Device_State.WORKING)
+                                                                                                {
+                                                                                                    return true;
+                                                                                                }
+                                                                                                return false;
+                                                                                            }, 4, 500).ConfigureAwait(true);
 
                             if (state == Device_State.WORKING)
                             {

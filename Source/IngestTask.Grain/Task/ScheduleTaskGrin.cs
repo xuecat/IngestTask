@@ -155,10 +155,22 @@ namespace IngestTask.Grain
             if (task != null)
             {
                 int removecount = 0;
+                bool stopnow = false;
+
                 lock (this.State)
                 {
-                    removecount = this.State.RemoveAll(x => x.Taskid == task.Taskid);
+                    var item = this.State.Find(x => x.Taskid == task.Taskid);
+                    if (item != null)
+                    {
+                        this.State.Remove(item);
+                        if (item.State == (int)taskState.tsExecuting)
+                        {
+                            stopnow = true;
+                        }
+                        removecount = 1;
+                    }
                 }
+
                 if (this.State.Count == 0 && _dispoScheduleTimer != null)
                 {
                     _dispoScheduleTimer.Dispose();
@@ -167,6 +179,11 @@ namespace IngestTask.Grain
                 if (removecount > 0)
                 {
                     await WriteStateAsync();
+                }
+
+                if (stopnow)
+                {
+                    await GrainFactory.GetGrain<ITask>(task.Channelid.GetValueOrDefault())?.StopTaskAsync(_mapper.Map<TaskContent>(task));
                 }
 
                 return task.Taskid;
