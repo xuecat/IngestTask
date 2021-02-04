@@ -69,17 +69,22 @@ namespace IngestTask.Grain
                 var lstdevice = await _restClient.GetAllDeviceInfoAsync();
                 var channelstate = await _restClient.GetAllChannelStateAsync();
 
-                State = Mapper.Map<List<ChannelInfo>>(lstdevice);
+                lock (State)
+                {
+                    State = Mapper.Map<List<ChannelInfo>>(lstdevice);
 
-                State.ForEach(x => {
-                    var info = channelstate.Find(y => y.ChannelId == x.ChannelId);
-                    if (info != null)
+                    State.ForEach(x =>
                     {
-                        x.CurrentDevState = info.DevState;
-                        x.LastMsvMode = info.MsvMode;
-                        x.VtrId = info.VtrId;
-                    }
-                });
+                        var info = channelstate.Find(y => y.ChannelId == x.ChannelId);
+                        if (info != null)
+                        {
+                            x.CurrentDevState = info.DevState;
+                            x.LastMsvMode = info.MsvMode;
+                            x.VtrId = info.VtrId;
+                        }
+                    });
+                }
+                
             }
             catch (Exception e)
             {
@@ -89,7 +94,24 @@ namespace IngestTask.Grain
             
             return true;
         }
-        
+        public Task NotifyDeviceDeleteAsync(int deviceid)
+        {
+            lock (State)
+            {
+                State.RemoveAll(x => x.Id == deviceid);
+            }
+            return Task.CompletedTask;
+        }
+
+        public Task NotifyChannelDeleteAsync(int deviceid)
+        {
+            lock (State)
+            {
+                State.RemoveAll(x => x.ChannelId == deviceid);
+            }
+            return Task.CompletedTask;
+        }
+
         public async Task NotifyDeviceChangeAsync()
         {
             await InitLoadAsync();
@@ -167,14 +189,18 @@ namespace IngestTask.Grain
             foreach (var itm in infos)
             {
                 var item = State.Find(x => x.Id == itm.Id);
-                if (item == null)
+                lock (State)
                 {
-                    State.Add(item);
+                    if (item == null)
+                    {
+                        State.Add(item);
+                    }
+                    else
+                    {
+                        ObjectTool.CopyObjectData(itm, item, string.Empty, BindingFlags.Public | BindingFlags.Instance);
+                    }
                 }
-                else
-                {
-                    ObjectTool.CopyObjectData(itm, item, string.Empty, BindingFlags.Public | BindingFlags.Instance);
-                }
+                
 
                 if (notify && itm.NeedStopFlag)//通知执行器
                 {
@@ -227,7 +253,6 @@ namespace IngestTask.Grain
             var lst = State.FindAll(x => x.Id%_monitorMember.Count == 0);
             return Task.FromResult(lst);
         }
-
 
        
     }

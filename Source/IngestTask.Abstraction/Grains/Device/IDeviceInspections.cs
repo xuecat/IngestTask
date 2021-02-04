@@ -25,6 +25,13 @@ namespace IngestTask.Abstraction.Grains
 
         [OneWay]
         Task NotifyDeviceChangeAsync();
+
+        [OneWay]
+        Task NotifyDeviceDeleteAsync(int deviceid);
+
+        [OneWay]
+        Task NotifyChannelDeleteAsync(int deviceid);
+
         [OneWay]
         Task NotifyDeviceChangeAsync(ChannelInfo info);
     }
