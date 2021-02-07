@@ -103,11 +103,11 @@ namespace IngestTask.Grain
             return Task.CompletedTask;
         }
 
-        public Task NotifyChannelDeleteAsync(int deviceid)
+        public Task NotifyChannelDeleteAsync(int channelid)
         {
             lock (State)
             {
-                State.RemoveAll(x => x.ChannelId == deviceid);
+                State.RemoveAll(x => x.ChannelId == channelid);
             }
             return Task.CompletedTask;
         }
