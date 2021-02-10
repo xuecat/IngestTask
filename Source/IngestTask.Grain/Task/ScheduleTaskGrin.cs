@@ -58,6 +58,7 @@ namespace IngestTask.Grain
             await base.OnDeactivateAsync();
         }
 
+        [NoProfiling]
         public Task<List<DispatchTask>> GetTaskListAsync()
         {
             return Task.FromResult(this.State);

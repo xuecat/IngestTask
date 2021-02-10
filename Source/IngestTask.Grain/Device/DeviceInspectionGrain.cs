@@ -143,7 +143,7 @@ namespace IngestTask.Grain
             return Task.FromResult(_stream.Guid);
         }
 
-
+        [NoProfiling]
         public Task<List<ChannelInfo>> GetChannelInfosAsync()
         {
             return Task.FromResult(this.State);

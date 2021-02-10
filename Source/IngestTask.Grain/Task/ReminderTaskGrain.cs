@@ -225,6 +225,7 @@ namespace IngestTask.Grain
             return Task.FromResult(default(List<DispatchTask>));
         }
 
+        [NoProfiling]
         public Task<List<DispatchTask>> GetTaskListAsync()
         {
             return Task.FromResult(this.State.ToList());

@@ -4,7 +4,12 @@ using System.Text;
 
 namespace OrleansDashboard.Abstraction
 {
-    
+
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true)]
+    public sealed class NoProfilingAttribute : Attribute
+    {
+    }
+
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true)]
     public sealed class MultiGrainAttribute : Attribute
     {
