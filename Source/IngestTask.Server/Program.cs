@@ -331,6 +331,7 @@ namespace IngestTask.Server
                 path = AppDomain.CurrentDomain.BaseDirectory.Replace("\\", "/") + "/" + fileName;
             }
 
+            StartLogger.Error($"path : {path}, {File.Exists(path)} ");
             if (File.Exists(path))
             {
                 try
