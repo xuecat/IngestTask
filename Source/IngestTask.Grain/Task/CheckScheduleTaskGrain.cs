@@ -32,7 +32,10 @@ namespace IngestTask.Grain
         }
         public Task<bool> StartCheckSyncAsync()
         {
-            _dispoScheduleTimer = RegisterTimer(this.OnCheckTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
+            if (_dispoScheduleTimer == null) 
+            {
+                _dispoScheduleTimer = RegisterTimer(this.OnCheckTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
+            }
             return Task.FromResult(true);
         }
 
@@ -84,5 +87,50 @@ namespace IngestTask.Grain
                 _resetTimes++;
             }
         }
+
+        //private async Task OnCheckTaskAsync(object type)
+        //{
+        //    var lsttask = await _restClient.GetNeedSyncTaskListAsync();
+        //    if (lsttask != null && lsttask.Count > 0)
+        //    {
+        //        _resetTimes = 0;
+
+        //        List<TaskContent> needsynctasklst = new List<TaskContent>();
+        //        lsttask.ForEach(x => {
+        //            var findstatetask = State.Find(y => y.TaskId == x.TaskId);
+        //            if (findstatetask != null)
+        //            {
+        //                findstatetask.SyncTimes++;
+        //                if (findstatetask.SyncTimes >= 2)
+        //                {
+        //                    needsynctasklst.Add(findstatetask);
+        //                }
+        //            }
+        //            else
+        //            {
+        //                State.Add(_mapper.Map<TaskContent, CheckTaskContent>(x, opt => opt.AfterMap((src, dst) => { dst.SyncTimes = 0; })));
+        //            }
+        //        });
+
+        //        if (needsynctasklst.Count > 0)
+        //        {
+        //            foreach (var item in needsynctasklst)
+        //            {
+        //                //
+        //                await _grainFactory.GetGrain<IDispatcherGrain>(0).AddTaskAsync(await _restClient.GetTaskDBAsync(item.TaskId));
+        //                //await _grainFactory.GetGrain<ITask>(item.ChannelId).AddTaskAsync(item);
+        //            }
+        //        }
+        //    }
+        //    else
+        //    {
+        //        if (_resetTimes > 10 && State.Count > 0)
+        //        {
+        //            State.Clear();
+        //            _resetTimes = 0;
+        //        }
+        //        _resetTimes++;
+        //    }
+        //}
     }
 }

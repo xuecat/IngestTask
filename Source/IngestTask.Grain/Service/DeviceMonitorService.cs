@@ -74,6 +74,7 @@ namespace IngestTask.Grain.Service
             _grainKey = refgrain.GrainServiceSiloAddress.ToParsableString() + ";" + refgrain.GrainIdentity.TypeCode.ToString() + ";" + extrakey;
 
             _lstTimerScheduleDevice = await _grainFactory.GetGrain<IDeviceInspections>(0).RequestChannelInfoAsync(_grainKey);
+            //await _grainFactory.GetGrain<ICheckSchedule>(0).StartCheckSyncAsync();
             await base.Start();
         }
 
