@@ -18,7 +18,7 @@ namespace IngestTask.Server
     using Orleans.Statistics;
     using IngestTask.Abstraction.Constants;
     using IngestTask.Server.Options;
-    
+
     using Sobey.Core.Log;
     using System.Globalization;
     using IngestTask.Grain;
@@ -38,7 +38,11 @@ namespace IngestTask.Server
 
     public static class Program
     {
-        public static Task<int> Main(string[] args) => LogAndRunAsync(CreateHostBuilder(args).Build());
+        public static Task<int> Main(string[] args)
+        {
+            Console.WriteLine("test");
+            return LogAndRunAsync(CreateHostBuilder(args).Build());
+        }
         private static Sobey.Core.Log.ILogger ExceptionLogger = LoggerManager.GetLogger("Exception");
         private static Sobey.Core.Log.ILogger StartLogger = LoggerManager.GetLogger("Startup");
         private static int siloStopping = 0;
@@ -79,7 +83,7 @@ namespace IngestTask.Server
                 StartLogger.Error(exception.Message + "Application terminated unexpectedly");
                 return 1;
             }
-            
+
         }
 
         private static void CurrentDomain_FirstChanceException(object sender, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs e)
@@ -125,8 +129,9 @@ namespace IngestTask.Server
             }
         }
 
-        private static IHostBuilder CreateHostBuilder(string[] args) =>
-            new HostBuilder()
+        private static IHostBuilder CreateHostBuilder(string[] args) {
+            Console.WriteLine("aaaa");
+           return new HostBuilder()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .ConfigureHostConfiguration(
                     configurationBuilder => configurationBuilder
@@ -148,6 +153,7 @@ namespace IngestTask.Server
                 .UseOrleans(ConfigureSiloBuilder)
                 .ConfigureWebHost(ConfigureWebHostBuilder)
                 .UseConsoleLifetime();
+        }
 
         private static void ConfigureSiloBuilder(
             Microsoft.Extensions.Hosting.HostBuilderContext context,
@@ -174,11 +180,12 @@ namespace IngestTask.Server
                         });
 
                         services.AddSingleton<MsvClientCtrlSDK>();
-                        services.AddSingleton<RestClient>(pd => {
-                            return new RestClient(pd.GetService<IHttpClientFactory>().CreateClient(PollyHttpClientServiceCollectionExtensions.HttpclientName), 
+                        services.AddSingleton<RestClient>(pd =>
+                        {
+                            return new RestClient(pd.GetService<IHttpClientFactory>().CreateClient(PollyHttpClientServiceCollectionExtensions.HttpclientName),
                                 context.Configuration.GetSection("IngestDBSvr").Value, context.Configuration.GetSection("CMServer").Value);
                         });
-                        
+
                         //services.AddSingleton<IDeviceMonitorService, DeviceMonitorService>();
                         services.AddSingleton<IDeviceMonitorClient, DeviceMonitorClient>();
                         services.AddSingleton<IGrainServiceDataBack, GrainServiceDataBack>();
@@ -192,11 +199,12 @@ namespace IngestTask.Server
                     })
                 .UseSiloUnobservedExceptionsHandler()
                 .UseAdoNetClustering(
-                    options => {
+                    options =>
+                    {
                         options.Invariant = "MySql.Data.MySqlClient";
                         options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                     })
-                
+
                 .ConfigureEndpoints(
                     EndpointOptions.DEFAULT_SILO_PORT,
                     EndpointOptions.DEFAULT_GATEWAY_PORT,
@@ -211,15 +219,16 @@ namespace IngestTask.Server
                         options.UseJsonFormat = true;
                     }
                 )
-               
+
                 .UseAdoNetReminderService(
-                      options => {
+                      options =>
+                      {
                           options.Invariant = "MySql.Data.MySqlClient";
                           options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                       })
-                
+
                 .AddSimpleMessageStreamProvider(StreamProviderName.Default)
-               
+
                 .AddAdoNetGrainStorage(
                     "PubSubStore",
                     options =>
@@ -238,14 +247,16 @@ namespace IngestTask.Server
                     x => x.UsePerfCounterEnvironmentStatistics())
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(HelloGrain).Assembly).WithReferences())
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
-                .UseDashboard(config => {
+                .UseDashboard(config =>
+                {
                     config.Port = int.Parse(context.Configuration.GetSection("Port").Value, CultureInfo.CurrentCulture);
                 });
 
         private static void ConfigureWebHostBuilder(IWebHostBuilder webHostBuilder) =>
             webHostBuilder
-                .UseKestrel((builderContext, options) => { 
-                    options.AddServerHeader = false; 
+                .UseKestrel((builderContext, options) =>
+                {
+                    options.AddServerHeader = false;
                     options.ListenAnyIP(int.Parse(builderContext.Configuration.GetSection("HealthCheckPort").Value, CultureInfo.CurrentCulture));
                 })
                 .UseStartup<Startup>();
@@ -268,7 +279,7 @@ namespace IngestTask.Server
                     args is object,
                     x => x.AddCommandLine(args));
 
-       
+
         private static void CreateLogger(IHost host)
         {
             var logConfig = host.Services.GetRequiredService<IConfiguration>().GetSection("Logging");
@@ -331,7 +342,7 @@ namespace IngestTask.Server
                 path = AppDomain.CurrentDomain.BaseDirectory.Replace("\\", "/") + "/" + fileName;
             }
 
-            StartLogger.Error($"path : {path}, {File.Exists(path)} ");
+            Console.WriteLine($"path : {path}, {File.Exists(path)} ");
             if (File.Exists(path))
             {
                 try
