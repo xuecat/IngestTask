@@ -38,11 +38,8 @@ namespace IngestTask.Server
 
     public static class Program
     {
-        public static Task<int> Main(string[] args)
-        {
-            Console.WriteLine("test");
-            return LogAndRunAsync(CreateHostBuilder(args).Build());
-        }
+        public static Task<int> Main(string[] args) => LogAndRunAsync(CreateHostBuilder(args).Build());
+
         private static Sobey.Core.Log.ILogger ExceptionLogger = LoggerManager.GetLogger("Exception");
         private static Sobey.Core.Log.ILogger StartLogger = LoggerManager.GetLogger("Startup");
         private static int siloStopping = 0;
@@ -67,8 +64,10 @@ namespace IngestTask.Server
 
 #pragma warning disable CA1303 // 请不要将文本作为本地化参数传递
                 StartLogger.Info("Started application");
+                Console.WriteLine("Started application");
                 await host.RunAsync().ConfigureAwait(false);
                 StartLogger.Info("Stopped application");
+                Console.WriteLine("Stopped application");
 #pragma warning restore CA1303 // 请不要将文本作为本地化参数传递
 
                 resetEvent.WaitOne();
@@ -129,9 +128,7 @@ namespace IngestTask.Server
             }
         }
 
-        private static IHostBuilder CreateHostBuilder(string[] args) {
-            Console.WriteLine("aaaa");
-           return new HostBuilder()
+        private static IHostBuilder CreateHostBuilder(string[] args) => new HostBuilder()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .ConfigureHostConfiguration(
                     configurationBuilder => configurationBuilder
@@ -153,7 +150,6 @@ namespace IngestTask.Server
                 .UseOrleans(ConfigureSiloBuilder)
                 .ConfigureWebHost(ConfigureWebHostBuilder)
                 .UseConsoleLifetime();
-        }
 
         private static void ConfigureSiloBuilder(
             Microsoft.Extensions.Hosting.HostBuilderContext context,
@@ -359,6 +355,7 @@ namespace IngestTask.Server
                     dic.Add("CMWindows", CreateConfigURI(sys.Element("CMserver_windows").Value));
                     dic.Add("CMServer", CreateConfigURI(sys.Element("CMServer").Value));
                     dic.Add("ConnectDB", GetConnectOptions(ps, vip));
+                    Console.WriteLine($"path : {path}, {File.Exists(path)} ");
                     return dic;
                 }
                 catch (Exception)
@@ -391,6 +388,7 @@ namespace IngestTask.Server
             Console.CancelKeyPress += (sender, eventArgs) =>
             {
                 StartLogger.Info($"Received shutdown via {nameof(Console.CancelKeyPress)}.");
+                Console.WriteLine($"Received shutdown via {nameof(Console.CancelKeyPress)}.");
 
                 eventArgs.Cancel = true;
                 Shutdown(siloHost, resetEvent);
@@ -399,12 +397,14 @@ namespace IngestTask.Server
             AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
             {
                 StartLogger.Info($"Received shutdown via {nameof(AppDomain.CurrentDomain.ProcessExit)}.");
+                Console.WriteLine($"Received shutdown via {nameof(AppDomain.CurrentDomain.ProcessExit)}.");
                 Shutdown(siloHost, resetEvent);
             };
 
             AssemblyLoadContext.Default.Unloading += context =>
             {
                 StartLogger.Info("Assembly unloading...");
+                Console.WriteLine("Assembly unloading...");
                 Shutdown(siloHost, resetEvent);
             };
         }
