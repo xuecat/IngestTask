@@ -44,7 +44,7 @@ namespace IngestTask.Server
         public static Task<int> Main(string[] args) => LogAndRunAsync(CreateHostBuilder(args).Build());
 
         private static Sobey.Core.Log.ILogger ExceptionLogger = LoggerManager.GetLogger("Exception");
-        private static Sobey.Core.Log.ILogger StartLogger = LoggerManager.GetLogger("Startup");
+        private static Sobey.Core.Log.ILogger StartLogger = LoggerManager.GetLogger("Main");
         private static int siloStopping = 0;
         public static async Task<int> LogAndRunAsync(IHost host)
         {
@@ -55,7 +55,12 @@ namespace IngestTask.Server
 
             StartLogger.Info("start");
             StartLogger.Info("dns name:"+Dns.GetHostName());
-            StartLogger.Info((await Dns.GetHostEntryAsync(Dns.GetHostName()).ConfigureAwait(true)).AddressList.ToString());
+            var lst = (await Dns.GetHostEntryAsync(Dns.GetHostName()).ConfigureAwait(true)).AddressList;
+            foreach (var item in lst)
+            {
+                StartLogger.Info(item.ToString());
+            }
+            
 
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             AppDomain.CurrentDomain.FirstChanceException += CurrentDomain_FirstChanceException;
