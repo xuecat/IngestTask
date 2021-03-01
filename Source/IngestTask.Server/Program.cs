@@ -43,8 +43,8 @@ namespace IngestTask.Server
     {
         public static Task<int> Main(string[] args) => LogAndRunAsync(CreateHostBuilder(args).Build());
 
-        private static Sobey.Core.Log.ILogger ExceptionLogger = LoggerManager.GetLogger("Exception");
-        private static Sobey.Core.Log.ILogger StartLogger = LoggerManager.GetLogger("Main");
+        private static Sobey.Core.Log.ILogger ExceptionLogger = null;
+        private static Sobey.Core.Log.ILogger StartLogger = null;
         private static int siloStopping = 0;
         public static async Task<int> LogAndRunAsync(IHost host)
         {
@@ -53,15 +53,6 @@ namespace IngestTask.Server
                 throw new ArgumentNullException(nameof(host));
             }
 
-            StartLogger.Info("start");
-            StartLogger.Info("dns name:"+Dns.GetHostName());
-            var lst = (await Dns.GetHostEntryAsync(Dns.GetHostName()).ConfigureAwait(true)).AddressList;
-            foreach (var item in lst)
-            {
-                StartLogger.Info(item.ToString());
-            }
-            
-
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             AppDomain.CurrentDomain.FirstChanceException += CurrentDomain_FirstChanceException;
 
@@ -69,8 +60,19 @@ namespace IngestTask.Server
                 Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>().Product;
 
             CreateLogger(host);
+
+            ExceptionLogger = LoggerManager.GetLogger("Exception");
+            StartLogger = LoggerManager.GetLogger("Main");
             try
             {
+                StartLogger.Info("start");
+                StartLogger.Info("dns name:" + Dns.GetHostName());
+                var lst = (await Dns.GetHostEntryAsync(Dns.GetHostName()).ConfigureAwait(true)).AddressList;
+                foreach (var item in lst)
+                {
+                    StartLogger.Info(item.ToString());
+                }
+
                 var resetEvent = new ManualResetEvent(false);
                 ConfigureShutdown(host, resetEvent);
 
