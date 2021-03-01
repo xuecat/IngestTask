@@ -36,6 +36,8 @@ namespace IngestTask.Server
     using System.Net.Http;
     using OrleansDashboard.Abstraction;
     using System.Net;
+    using System.Linq;
+    using System.Net.Sockets;
 
     public static class Program
     {
@@ -202,9 +204,9 @@ namespace IngestTask.Server
                         options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                     })
                 .ConfigureEndpoints(
+                    Dns.GetHostEntry(Dns.GetHostName()).AddressList.FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork),
                     EndpointOptions.DEFAULT_SILO_PORT,
-                    EndpointOptions.DEFAULT_GATEWAY_PORT,
-                    listenOnAnyHostAddress: true/*!context.HostingEnvironment.IsDevelopment()*/
+                    EndpointOptions.DEFAULT_GATEWAY_PORT
                 )
                 //
                 .AddAdoNetGrainStorageAsDefault(
