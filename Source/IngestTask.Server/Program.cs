@@ -168,20 +168,15 @@ namespace IngestTask.Server
             ISiloBuilder siloBuilder) =>
             siloBuilder
                 .Configure<SerializationProviderOptions>(opt => opt.SerializationProviders.Add(typeof(ProtobufNetSerializer).GetTypeInfo()))
-            .Configure<EndpointOptions>(options =>
-            {
-                // Port to use for Silo-to-Silo
-                options.SiloPort = 11111;
-                // Port to use for the gateway
-                options.GatewayPort = 30000;
-                // IP Address to advertise in the cluster
-                options.AdvertisedIPAddress = IPAddress.Parse("172.16.128.96");
-                // The socket used for silo-to-silo will bind to this endpoint
-                options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
-                // The socket used by the gateway will bind to this endpoint
-                options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
-            })
-            .ConfigureServices(
+                .Configure<EndpointOptions>(options =>
+                {
+                    options.SiloPort = 11111;
+                    options.GatewayPort = 30000;
+                    options.AdvertisedIPAddress = IPAddress.Parse("172.16.128.96");
+                    options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
+                    options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
+                })
+                .ConfigureServices(
                     (context, services) =>
                     {
                         var CircuitBreakerOpenTriggerCount = context.Configuration.GetSection("PollySetting:CircuitBreakerOpenTriggerCount").Get<int>();
