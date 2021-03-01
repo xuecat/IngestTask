@@ -54,7 +54,7 @@ namespace IngestTask.Server
             }
 
             StartLogger.Info("start");
-            StartLogger.Info( "dns name:"+Dns.GetHostName());
+            StartLogger.Info("dns name:"+Dns.GetHostName());
             StartLogger.Info((await Dns.GetHostEntryAsync(Dns.GetHostName()).ConfigureAwait(true)).AddressList.ToString());
 
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -72,6 +72,7 @@ namespace IngestTask.Server
 #pragma warning disable CA1303 // 请不要将文本作为本地化参数传递
                 StartLogger.Info("Started application");
                 Console.WriteLine("Started application");
+                Console.WriteLine("dns name:" + Dns.GetHostName());
                 await host.RunAsync().ConfigureAwait(false);
                 StartLogger.Info("Stopped application");
                 Console.WriteLine("Stopped application");
