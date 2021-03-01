@@ -91,6 +91,16 @@ namespace IngestTask.Tool.Msv
             tmptaskparam.isPlanMode = true;
             tmptaskparam.tmBeg = pTaskparam.tmBeg;
         }
+
+        private bool IsTestDevice(string ip, int port)
+        {
+            if (port == 110)
+            {
+                return true;
+            }
+            return false;
+        }
+
         public async Task<SDISignalStatus> QuerySDIFormatAsync(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
         {
            
@@ -314,12 +324,14 @@ namespace IngestTask.Tool.Msv
             }
         }
 
-        public async Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, Sobey.Core.Log.ILogger logger)
+        public async Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, /*int taskid,*/ Sobey.Core.Log.ILogger logger)
         {
             logger.Info($"MsvSDK prepare QueryTaskState(ip={strMsvIP})");
             try
             {
-                TASK_PARAM info = await _clientSdk.MSVQueryRuningTaskAsync(strMsvIP,  nChPort, logger).ConfigureAwait(true);
+                TASK_PARAM info = IsTestDevice(strMsvIP, nChPort) ?
+                    await _clientSdk.Test_MSVQueryRuningTaskAsync(strMsvIP, nChPort, 0, logger).ConfigureAwait(true)
+                    : await _clientSdk.MSVQueryRuningTaskAsync(strMsvIP,  nChPort, logger).ConfigureAwait(true);
 
                 if (info == null)
                 {

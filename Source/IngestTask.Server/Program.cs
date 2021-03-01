@@ -35,6 +35,7 @@ namespace IngestTask.Server
     using Orleans.Runtime.Placement;
     using System.Net.Http;
     using OrleansDashboard.Abstraction;
+    using System.Net;
 
     public static class Program
     {
@@ -196,11 +197,11 @@ namespace IngestTask.Server
                         options.Invariant = "MySql.Data.MySqlClient";
                         options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                     })
-                
                 .ConfigureEndpoints(
                     EndpointOptions.DEFAULT_SILO_PORT,
                     EndpointOptions.DEFAULT_GATEWAY_PORT,
-                    listenOnAnyHostAddress: !context.HostingEnvironment.IsDevelopment())
+                    listenOnAnyHostAddress: true/*!context.HostingEnvironment.IsDevelopment()*/
+                )
                 //
                 .AddAdoNetGrainStorageAsDefault(
                     options =>

@@ -2391,6 +2391,15 @@ namespace IngestTask.Tool.Msv
             
 
         }
+
+        /// <summary>
+        /// 从上层调用看他们只关心taskid的返回
+        /// </summary>
+        /// <returns></returns>
+        public Task<TASK_PARAM> Test_MSVQueryRuningTaskAsync(string strMsvIp, int nChannel, int taskid, Sobey.Core.Log.ILogger logger)
+        {
+            return Task.FromResult(new TASK_PARAM() { ulID = taskid });
+        }
         /**********************************************************************************
             描述: 查询当前运行任务  返回任务的常规参数
         ***********************************************************************************/
