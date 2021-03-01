@@ -175,7 +175,7 @@ namespace IngestTask.Server
                 // Port to use for the gateway
                 options.GatewayPort = 30000;
                 // IP Address to advertise in the cluster
-                options.AdvertisedIPAddress = Dns.GetHostEntry(Dns.GetHostName()).AddressList.LastOrDefault();
+                options.AdvertisedIPAddress = IPAddress.Parse("172.16.128.96");
                 // The socket used for silo-to-silo will bind to this endpoint
                 options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
                 // The socket used by the gateway will bind to this endpoint
