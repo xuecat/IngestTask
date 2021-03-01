@@ -168,7 +168,20 @@ namespace IngestTask.Server
             ISiloBuilder siloBuilder) =>
             siloBuilder
                 .Configure<SerializationProviderOptions>(opt => opt.SerializationProviders.Add(typeof(ProtobufNetSerializer).GetTypeInfo()))
-                .ConfigureServices(
+            .Configure<EndpointOptions>(options =>
+            {
+                // Port to use for Silo-to-Silo
+                options.SiloPort = 11111;
+                // Port to use for the gateway
+                options.GatewayPort = 30000;
+                // IP Address to advertise in the cluster
+                options.AdvertisedIPAddress = Dns.GetHostEntry(Dns.GetHostName()).AddressList.LastOrDefault();
+                // The socket used for silo-to-silo will bind to this endpoint
+                options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
+                // The socket used by the gateway will bind to this endpoint
+                options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
+            })
+            .ConfigureServices(
                     (context, services) =>
                     {
                         var CircuitBreakerOpenTriggerCount = context.Configuration.GetSection("PollySetting:CircuitBreakerOpenTriggerCount").Get<int>();
@@ -212,11 +225,11 @@ namespace IngestTask.Server
                         options.Invariant = "MySql.Data.MySqlClient";
                         options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                     })
-                .ConfigureEndpoints(
-                    Dns.GetHostName(),
-                    EndpointOptions.DEFAULT_SILO_PORT,
-                    EndpointOptions.DEFAULT_GATEWAY_PORT
-                )
+                //.ConfigureEndpoints(
+                //    Dns.GetHostName(),
+                //    EndpointOptions.DEFAULT_SILO_PORT,
+                //    EndpointOptions.DEFAULT_GATEWAY_PORT
+                //)
                 //
                 .AddAdoNetGrainStorageAsDefault(
                     options =>
