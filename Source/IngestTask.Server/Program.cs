@@ -53,6 +53,7 @@ namespace IngestTask.Server
                 throw new ArgumentNullException(nameof(host));
             }
 
+            StartLogger.Info("start");
             StartLogger.Info( "dns name:"+Dns.GetHostName());
             StartLogger.Info((await Dns.GetHostEntryAsync(Dns.GetHostName()).ConfigureAwait(true)).AddressList.ToString());
 
