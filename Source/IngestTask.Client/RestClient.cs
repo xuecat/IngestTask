@@ -15,8 +15,9 @@ namespace IngestTask.Client
     {
         
         private HttpClient _httpClient = null;
-        const string TASKAPI20 = "api/v2/task";
-        const string TASKAPI21 = "api/v2.1/task";
+        //const string TASKAPI20 = "api/v2/task";
+        //const string TASKAPI21 = "api/v2.1/task";
+        const string TASKAPI30 = "api/v3/task";
         //const string MATRIXAPI20 = "api/v2/matrix";
         //const string USERAPI20 = "api/v2/user";
         //const string DEVICEAPI21 = "api/v2.1/device";
@@ -540,7 +541,9 @@ namespace IngestTask.Client
         public async Task<List<TaskContent>> GetNeedSyncTaskListAsync()
         {
             var back = await GetAsync<ResponseMessage<List<TaskContent>>>(
-                    $"{_ingestDbUrl}/{TASKAPI20}/needsync", null, GetIngestHeader()
+                    //$"{_ingestDbUrl}/{TASKAPI20}/needsync"
+                    $"{_ingestDbUrl}/{TASKAPI30}/sync/ready"
+                    , null, GetIngestHeader()
                     ).ConfigureAwait(true);
 
             if (back != null)
@@ -552,7 +555,7 @@ namespace IngestTask.Client
         public async Task<DispatchTask> GetTaskDBAsync(int taskid)
         {
             var back = await GetAsync<ResponseMessage<DispatchTask>>(
-                    $"{_ingestDbUrl}/{TASKAPI21}/db/{taskid}", null, GetIngestHeader()
+                    $"{_ingestDbUrl}/{TASKAPI30}/db/{taskid}", null, GetIngestHeader()
                     ).ConfigureAwait(true);
 
             if (back != null)

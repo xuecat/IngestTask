@@ -18,12 +18,14 @@ namespace IngestTask.Tool
         private readonly ILogger Logger = LoggerManager.GetLogger("ApiClient");
 
         private HttpClient _httpClient = null;
-        const string TASKAPI20 = "api/v2/task";
+        //const string TASKAPI20 = "api/v2/task";
         const string TASKAPI30 = "api/v3/task";
-        const string MATRIXAPI20 = "api/v2/matrix";
-        const string USERAPI20 = "api/v2/user";
+        //const string MATRIXAPI20 = "api/v2/matrix";
+        const string MATRIXAPI30 = "api/v3/matrix";
+        //const string USERAPI20 = "api/v2/user";
+        const string USERAPI30 = "api/v3/user";
         const string DEVICEAPI30 = "api/v3/device";
-        const string DEVICEAPI20 = "api/v2/device";
+        //const string DEVICEAPI20 = "api/v2/device";
 
         private string IngestDbUrl { get; set; }
         private string CmServerUrl { get; set; }
@@ -542,7 +544,9 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<UserLoginInfo>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<UserLoginInfo>>>(
-                    $"{IngestDbUrl}/{USERAPI20}/userlogininfo/all", null, GetIngestHeader()
+                    //$"{IngestDbUrl}/{USERAPI20}/userlogininfo/all"
+                    $"{IngestDbUrl}/{USERAPI30}/logininfo"
+                    , null, GetIngestHeader()
                     );
             }).ConfigureAwait(true);
 
@@ -560,7 +564,9 @@ namespace IngestTask.Tool
         {
             var back = await AutoRetry.RunAsync<ResponseMessage<List<TaskContent>>>(() => {
                 return GetAsync<ResponseMessage<List<TaskContent>>>(
-                    $"{IngestDbUrl}/{TASKAPI20}/needsync", null, GetIngestHeader()
+                    //$"{IngestDbUrl}/{TASKAPI20}/needsync"
+                    $"{IngestDbUrl}/{TASKAPI30}/sync/ready"
+                    , null, GetIngestHeader()
                     );
             }).ConfigureAwait(true);
 
@@ -578,7 +584,7 @@ namespace IngestTask.Tool
                 v.Add("newest", "1");
 
                 return GetAsync<ResponseMessage<TaskContent>>(
-                    $"{IngestDbUrl}/{TASKAPI20}/capturing/{channelid}", v, GetIngestHeader()
+                    $"{IngestDbUrl}/{TASKAPI30}/capturing/{channelid}", v, GetIngestHeader()
                     );
             }).ConfigureAwait(true);
 
@@ -594,8 +600,9 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<TaskSource>>(() =>
             {
                 return GetAsync<ResponseMessage<TaskSource>>(
-                    $"{IngestDbUrl}/{TASKAPI20}/tasksource/{taskid}",
-                    null, GetIngestHeader());
+                    //$"{IngestDbUrl}/{TASKAPI20}/tasksource/{taskid}"
+                    $"{IngestDbUrl}/{TASKAPI30}/{taskid}/tasksource"
+                    ,null, GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null)
@@ -649,7 +656,8 @@ namespace IngestTask.Tool
                 };
 
                 return PutAsync<ResponseMessage>(
-                    $"{IngestDbUrl}/{TASKAPI20}/completesync",
+                    //$"{IngestDbUrl}/{TASKAPI20}/completesync",
+                    $"{IngestDbUrl}/{TASKAPI30}/sync/complete",
                     task, GetIngestHeader());
             }).ConfigureAwait(true);
 
@@ -665,7 +673,8 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage>(() =>
             {
                 return DeleteAsync<ResponseMessage>(
-                    $"{IngestDbUrl}/{TASKAPI20}/delete/{taskid}",
+                    //$"{IngestDbUrl}/{TASKAPI20}/delete/{taskid}",
+                    $"{IngestDbUrl}/{TASKAPI30}/{taskid}",
                     GetIngestHeader());
             }).ConfigureAwait(true);
 
@@ -684,8 +693,9 @@ namespace IngestTask.Tool
                 v.Add("state", ((int)tkstate).ToString());
 
                 return PutAsync<ResponseMessage<int>>(
-                    $"{IngestDbUrl}/{TASKAPI20}/state/{taskid}",null,
-                    GetIngestHeader(), v);
+                    //$"{IngestDbUrl}/{TASKAPI20}/state/{taskid}"
+                    $"{IngestDbUrl}/{TASKAPI30}/{taskid}/state"
+                    , null,GetIngestHeader(), v);
             }).ConfigureAwait(true);
 
             if (back != null && back.IsSuccess())
@@ -701,8 +711,9 @@ namespace IngestTask.Tool
             {
                
                 return PostAsync<ResponseMessage<TaskContent>>(
-                    $"{IngestDbUrl}/{TASKAPI20}/periodic/createtask/{taskid}", null,
-                    GetIngestHeader());
+                    //$"{IngestDbUrl}/{TASKAPI20}/periodic/createtask/{taskid}"
+                    $"{IngestDbUrl}/{TASKAPI30}/periodic/{taskid}"
+                    , null, GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null && back.IsSuccess())
@@ -756,7 +767,8 @@ namespace IngestTask.Tool
                 query.Add("inport", inport.ToString());
                 query.Add("outport", outport.ToString());
                 return GetAsync<ResponseMessage<bool>>(
-                    $"{IngestDbUrl}/{MATRIXAPI20}/switch/",
+                    //$"{IngestDbUrl}/{MATRIXAPI20}/switch/",
+                    $"{IngestDbUrl}/{MATRIXAPI30}/switch/",
                     query,
                     GetIngestHeader());
             }).ConfigureAwait(true);
@@ -776,7 +788,8 @@ namespace IngestTask.Tool
                 query.Add("signal", signalid.ToString());
                 query.Add("channel", channelid.ToString());
                 return GetAsync<ResponseMessage<bool>>(
-                    $"{IngestDbUrl}/{MATRIXAPI20}/switchsignalchannel/",
+                    //$"{IngestDbUrl}/{MATRIXAPI20}/switchsignalchannel/",
+                    $"{IngestDbUrl}/{MATRIXAPI30}/switch/signalchannel",
                     query,
                     GetIngestHeader());
             }).ConfigureAwait(true);
@@ -797,7 +810,8 @@ namespace IngestTask.Tool
                 query.Add("channelid", channelid.ToString());
                 query.Add("url", url);
                 return GetAsync<ResponseMessage<bool>>(
-                    $"{IngestDbUrl}/{MATRIXAPI20}/switchchannelrtmpurl/",
+                    //$"{IngestDbUrl}/{MATRIXAPI20}/switchchannelrtmpurl/",
+                    $"{IngestDbUrl}/{MATRIXAPI30}/switch/channelrtmpurl",
                     query,
                     GetIngestHeader());
             }).ConfigureAwait(true);
@@ -818,7 +832,8 @@ namespace IngestTask.Tool
                 query.Add("outport", outport.ToString());
                 query.Add("url", url);
                 return GetAsync<ResponseMessage<bool>>(
-                    $"{IngestDbUrl}/{MATRIXAPI20}/switchrtmpurl/",
+                    //$"{IngestDbUrl}/{MATRIXAPI20}/switchrtmpurl/",
+                    $"{IngestDbUrl}/{MATRIXAPI30}/switch/rtmpurl",
                     query,
                     GetIngestHeader());
             }).ConfigureAwait(true);
@@ -837,8 +852,9 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<CaptureChannelInfo>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<CaptureChannelInfo>>>(
-                    $"{IngestDbUrl}/{DEVICEAPI20}/capturechannel/all", null, GetIngestHeader()
-                    );
+                    //$"{IngestDbUrl}/{DEVICEAPI20}/capturechannel/all"
+                    $"{IngestDbUrl}/{DEVICEAPI30}/channel"
+                    , null, GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null)
@@ -853,8 +869,9 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<SignalSrc>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<SignalSrc>>>(
-                    $"{IngestDbUrl}/{DEVICEAPI20}/signalsrc/all", null, GetIngestHeader()
-                    );
+                    //$"{IngestDbUrl}/{DEVICEAPI20}/signalsrc/all"
+                    $"{IngestDbUrl}/{DEVICEAPI30}/signal"
+                    , null, GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null)
@@ -869,8 +886,9 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<MsvChannelState>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<MsvChannelState>>>(
-                    $"{IngestDbUrl}/{DEVICEAPI20}/channelstate/all", null, GetIngestHeader()
-                    );
+                    //$"{IngestDbUrl}/{DEVICEAPI20}/channelstate/all"
+                    $"{IngestDbUrl}/{DEVICEAPI30}/channel/state"
+                    , null, GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null)
@@ -885,8 +903,9 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<ProgrammeInfo>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<ProgrammeInfo>>>(
-                    $"{IngestDbUrl}/{DEVICEAPI20}/programme/all", null, GetIngestHeader()
-                    );
+                    //$"{IngestDbUrl}/{DEVICEAPI20}/programme/all"
+                    $"{IngestDbUrl}/{DEVICEAPI30}/signal/group"
+                    , null, GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null)
@@ -900,7 +919,8 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
             {
                 return PostAsync<ResponseMessage<bool>>(
-                    $"{IngestDbUrl}/{DEVICEAPI20}/channelstate/{id}", 
+                    //$"{IngestDbUrl}/{DEVICEAPI20}/channelstate/{id}",
+                    $"{IngestDbUrl}/{DEVICEAPI30}/channel/{id}/state",
                     new { DevState = state, MSVMode = mode }, GetIngestHeader());
             }).ConfigureAwait(true);
 
