@@ -346,7 +346,7 @@ namespace IngestTask.Server
                 path = AppDomain.CurrentDomain.BaseDirectory.Replace("\\", "/") + "/" + fileName;
             }
 
-            Console.WriteLine($"path : {path}, {File.Exists(path)} ");
+            StartLogger.Info($"path : {path}, {File.Exists(path)} ");
             if (File.Exists(path))
             {
                 try
@@ -363,7 +363,7 @@ namespace IngestTask.Server
                     dic.Add("CMWindows", CreateConfigURI(sys.Element("CMserver_windows").Value));
                     dic.Add("CMServer", CreateConfigURI(sys.Element("CMServer").Value));
                     dic.Add("ConnectDB", GetConnectOptions(ps, vip));
-                    Console.WriteLine($"path : {path}, {File.Exists(path)} ");
+                    StartLogger.Info($"path : {path}, {File.Exists(path)} ");
                     return dic;
                 }
                 catch (Exception)

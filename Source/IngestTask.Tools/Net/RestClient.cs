@@ -34,6 +34,7 @@ namespace IngestTask.Tool
         public RestClient(HttpClient httpClient, string ingesturl, string cmurl)
         {
             _disposed = false;
+            Logger.Info("rest ip:"+ingesturl+cmurl);
             _httpClient = httpClient != null? httpClient : new HttpClient();
             _httpClient.DefaultRequestHeaders.Connection.Clear();
             _httpClient.DefaultRequestHeaders.ConnectionClose = false;
