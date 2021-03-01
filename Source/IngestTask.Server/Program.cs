@@ -53,6 +53,9 @@ namespace IngestTask.Server
                 throw new ArgumentNullException(nameof(host));
             }
 
+            StartLogger.Info(Dns.GetHostName());
+            StartLogger.Info((await Dns.GetHostEntryAsync(Dns.GetHostName()).ConfigureAwait(true)).AddressList.ToString());
+
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             AppDomain.CurrentDomain.FirstChanceException += CurrentDomain_FirstChanceException;
 
