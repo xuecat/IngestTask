@@ -213,7 +213,7 @@ namespace IngestTask.Server
                         options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                     })
                 .ConfigureEndpoints(
-                    Dns.GetHostEntry(Dns.GetHostName()).AddressList.LastOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork),
+                    IPAddress.Parse("172.16.128.96"),
                     EndpointOptions.DEFAULT_SILO_PORT,
                     EndpointOptions.DEFAULT_GATEWAY_PORT
                 )
