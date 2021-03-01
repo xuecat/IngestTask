@@ -60,9 +60,6 @@ namespace IngestTask.Server
                 Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>().Product;
 
             CreateLogger(host);
-
-            ExceptionLogger = LoggerManager.GetLogger("Exception");
-            StartLogger = LoggerManager.GetLogger("Main");
             try
             {
                 StartLogger.Info("start");
@@ -321,6 +318,9 @@ namespace IngestTask.Server
                 //TargetConsole = false
             });
             LoggerManager.SetLoggerAboveLevels(logLevel);
+
+            ExceptionLogger = LoggerManager.GetLogger("Exception");
+            StartLogger = LoggerManager.GetLogger("Main");
         }
 
         private static void ConfigureJsonSerializerSettings(JsonSerializerSettings jsonSerializerSettings)
@@ -353,7 +353,7 @@ namespace IngestTask.Server
                 path = AppDomain.CurrentDomain.BaseDirectory.Replace("\\", "/") + "/" + fileName;
             }
 
-            StartLogger.Info($"path : {path}, {File.Exists(path)} ");
+            Console.WriteLine($"path : {path}, {File.Exists(path)} ");
             if (File.Exists(path))
             {
                 try
@@ -370,7 +370,7 @@ namespace IngestTask.Server
                     dic.Add("CMWindows", CreateConfigURI(sys.Element("CMserver_windows").Value));
                     dic.Add("CMServer", CreateConfigURI(sys.Element("CMServer").Value));
                     dic.Add("ConnectDB", GetConnectOptions(ps, vip));
-                    StartLogger.Info($"path : {path}, {File.Exists(path)} ");
+                    Console.WriteLine($"path : {path}, {File.Exists(path)} ");
                     return dic;
                 }
                 catch (Exception)
