@@ -62,14 +62,7 @@ namespace IngestTask.Server
             CreateLogger(host);
             try
             {
-                StartLogger.Info("start");
-                StartLogger.Info("dns name:" + Dns.GetHostName());
-                var lst = (await Dns.GetHostEntryAsync(Dns.GetHostName()).ConfigureAwait(true)).AddressList;
-                foreach (var item in lst)
-                {
-                    StartLogger.Info(item.ToString());
-                }
-
+               
                 var resetEvent = new ManualResetEvent(false);
                 ConfigureShutdown(host, resetEvent);
 
@@ -170,9 +163,15 @@ namespace IngestTask.Server
                 .Configure<SerializationProviderOptions>(opt => opt.SerializationProviders.Add(typeof(ProtobufNetSerializer).GetTypeInfo()))
                 .Configure<EndpointOptions>(options =>
                 {
+                    var lst = Dns.GetHostEntry("appnode").AddressList;
+                    foreach (var item in lst)
+                    {
+                        Console.WriteLine(item.ToString());
+                    }
+
                     options.SiloPort = 11111;
                     options.GatewayPort = 30000;
-                    options.AdvertisedIPAddress = IPAddress.Parse("172.16.128.96");
+                    options.AdvertisedIPAddress = Dns.GetHostAddresses("appnode").First();
                     options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
                     options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
                 })
