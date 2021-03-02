@@ -161,7 +161,9 @@ namespace IngestTask.Server
             ISiloBuilder siloBuilder) =>
             siloBuilder
                 .Configure<SerializationProviderOptions>(opt => opt.SerializationProviders.Add(typeof(ProtobufNetSerializer).GetTypeInfo()))
-                .Configure<EndpointOptions>(options =>
+#if DEBUG
+#else
+            .Configure<EndpointOptions>(options =>
                 {
                     var lst = Dns.GetHostEntry("appnode").AddressList;
                     foreach (var item in lst)
@@ -175,6 +177,8 @@ namespace IngestTask.Server
                     options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
                     options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
                 })
+
+#endif
                 .ConfigureServices(
                     (context, services) =>
                     {
@@ -219,12 +223,12 @@ namespace IngestTask.Server
                         options.Invariant = "MySql.Data.MySqlClient";
                         options.ConnectionString = context.Configuration.GetSection("ConnectDB").Value;
                     })
-                //.ConfigureEndpoints(
-                //    Dns.GetHostName(),
-                //    EndpointOptions.DEFAULT_SILO_PORT,
-                //    EndpointOptions.DEFAULT_GATEWAY_PORT
-                //)
-                //
+#if DEBUG
+                 .ConfigureEndpoints(
+                        EndpointOptions.DEFAULT_SILO_PORT,
+                        EndpointOptions.DEFAULT_GATEWAY_PORT
+                    )
+#endif
                 .AddAdoNetGrainStorageAsDefault(
                     options =>
                     {
