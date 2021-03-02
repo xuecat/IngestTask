@@ -161,9 +161,13 @@ namespace IngestTask.Server
             ISiloBuilder siloBuilder) =>
             siloBuilder
                 .Configure<SerializationProviderOptions>(opt => opt.SerializationProviders.Add(typeof(ProtobufNetSerializer).GetTypeInfo()))
+                .Configure<ClusterMembershipOptions>(opt => {
+                    opt.DefunctSiloExpiration = TimeSpan.FromHours(1);
+                    opt.DefunctSiloCleanupPeriod = TimeSpan.FromHours(1);
+                })
 #if DEBUG
 #else
-            .Configure<EndpointOptions>(options =>
+                .Configure<EndpointOptions>(options =>
                 {
                     var lst = Dns.GetHostEntry("appnode").AddressList;
                     foreach (var item in lst)
