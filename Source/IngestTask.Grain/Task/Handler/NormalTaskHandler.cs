@@ -76,15 +76,26 @@ namespace IngestTask.Grain
 
             if (task.StartOrStop && task.OpType != opType.otDel)
             {
-                if (task.TaskContent.TaskType == TaskType.TT_MANUTASK)
+                if (task.TaskContent.TaskType == TaskType.TT_MANUTASK)//已经执行的手动任务不需要执行，未执行的手动任务需要继续执行
                 {
-                    await UnlockTaskAsync(taskid, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
-                    return taskid;
+                    if (task.TaskContent.State == taskState.tsExecuting || task.TaskContent.State == taskState.tsManuexecuting)
+                    {
+                        await UnlockTaskAsync(taskid, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
+                        return taskid;
+                    }
                 }
                 else if (task.TaskContent.TaskType == TaskType.TT_TIEUP)
                 {
                     await HandleTieupTaskAsync(task.TaskContent);
                     return taskid;
+                }
+                else
+                {
+                    if (DateTimeFormat.DateTimeFromString(task.TaskContent.End) < DateTime.Now)//普通任务进行时间有效性判断, 
+                    {
+                        task.StartOrStop = false;//禁止监听任务
+                        return taskid;
+                    }
                 }
 
                 if (channel.CurrentDevState == Device_State.DISCONNECTTED)
@@ -127,10 +138,10 @@ namespace IngestTask.Grain
             }
             else
             {
+
                 Logger.Info($"task stop timespan {(DateTimeFormat.DateTimeFromString(task.TaskContent.End) - DateTime.Now).TotalSeconds}");
                 task.TaskContent.End = DateTimeFormat.DateTimeToString(DateTime.Now);
 
-                
                 if (task.TaskContent.TaskType != TaskType.TT_MANUTASK || 
                     (task.TaskContent.TaskType == TaskType.TT_MANUTASK && task.OpType == opType.otDel))
                 {

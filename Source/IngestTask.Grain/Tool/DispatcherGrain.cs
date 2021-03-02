@@ -39,7 +39,7 @@ namespace IngestTask.Grain
         {
             if (task != null && task.Tasktype != null 
                 && task.Taskid >0 && task.State != null && task.Endtime != null 
-                && task.Starttime != null && task.Endtime > task.Starttime)
+                && task.Starttime != null && task.Endtime > DateTime.MinValue)
             {
                 if (task.Tasktype != (int)TaskType.TT_PERIODIC)
                 {
@@ -57,23 +57,30 @@ namespace IngestTask.Grain
         {
             if (!TaskIsInvalid(task))
             {
-                if ((task.Starttime - DateTime.Now).TotalSeconds >
-                    taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < taskSchedulePrevious)//开始时间之前，结束时间之后，有效范围外的
+                if (task.Tasktype == (int)TaskType.TT_MANUTASK)
                 {
-                    //提交开始监听(监听会做有效时间判断)
-                    await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(task);
+                    var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
                 }
                 else
                 {
-                    var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
-                    if (!add)
+                    if ((task.Starttime - DateTime.Now).TotalSeconds >
+                    taskSchedulePrevious || (task.Endtime - DateTime.Now).TotalSeconds < taskSchedulePrevious)//开始时间之前，结束时间之后，有效范围外的
                     {
+                        //提交开始监听(监听会做有效时间判断)
                         await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(task);
                     }
-                    else//添加结束的监听
+                    else
                     {
-                        task.State = (int)taskState.tsExecuting;
-                        await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(task);
+                        var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
+                        if (!add)
+                        {
+                            await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(task);
+                        }
+                        else//添加结束的监听
+                        {
+                            task.State = (int)taskState.tsExecuting;
+                            await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(task);
+                        }
                     }
                 }
 

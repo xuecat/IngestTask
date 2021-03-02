@@ -68,10 +68,8 @@ namespace IngestTask.Grain
         {
             if (task != null && task.Tasktype != null
                 && task.Taskid > 0 && task.State != null && task.Endtime != null
-                && task.Starttime != null && task.Endtime > task.Starttime)
+                && task.Starttime != null && task.Endtime > DateTime.MinValue)
             {
-               
-
                 return false;
             }
             return true;
