@@ -330,7 +330,7 @@ namespace IngestTask.Server
                 LogFileTemplate = LogFileTemplates.PerDayDirAndLogger,
                 LogContentTemplate = LogLayoutTemplates.SimpleLayout,
                 DeleteDay = maxDays.ToString(CultureInfo.CurrentCulture),
-                //TargetConsole = false
+                TargetConsole = true
             });
             LoggerManager.SetLoggerAboveLevels(logLevel);
 
