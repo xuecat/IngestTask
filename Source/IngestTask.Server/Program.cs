@@ -177,7 +177,7 @@ namespace IngestTask.Server
 
                     options.SiloPort = 11111;
                     options.GatewayPort = 30000;
-                    options.AdvertisedIPAddress = Dns.GetHostAddresses("appnode").First();
+                    options.AdvertisedIPAddress = Dns.GetHostName();
                     options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
                     options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
                 })
