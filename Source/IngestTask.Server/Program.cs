@@ -216,23 +216,26 @@ namespace IngestTask.Server
 #else
                 .Configure<EndpointOptions>(options =>
                     {
-                        //var lst = Dns.GetHostEntry("appnode").AddressList;
-                        //foreach (var item in lst)
-                        //{
-                        //    Console.WriteLine(item.ToString());
-                        //}
-
-                        AWSContainerMetadata _awsContainerMetadata = new AWSContainerMetadata(
+                        var lst = Dns.GetHostEntry("appnode").AddressList;
+                        if (lst != null && lst.Length > 0)
+                        {
+                            options.AdvertisedIPAddress = lst.First();
+                        }
+                        else
+                        {
+                            AWSContainerMetadata _awsContainerMetadata = new AWSContainerMetadata(
                             new AWSContainerMetadataHttpClient(Microsoft.Extensions.Logging.Abstractions.NullLogger<AWSContainerMetadataHttpClient>.Instance),
                             Microsoft.Extensions.Logging.Abstractions.NullLogger<AWSContainerMetadata>.Instance
                             );
-                        
-                        var ipinfo = _awsContainerMetadata.GetHostPrivateIPv4Address() ?? Dns.GetHostAddresses(Dns.GetHostName()).First();
-                        Console.WriteLine("ingesttask ipinfo: "+ipinfo.ToString());
+
+                            var ipinfo = _awsContainerMetadata.GetHostPrivateIPv4Address() ?? Dns.GetHostAddresses(Dns.GetHostName()).First();
+                            options.AdvertisedIPAddress = ipinfo;
+                        }
+
+                        Console.WriteLine("ingesttask ipinfo: "+ options.AdvertisedIPAddress.ToString());
 
                         options.SiloPort = 11111;
                         options.GatewayPort = 30000;
-                        options.AdvertisedIPAddress = ipinfo;
                         options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
                         options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
                     })
