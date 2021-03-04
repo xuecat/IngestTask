@@ -38,6 +38,9 @@ namespace IngestTask.Server
     using System.Net;
     using System.Linq;
     using System.Net.Sockets;
+    using AWSECS.ContainerMetadata.Extensions;
+    using AWSECS.ContainerMetadata.Services;
+    using AWSECS.ContainerMetadata.Contracts;
 
     public static class Program
     {
@@ -46,6 +49,8 @@ namespace IngestTask.Server
         private static Sobey.Core.Log.ILogger ExceptionLogger = null;
         private static Sobey.Core.Log.ILogger StartLogger = null;
         private static int siloStopping = 0;
+
+
         public static async Task<int> LogAndRunAsync(IHost host)
         {
             if (host is null)
@@ -161,28 +166,6 @@ namespace IngestTask.Server
             ISiloBuilder siloBuilder) =>
             siloBuilder
                 .Configure<SerializationProviderOptions>(opt => opt.SerializationProviders.Add(typeof(ProtobufNetSerializer).GetTypeInfo()))
-                .Configure<ClusterMembershipOptions>(opt => {
-                    opt.DefunctSiloExpiration = TimeSpan.FromHours(1);
-                    opt.DefunctSiloCleanupPeriod = TimeSpan.FromHours(1);
-                })
-#if DEBUG
-#else
-                .Configure<EndpointOptions>(options =>
-                {
-                    var lst = Dns.GetHostEntry("appnode").AddressList;
-                    foreach (var item in lst)
-                    {
-                        Console.WriteLine(item.ToString());
-                    }
-
-                    options.SiloPort = 11111;
-                    options.GatewayPort = 30000;
-                    options.AdvertisedIPAddress = Dns.GetHostName();
-                    options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
-                    options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
-                })
-
-#endif
                 .ConfigureServices(
                     (context, services) =>
                     {
@@ -218,8 +201,43 @@ namespace IngestTask.Server
                         services.Configure<ClusterOptions>(opt => { opt.ClusterId = Cluster.ClusterId; opt.ServiceId = Cluster.ServiceId; });
                         services.AddSingletonNamedService<PlacementStrategy, ScheduleTaskPlacementStrategy>(nameof(ScheduleTaskPlacementStrategy));
                         services.AddSingletonKeyedService<Type, IPlacementDirector, ScheduleTaskPlacementSiloDirector>(typeof(ScheduleTaskPlacementStrategy));
+#if DEBUG
+#else
+                        services.AddAWSContainerMetadataService();
+#endif
                         //services.BuildServiceProvider();
                     })
+                .Configure<ClusterMembershipOptions>(opt =>
+                    {
+                        opt.DefunctSiloExpiration = TimeSpan.FromHours(1);
+                        opt.DefunctSiloCleanupPeriod = TimeSpan.FromHours(1);
+                    })
+#if DEBUG
+#else
+                .Configure<EndpointOptions>(options =>
+                    {
+                        //var lst = Dns.GetHostEntry("appnode").AddressList;
+                        //foreach (var item in lst)
+                        //{
+                        //    Console.WriteLine(item.ToString());
+                        //}
+
+                        AWSContainerMetadata _awsContainerMetadata = new AWSContainerMetadata(
+                            new AWSContainerMetadataHttpClient(Microsoft.Extensions.Logging.Abstractions.NullLogger<AWSContainerMetadataHttpClient>.Instance),
+                            Microsoft.Extensions.Logging.Abstractions.NullLogger<AWSContainerMetadata>.Instance
+                            );
+                        
+                        var ipinfo = _awsContainerMetadata.GetHostPrivateIPv4Address() ?? Dns.GetHostAddresses(Dns.GetHostName()).First();
+                        Console.WriteLine("ingesttask ipinfo: "+ipinfo.ToString());
+
+                        options.SiloPort = 11111;
+                        options.GatewayPort = 30000;
+                        options.AdvertisedIPAddress = ipinfo;
+                        options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
+                        options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
+                    })
+
+#endif
                 .UseSiloUnobservedExceptionsHandler()
                 .UseAdoNetClustering(
                     options =>
@@ -330,7 +348,7 @@ namespace IngestTask.Server
                 LogFileTemplate = LogFileTemplates.PerDayDirAndLogger,
                 LogContentTemplate = LogLayoutTemplates.SimpleLayout,
                 DeleteDay = maxDays.ToString(CultureInfo.CurrentCulture),
-#if DEBUG
+                #if DEBUG
 #else
                 TargetConsole = true
 #endif
