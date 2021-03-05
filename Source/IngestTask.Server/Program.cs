@@ -41,6 +41,7 @@ namespace IngestTask.Server
     using AWSECS.ContainerMetadata.Extensions;
     using AWSECS.ContainerMetadata.Services;
     using AWSECS.ContainerMetadata.Contracts;
+    using Sobey.Core.Xml;
 
     public static class Program
     {
@@ -441,9 +442,17 @@ namespace IngestTask.Server
             {
                 if (item.Attribute("module").Value.CompareTo("INGESTDB") == 0)
                 {
+                    string ip = string.Empty;
+                    if (item.IsExistsChild("Server"))
+                    {
+                        ip = item.Element("Server").Value;
+                    }
+                    else
+                        ip = vip;
+
                     return string.Format(
                 "Server={0};Port={4};Database={1};Uid={2};Pwd={3};Pooling=true;minpoolsize=0;maxpoolsize=40;SslMode=none;",
-                vip, item.Element("Instance").Value,
+                ip, item.Element("Instance").Value,
                 item.Element("Username").Value,
                 Base64SQL.Base64_Decode(item.Element("Password").Value),
                 item.Element("Port").Value);
