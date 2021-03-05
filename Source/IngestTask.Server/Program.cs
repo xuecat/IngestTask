@@ -216,10 +216,21 @@ namespace IngestTask.Server
 #else
                 .Configure<EndpointOptions>(options =>
                     {
-                        var lst = Dns.GetHostEntry("appnode").AddressList;
+                        IPAddress[] lst = null;
+                        try
+                        {
+                            lst = Dns.GetHostEntry("appnode").AddressList;
+                        }
+                        catch (Exception)
+                        {
+                            lst = null;
+                        }
+                        
                         if (lst != null && lst.Length > 0)
                         {
                             options.AdvertisedIPAddress = lst.First();
+                            options.SiloPort = EndpointOptions.DEFAULT_SILO_PORT;
+                            options.GatewayPort = EndpointOptions.DEFAULT_GATEWAY_PORT;
                         }
                         else
                         {
@@ -228,14 +239,18 @@ namespace IngestTask.Server
                             Microsoft.Extensions.Logging.Abstractions.NullLogger<AWSContainerMetadata>.Instance
                             );
 
-                            var ipinfo = _awsContainerMetadata.GetHostPrivateIPv4Address() ?? Dns.GetHostAddresses(Dns.GetHostName()).First();
-                            options.AdvertisedIPAddress = ipinfo;
+                            var awsContainerMetadata = _awsContainerMetadata.GetContainerMetadata();
+                            options.AdvertisedIPAddress = _awsContainerMetadata.GetHostPrivateIPv4Address() ?? Dns.GetHostAddresses(Dns.GetHostName()).First();
+
+                            options.SiloPort = awsContainerMetadata?.Ports?.FirstOrDefault(p => p.ContainerPort == 50000)?
+                            .HostPort ?? EndpointOptions.DEFAULT_SILO_PORT;
+
+                            options.GatewayPort = awsContainerMetadata?.Ports?.FirstOrDefault(p => p.ContainerPort == 40000)?
+                            .HostPort ?? EndpointOptions.DEFAULT_GATEWAY_PORT;
                         }
 
-                        Console.WriteLine("ingesttask ipinfo: "+ options.AdvertisedIPAddress.ToString());
-
-                        options.SiloPort = 11111;
-                        options.GatewayPort = 30000;
+                        Console.WriteLine("ingesttask ipinfo: "+ options.AdvertisedIPAddress.ToString() + options.SiloPort + options.GatewayPort);
+                       
                         options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
                         options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
                     })
