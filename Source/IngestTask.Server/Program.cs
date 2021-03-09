@@ -119,7 +119,7 @@ namespace IngestTask.Server
                             return;
                         }
                     }
-                    ExceptionLogger.Error("Exception: {0} {1}", e.Exception.ToString());
+                    ExceptionLogger.Error("Exception: {0} ", e.Exception.ToString());
                 }
             }
         }
@@ -221,8 +221,8 @@ namespace IngestTask.Server
                     })
                 .Configure<ClusterMembershipOptions>(opt =>
                     {
-                        opt.DefunctSiloExpiration = TimeSpan.FromHours(1);
-                        opt.DefunctSiloCleanupPeriod = TimeSpan.FromHours(1);
+                        opt.DefunctSiloExpiration = TimeSpan.FromMinutes(1);
+                        opt.DefunctSiloCleanupPeriod = TimeSpan.FromMinutes(1);
                     })
 #if DEBUG
 #else
