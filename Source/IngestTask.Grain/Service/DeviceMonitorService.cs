@@ -17,6 +17,7 @@ namespace IngestTask.Grain.Service
     using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading.Tasks;
 
@@ -35,7 +36,9 @@ namespace IngestTask.Grain.Service
         private readonly IGrainFactory _grainFactory;
         private string _grainKey;
 
-        public DeviceMonitorService(IServiceProvider services, IGrainIdentity id, Silo silo,
+        private readonly IMembershipTable membershipTableProvider;
+        private readonly ILocalSiloDetails localsilo;
+        public DeviceMonitorService(IMembershipTable member, ILocalSiloDetails localsilo, IGrainIdentity id, Silo silo,
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory,
             IGrainFactory grainFactory, MsvClientCtrlSDK msv, RestClient client)
             : base(id, silo, loggerFactory)
@@ -47,6 +50,8 @@ namespace IngestTask.Grain.Service
             _restClient = client;
             _grainFactory = grainFactory;
             _grainKey = string.Empty;
+            this.membershipTableProvider = member;
+            this.localsilo = localsilo;
         }
 
         public override Task Init(IServiceProvider serviceProvider)
@@ -86,6 +91,31 @@ namespace IngestTask.Grain.Service
                 _timer = null;
             }
             await _grainFactory.GetGrain<IDeviceInspections>(0).QuitServiceAsync(_grainKey);
+
+            //if (this.membershipTableProvider != null)
+            //{
+            //    try
+            //    {
+            //        var info = await this.membershipTableProvider.ReadAll().ConfigureAwait(true);
+            //        if (info != null && info.Members.Count > 3)
+            //        {
+            //            var iteminfo = info.Members.First(x => x.Item1.Status == SiloStatus.Active
+            //            && x.Item1.SiloAddress == localsilo.SiloAddress);
+            //            if (iteminfo != null)
+            //            {
+            //                await membershipTableProvider.DeleteMembershipTableEntries(Abstraction.Constants.Cluster.ClusterId).ConfigureAwait(true);
+            //                await membershipTableProvider.InsertRow(iteminfo.Item1, info.Version);
+            //            }
+                        
+            //        }
+            //    }
+            //    catch (Exception)
+            //    {
+
+            //    }
+
+            //}
+
             await base.Stop();
         }
 

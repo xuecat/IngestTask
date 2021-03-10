@@ -224,6 +224,7 @@ namespace IngestTask.Server
                         opt.DefunctSiloExpiration = TimeSpan.FromMinutes(1);
                         opt.DefunctSiloCleanupPeriod = TimeSpan.FromMinutes(1);
                     })
+                //.AddSartIngestTask()
 #if DEBUG
 #else
                 .Configure<EndpointOptions>(options =>
@@ -504,12 +505,26 @@ namespace IngestTask.Server
             {
                 StartLogger.Info($"Shutting down silohost from thread ID:'{Thread.CurrentThread.ManagedThreadId}' name:'{Thread.CurrentThread.Name}'");
 
+//                var member = siloHost.Services.GetService<IMembershipTable>();
+//                if (member != null)
+//                {
+//#pragma warning disable VSTHRD002 // 避免有问题的同步等待
+//                    var info = member.ReadAll().Result;
+//#pragma warning restore VSTHRD002 // 避免有问题的同步等待
+//                    if (info.Members.Count(x => x.Item1.Status == SiloStatus.Active) <= 1)
+//                    {
+//#pragma warning disable VSTHRD002 // 避免有问题的同步等待
+//                        member.DeleteMembershipTableEntries(Abstraction.Constants.Cluster.ClusterId).Wait();
+//#pragma warning restore VSTHRD002 // 避免有问题的同步等待
+//                    }
+//                }
                 try
                 {
 #pragma warning disable VSTHRD002 // 避免有问题的同步等待
                     Dashboard.Stop();
 
                     siloHost.StopAsync().Wait();
+                    siloHost.Dispose();
 #pragma warning restore VSTHRD002 // 避免有问题的同步等待
                 }
                 finally

@@ -9,7 +9,7 @@
     <FLSvr>172.16.168.0:9033</FLSvr>
     <Jove>172.16.168.0:9027</Jove>
     <PLS_Windows>172.16.0.205:9035</PLS_Windows>
-    <IngestDBSvr>172.16.135.116:9024</IngestDBSvr>
+    <IngestDBSvr>172.16.136.9:9024</IngestDBSvr>
     <IngestDEVCTL>172.16.0.205:9039</IngestDEVCTL>
     <IngestTaskSvr>172.16.0.205:9041</IngestTaskSvr>
     <IngestMsgSvr>172.16.0.205:9043</IngestMsgSvr>
