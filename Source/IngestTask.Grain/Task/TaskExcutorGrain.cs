@@ -176,7 +176,10 @@ namespace IngestTask.Grain
             //{
             //    await grainStorage.ClearStateAsync(this.GetType().FullName, this.GrainReference, grainState: null);
             //}
-            
+            if (State.TaskLists.Count > 0)
+            {
+                State.TaskLists.Clear();
+            }
             if (_timer != null)
             {
                 _timer.Dispose();
