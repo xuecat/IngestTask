@@ -87,7 +87,17 @@ namespace IngestTask.Grain
                 case opType.otStop:
                     {
                         //if (DateTimeFormat.DateTimeFromString(@event.TaskContentInfo.End) < DateTime.Now.AddSeconds(10))
-                        TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = false, HandleTask = false });
+                        var info = TaskLists.Find(x => x.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
+                        if (info == null)
+                        {
+                            TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = false, HandleTask = false });
+                        }
+                        else
+                        {
+                            info.StartOrStop = false;
+                            info.HandleTask = false;
+                        }
+                        
                     }
                     break;
                 case opType.otReDispatch:
