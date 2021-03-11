@@ -922,7 +922,7 @@ namespace IngestTask.Tool
                 return PostAsync<ResponseMessage<bool>>(
                     //$"{IngestDbUrl}/{DEVICEAPI20}/channelstate/{id}",
                     $"{IngestDbUrl}/{DEVICEAPI30}/channel/{id}/state",
-                    new { DevState = state, MSVMode = mode }, GetIngestHeader());
+                    new { DevState = (int)state, MSVMode = (int)mode }, GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null)
