@@ -222,7 +222,7 @@ namespace IngestTask.Grain
                 }
 
 
-                string capparam = await GetCaptureParmAsync(task, channel);
+                
 
                 DateTime dtcurrent;
                 DateTime dtbegin = (task.RetryTimes > 0 && task.NewBeginTime != DateTime.MinValue)?task.NewBeginTime :
@@ -233,6 +233,8 @@ namespace IngestTask.Grain
                     dtcurrent = DateTime.Now;
                     if (dtcurrent >= dtbegin)
                     {
+                        string capparam = await GetCaptureParmAsync(task, channel);
+
                         var recordinfo = msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", capparam, Logger);
 
                         bool backrecord = await msvClient.RecordAsync(recordinfo, channel.ChannelIndex, channel.Ip, Logger);

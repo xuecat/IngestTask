@@ -938,7 +938,7 @@ namespace IngestTask.Tool
             {
                 return GetAsync<ResponseMessage<List<DeviceInfo>>>(
                     $"{IngestDbUrl}/{DEVICEAPI30}/device/state", null, GetIngestHeader());
-            }).ConfigureAwait(true);
+            },5,2000).ConfigureAwait(true);
 
             if (back != null)
             {
