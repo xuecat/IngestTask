@@ -937,7 +937,7 @@ namespace IngestTask.Tool
             var back = await AutoRetry.RunAsync<ResponseMessage<List<DeviceInfo>>>(() =>
             {
                 return GetAsync<ResponseMessage<List<DeviceInfo>>>(
-                    $"{IngestDbUrl}/{DEVICEAPI30}/allocdevice", null, GetIngestHeader());
+                    $"{IngestDbUrl}/{DEVICEAPI30}/device/state", null, GetIngestHeader());
             }).ConfigureAwait(true);
 
             if (back != null)

@@ -171,11 +171,11 @@ namespace IngestTask.Grain
             {
                 await _streamHandle.UnsubscribeAsync();
             }
-            var grainStorage = this.GetGrainStorage(ServiceProvider);
-            if (grainStorage != null)
-            {
-                await grainStorage.ClearStateAsync(this.GetType().FullName, this.GrainReference, grainState: null);
-            }
+            //var grainStorage = this.GetGrainStorage(ServiceProvider);
+            //if (grainStorage != null)
+            //{
+            //    await grainStorage.ClearStateAsync(this.GetType().FullName, this.GrainReference, grainState: null);
+            //}
             
             if (_timer != null)
             {
