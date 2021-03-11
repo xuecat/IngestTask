@@ -40,7 +40,7 @@ namespace IngestTask.Tool
             _httpClient.DefaultRequestHeaders.ConnectionClose = false;
             _httpClient.Timeout = TimeSpan.FromSeconds(15);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Add("sobeyhive-http-system", "INGESTSERVER");
+            _httpClient.DefaultRequestHeaders.Add("sobeyhive-http-system", "INGEST");
             _httpClient.DefaultRequestHeaders.Add("sobeyhive-http-site", "S1");
             _httpClient.DefaultRequestHeaders.Add("sobeyhive-http-tool", "INGESTSERVER");
             IngestDbUrl = ingesturl;

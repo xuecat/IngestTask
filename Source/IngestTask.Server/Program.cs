@@ -221,8 +221,8 @@ namespace IngestTask.Server
                     })
                 .Configure<ClusterMembershipOptions>(opt =>
                     {
-                        opt.DefunctSiloExpiration = TimeSpan.FromMinutes(1);
-                        opt.DefunctSiloCleanupPeriod = TimeSpan.FromMinutes(1);
+                        opt.DefunctSiloExpiration = TimeSpan.FromMinutes(5);
+                        opt.DefunctSiloCleanupPeriod = TimeSpan.FromMinutes(5);
                     })
                 //.AddSartIngestTask()
 #if DEBUG
@@ -437,7 +437,7 @@ namespace IngestTask.Server
                     dic.Add("CMWindows", CreateConfigURI(sys.Element("CMserver_windows").Value));
                     dic.Add("CMServer", CreateConfigURI(sys.Element("CMServer").Value));
                     dic.Add("ConnectDB", GetConnectOptions(ps, vip));
-                    Console.WriteLine($"path : {path}, {File.Exists(path)} ");
+                    Console.WriteLine($"path : {path}, {File.Exists(path)} {dic["ConnectDB"]} ");
                     return dic;
                 }
                 catch (Exception)
