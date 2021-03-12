@@ -282,7 +282,7 @@ namespace IngestTask.Grain
                 * flag katamaki任务检测
                 */
                 var devicegrain = GrainFactory.GetGrain<IDeviceInspections>(0);
-                if (devicegrain != null)
+                if (devicegrain != null && task.TaskContent != null)
                 {
                     var chinfo = await devicegrain.GetChannelInfoAsync(task.TaskContent.ChannelId);
                     if (chinfo != null)

@@ -98,22 +98,22 @@ namespace IngestTask.Grain
                 strPath = "\\" + strPath;
             }
             
-            strPath = strPath.Replace("*", "_");
-            strPath = strPath.Replace("\"", "_");
-            strPath = strPath.Replace("/", "_");
-            strPath = strPath.Replace("<", "_");
-            strPath = strPath.Replace(">", "_");
-            strPath = strPath.Replace("|", "_");
-            strPath = strPath.Replace("?", "_");
+            //strPath = strPath.Replace("*", "_");
+            //strPath = strPath.Replace("\"", "_");
+            //strPath = strPath.Replace("/", "_");
+            //strPath = strPath.Replace("<", "_");
+            //strPath = strPath.Replace(">", "_");
+            //strPath = strPath.Replace("|", "_");
+            //strPath = strPath.Replace("?", "_");
 
             //最后处理冒号
-            int len = strPath.Length;
+            //int len = strPath.Length;
             
-            for (int i = 2; i < len; i++)
-            {
-                if (strPath[i] == ':')
-                    strPath = strPath.Replace(strPath[i], '_');
-            }
+            //for (int i = 2; i < len; i++)
+            //{
+            //    if (strPath[i] == ':')
+            //        strPath = strPath.Replace(strPath[i], '_');
+            //}
             return strPath;
         }
 
@@ -151,12 +151,14 @@ namespace IngestTask.Grain
                     captureparam = captureparam.Replace("&lt;", "<");
                     captureparam = captureparam.Replace("&gt;", ">");
                 }
-                if (captureparam.IndexOf("&amp;") > 0 || captureparam.IndexOf("&lt;") > 0)
+                if (captureparam.IndexOf("&lt;") > 0)
                 {
                     captureparam = captureparam.Replace("&amp;", "&");
                     captureparam = captureparam.Replace("&lt;", "<");
                     captureparam = captureparam.Replace("&gt;", ">");
                 }
+
+                //captureparam = captureparam.Replace("&", "&amp;");
 
                 XElement capturenode = null;
                 var root = XDocument.Parse(captureparam);
@@ -263,7 +265,9 @@ namespace IngestTask.Grain
                             }
                         }
 
-                        return capturenode.ToString();
+                        string backinfo = capturenode.ToString();
+                        //backinfo = backinfo.Replace("&amp;", "&");
+                        return backinfo;
                     }
                     else
                         Logger.Error($"load captureparam error {captureparam} {typeinfo.SignalType}");
