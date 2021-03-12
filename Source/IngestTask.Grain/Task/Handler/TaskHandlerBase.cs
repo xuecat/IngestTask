@@ -138,7 +138,7 @@ namespace IngestTask.Grain
             if (typeinfo.VideoFormat == SignalFormat._unknown_vid_format)
             {
                 //查询的制式出现了问题，重新再来一遍
-                await Task.Delay(500);
+                await Task.Delay(1000);
                 typeinfo = await msvClient.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
             }
 

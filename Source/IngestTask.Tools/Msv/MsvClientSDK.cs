@@ -190,7 +190,6 @@ namespace IngestTask.Tool.Msv
                     }
                 }
 
-                allparam.captureParam = allparam.captureParam.Replace("&amp;", "&");
                 allparam.nCutLen = 10;
                 logger.Info($"MsvSDK Record Prepare Cast MSVStartTaskNew Function ip={strMsvIP} port={nChPort} cutlen={allparam.nCutLen}");
 
