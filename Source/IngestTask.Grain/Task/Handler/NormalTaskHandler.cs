@@ -221,7 +221,7 @@ namespace IngestTask.Grain
                         break;
                 }
 
-
+                await Task.Delay(200);
                 
 
                 DateTime dtcurrent;
