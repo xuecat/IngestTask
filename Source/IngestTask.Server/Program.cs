@@ -224,7 +224,7 @@ namespace IngestTask.Server
                         opt.DefunctSiloExpiration = TimeSpan.FromSeconds(5);
                         opt.DefunctSiloCleanupPeriod = TimeSpan.FromSeconds(5);
                         opt.TableRefreshTimeout = TimeSpan.FromSeconds(10);
-                        opt.DeathVoteExpirationTimeout = TimeSpan.FromSeconds(15);
+                        opt.DeathVoteExpirationTimeout = TimeSpan.FromSeconds(10);
                     })
                 //.AddSartIngestTask()
 #if DEBUG
