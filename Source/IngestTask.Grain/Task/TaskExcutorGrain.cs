@@ -67,7 +67,7 @@ namespace IngestTask.Grain
             {
                 case opType.otAdd:
                     {
-                        var info = TaskLists.Find(x => x.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
+                        var info = TaskLists.Find(x => x != null && x.TaskContent !=null&& x.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
                         if (info == null)
                         {
                             TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = true, HandleTask = false });
@@ -82,7 +82,7 @@ namespace IngestTask.Grain
                     break;
                 case opType.otDel:
                     {
-                        TaskLists.RemoveAll(a => a.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
+                        TaskLists.RemoveAll(a => a != null && a.TaskContent != null && a.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
                     }
                     break;
                 case opType.otMove:
@@ -92,7 +92,7 @@ namespace IngestTask.Grain
                 case opType.otStop:
                     {
                         //if (DateTimeFormat.DateTimeFromString(@event.TaskContentInfo.End) < DateTime.Now.AddSeconds(10))
-                        var info = TaskLists.Find(x => x.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
+                        var info = TaskLists.Find(x => x != null && x.TaskContent != null && x.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
                         if (info == null)
                         {
                             TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = false, HandleTask = false });
@@ -107,7 +107,7 @@ namespace IngestTask.Grain
                     break;
                 case opType.otReDispatch:
                     {
-                        var taskitem = TaskLists.Find(a => a.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
+                        var taskitem = TaskLists.Find(a => a != null && a.TaskContent != null && a.TaskContent.TaskId == @event.TaskContentInfo.TaskId);
                         if (taskitem != null)
                         {
                             taskitem.RetryTimes++;

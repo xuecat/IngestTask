@@ -107,12 +107,26 @@ namespace IngestTask.Tool.Msv
             try
             {
                 //ret = _clientSdk.MSVQuerySDIFormat(strMsvIP, ref singleType, ref bIsBack, logger, nChPort);
-                var ret = await _clientSdk.MSVQuerySDIFormatAsync(strMsvIP, logger, nChPort).ConfigureAwait(true);
+                var ret = await AutoRetry.RunSyncAsync(() => _clientSdk.MSVQuerySDIFormatAsync(strMsvIP, logger, nChPort),
+                    (e) =>
+                    {
+                        if (e== null|| e.VideoFormat == SignalFormat._unknown_vid_format)
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    }).ConfigureAwait(true);
                 if (ret == null)
                 {
                     logger.Error($"Cast Interface Function MSVQuerySDIFormat Error!(error {_clientSdk.MSVGetLastErrorString()})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
                     return null;
                 }
+                //if (ret.VideoFormat == SignalFormat._unknown_vid_format)
+                //{
+                //    await Task.Delay(1000).ConfigureAwait(true);
+                //    ret = await _clientSdk.MSVQuerySDIFormatAsync(strMsvIP, logger, nChPort).ConfigureAwait(true);
+                //}
                 
                 logger.Info($"Cast Interface Function {strMsvIP} {nChPort} QuerySDIFormat!(vedioformat ={ret.VideoFormat} :width :{ret.nWidth})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
 
