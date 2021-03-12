@@ -233,40 +233,50 @@ namespace IngestTask.Grain
                     dtcurrent = DateTime.Now;
                     if (dtcurrent >= dtbegin)
                     {
-                        string capparam = await GetCaptureParmAsync(task, channel);
-                        if (!string.IsNullOrEmpty(capparam))
+                        try
                         {
-                            var recordinfo = msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", capparam, Logger);
-
-                            bool backrecord = await msvClient.RecordAsync(recordinfo, channel.ChannelIndex, channel.Ip, Logger);
-
-                            if (backrecord)
+                            string capparam = await GetCaptureParmAsync(task, channel);
+                            if (!string.IsNullOrEmpty(capparam))
                             {
+                                var recordinfo = msvClient.RecordReady(channel.ChannelIndex, channel.Ip, CreateTaskParam(task.TaskContent), "", capparam, Logger);
 
-                                var state = await AutoRetry.RunSyncAsync(() =>
-                                                                msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger),
-                                                                                                (e) =>
-                                                                                                {
-                                                                                                    if (e == Device_State.WORKING)
-                                                                                                    {
-                                                                                                        return true;
-                                                                                                    }
-                                                                                                    return false;
-                                                                                                }, 4, 500).ConfigureAwait(true);
+                                bool backrecord = await msvClient.RecordAsync(recordinfo, channel.ChannelIndex, channel.Ip, Logger);
 
-                                if (state == Device_State.WORKING)
+                                if (backrecord)
                                 {
-                                    return task.TaskContent.TaskId;
+
+                                    var state = await AutoRetry.RunSyncAsync(() =>
+                                                                    msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, Logger),
+                                                                                                    (e) =>
+                                                                                                    {
+                                                                                                        if (e == Device_State.WORKING)
+                                                                                                        {
+                                                                                                            return true;
+                                                                                                        }
+                                                                                                        return false;
+                                                                                                    }, 4, 500).ConfigureAwait(true);
+
+                                    if (state == Device_State.WORKING)
+                                    {
+                                        return task.TaskContent.TaskId;
+                                    }
+                                    else
+                                        Logger.Error($"start task error {task.TaskContent.TaskId}");
                                 }
                                 else
-                                    Logger.Error($"start task error {task.TaskContent.TaskId}");
-                            }
-                            else
-                            {
-                                Logger.Error($"task param is empty error {task.TaskContent.TaskId}");
-                            }
+                                {
+                                    Logger.Error($"task param is empty error {task.TaskContent.TaskId}");
+                                }
 
+                            }
                         }
+                        catch (Exception e)
+                        {
+                            Logger.Error($"GetCaptureParmAsync error {e.Message}");
+                            return 0;
+                        }
+                        
+                        
                         return 0;
                     }
                     else
