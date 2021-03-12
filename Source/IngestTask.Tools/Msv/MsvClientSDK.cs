@@ -114,7 +114,7 @@ namespace IngestTask.Tool.Msv
                     return null;
                 }
                 
-                logger.Info($"Cast Interface Function QuerySDIFormat!(vedioformat ={ret.VideoFormat} :width :{ret.nWidth})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
+                logger.Info($"Cast Interface Function {strMsvIP} {nChPort} QuerySDIFormat!(vedioformat ={ret.VideoFormat} :width :{ret.nWidth})...........MsvUdpClientCtrlSDK::QuerySDIFormat");
 
                 int pnSingleType = 255;
                 bool bValidVideo = false;
