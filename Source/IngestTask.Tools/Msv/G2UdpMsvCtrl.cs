@@ -27,7 +27,7 @@ namespace IngestTask.Tool.Msv
         {
             string strret = "";
 
-            if (logger == null)
+            if (logger == null || ipaddress.AddressFamily != AddressFamily.InterNetwork)
             {
                 return strret;
             }

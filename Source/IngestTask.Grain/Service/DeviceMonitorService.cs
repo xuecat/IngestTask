@@ -59,29 +59,6 @@ namespace IngestTask.Grain.Service
             
             await base.Init(serviceProvider);
 
-            //if (this.membershipTableProvider != null)
-            //{
-            //    try
-            //    {
-            //        var info = await membershipTableProvider.ReadAll().ConfigureAwait(true);
-            //        if (info != null && info.Members.Count > 3)
-            //        {
-            //            var iteminfo = info.Members.First(x => x.Item1.Status == SiloStatus.Active
-            //            && x.Item1.SiloAddress == localsilo.SiloAddress);
-            //            if (iteminfo != null)
-            //            {
-            //                await membershipTableProvider.DeleteMembershipTableEntries(Abstraction.Constants.Cluster.ClusterId).ConfigureAwait(true);
-            //                await membershipTableProvider.InsertRow(iteminfo.Item1, info.Version);
-            //            }
-
-            //        }
-            //    }
-            //    catch (Exception)
-            //    {
-
-            //    }
-
-            //}
         }
 
         public List<ChannelInfo> GetDataBack()
@@ -116,8 +93,6 @@ namespace IngestTask.Grain.Service
                 _timer = null;
             }
             await _grainFactory.GetGrain<IDeviceInspections>(0).QuitServiceAsync(_grainKey);
-
-            
 
             await base.Stop();
         }

@@ -91,7 +91,13 @@ namespace IngestTask.Grain
             strPath = strPath.Replace("%YY-MM-DD%", strTime);
 
             //将非法字符替换为下划线
-            strPath = strPath.Replace("\\\\", "\\_");
+            strPath = strPath.Replace("\\\\", "\\");
+            strPath = strPath.Replace(@"\\", @"\");
+            if (strPath[0] == '\\')
+            {
+                strPath = "\\" + strPath;
+            }
+            
             strPath = strPath.Replace("*", "_");
             strPath = strPath.Replace("\"", "_");
             strPath = strPath.Replace("/", "_");
@@ -99,7 +105,6 @@ namespace IngestTask.Grain
             strPath = strPath.Replace(">", "_");
             strPath = strPath.Replace("|", "_");
             strPath = strPath.Replace("?", "_");
-
 
             //最后处理冒号
             int len = strPath.Length;
@@ -140,7 +145,13 @@ namespace IngestTask.Grain
             if (typeinfo != null && typeinfo.SignalType < 254)
             {
                 /*oss路径过滤*/
-                if (captureparam.IndexOf("&amp;") > 0 && captureparam.IndexOf("&lt;") > 0)
+                if (captureparam.IndexOf("&amp;") > 0 || captureparam.IndexOf("&lt;") > 0)
+                {
+                    captureparam = captureparam.Replace("&amp;", "&");
+                    captureparam = captureparam.Replace("&lt;", "<");
+                    captureparam = captureparam.Replace("&gt;", ">");
+                }
+                if (captureparam.IndexOf("&amp;") > 0 || captureparam.IndexOf("&lt;") > 0)
                 {
                     captureparam = captureparam.Replace("&amp;", "&");
                     captureparam = captureparam.Replace("&lt;", "<");

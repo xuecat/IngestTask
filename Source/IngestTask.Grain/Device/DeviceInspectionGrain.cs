@@ -20,6 +20,7 @@ namespace IngestTask.Grain
     using OrleansDashboard.Abstraction;
     using System.Reflection;
     using AutoMapper.Internal;
+    using System.Data;
 
     [Reentrant]
     [TraceGrain("IngestTask.Grain.DeviceInspectionGrain", TaskTraceEnum.Device)]
@@ -96,30 +97,47 @@ namespace IngestTask.Grain
         }
         public Task NotifyDeviceDeleteAsync(int deviceid)
         {
-            lock (State)
+            if (this.State.Count > 0)
             {
-                State.RemoveAll(x => x.Id == deviceid);
+                lock (State)
+                {
+                    State.RemoveAll(x => x != null && x.Id == deviceid);
+                }
             }
+            
             return Task.CompletedTask;
         }
 
         public Task NotifyChannelDeleteAsync(int channelid)
         {
-            lock (State)
+            if (this.State.Count > 0)
             {
-                State.RemoveAll(x => x.ChannelId == channelid);
+                lock (State)
+                {
+                    State.RemoveAll(x => x != null && x.ChannelId == channelid);
+                }
             }
+            
             return Task.CompletedTask;
         }
 
         public async Task NotifyDeviceChangeAsync()
         {
             await InitLoadAsync();
+            //其它的service强制更新，这样他们会重新申请
+            lock (_monitorMember)
+            {
+                for (int i = 0; i < _monitorMember.Count; i++)
+                {
+                    _monitorMember[_monitorMember.ElementAt(i).Key] = 0;
+                }
+            }
+
         }
 
         public Task NotifyDeviceChangeAsync(ChannelInfo info)
         {
-            var iteminfo = State.Find(x => x.Id == info.Id);
+            var iteminfo = State.Find(x => x != null && x.Id == info.Id);
             if (iteminfo != null)
             {
                 ObjectTool.CopyObjectData(info, iteminfo, string.Empty, BindingFlags.Public | BindingFlags.Instance);
@@ -186,41 +204,46 @@ namespace IngestTask.Grain
 
         public async Task<bool> SubmitChannelInfoAsync(string serverid, List<ChannelInfo> infos, bool notify)
         {
-            foreach (var itm in infos)
+            if (this.State.Count > 0)
             {
-                var item = State.Find(x => x.Id == itm.Id);
-                lock (State)
+                foreach (var itm in infos)
                 {
-                    if (item == null)
+                    lock (State)
                     {
-                        State.Add(item);
+                        var item = State.Find(x => x!= null&& x.Id == itm.Id);
+                        if (item == null)
+                        {
+                            State.Add(item);
+                        }
+                        else
+                        {
+                            ObjectTool.CopyObjectData(itm, item, string.Empty, BindingFlags.Public | BindingFlags.Instance);
+                        }
                     }
-                    else
+
+
+                    if (notify && itm.NeedStopFlag)//通知执行器
                     {
-                        ObjectTool.CopyObjectData(itm, item, string.Empty, BindingFlags.Public | BindingFlags.Instance);
+                        await _stream.OnNextAsync(infos.First());
                     }
                 }
-                
 
-                if (notify && itm.NeedStopFlag)//通知执行器
-                {
-                    await _stream.OnNextAsync(infos.First());
-                }
-            }
-
-            int count = 0;
-            if (!_monitorMember.TryGetValue(serverid, out count))
-            {
-                return true;
-            }
-            else
-            {
-                if (count != _monitorMember.Count)
+                int count = 0;
+                if (!_monitorMember.TryGetValue(serverid, out count))
                 {
                     return true;
                 }
+                else
+                {
+                    if (count != _monitorMember.Count)
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
             return false;
+            
         }
 
         public Task<int> QuitServiceAsync(string serviceid)
@@ -228,13 +251,14 @@ namespace IngestTask.Grain
             _monitorMember.Remove(serviceid);
 
             //其它的service强制更新，这样他们会重新申请
-            if (_monitorMember.Count > 0)
+            lock (_monitorMember)
             {
-                foreach (var item in _monitorMember)
+                for (int i = 0; i < _monitorMember.Count; i++)
                 {
-                    _monitorMember[item.Key] = 0;
+                    _monitorMember[_monitorMember.ElementAt(i).Key] = 0;
                 }
             }
+            
             return Task.FromResult(_monitorMember.Count);
         }
 
@@ -250,7 +274,7 @@ namespace IngestTask.Grain
                 _monitorMember[serverid] = _monitorMember.Count;
             }
 
-            var lst = State.FindAll(x => x.Id%_monitorMember.Count == 0);
+            var lst = State.FindAll(x => x != null && x.Id%_monitorMember.Count == 0);
             return Task.FromResult(lst);
         }
 

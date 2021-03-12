@@ -72,6 +72,11 @@ namespace IngestTask.Grain
                         {
                             TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = true, HandleTask = false });
                         }
+                        else
+                        {
+                            info.StartOrStop = false;
+                            info.HandleTask = false;
+                        }
                         
                     }
                     break;

@@ -221,8 +221,10 @@ namespace IngestTask.Server
                     })
                 .Configure<ClusterMembershipOptions>(opt =>
                     {
-                        opt.DefunctSiloExpiration = TimeSpan.FromMinutes(5);
-                        opt.DefunctSiloCleanupPeriod = TimeSpan.FromMinutes(5);
+                        opt.DefunctSiloExpiration = TimeSpan.FromSeconds(5);
+                        opt.DefunctSiloCleanupPeriod = TimeSpan.FromSeconds(5);
+                        opt.TableRefreshTimeout = TimeSpan.FromSeconds(10);
+                        opt.DeathVoteExpirationTimeout = TimeSpan.FromSeconds(15);
                     })
                 //.AddSartIngestTask()
 #if DEBUG

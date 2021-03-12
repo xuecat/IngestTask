@@ -280,7 +280,7 @@ namespace IngestTask.Grain
                                 _dispoScheduleTimer = null;
                             }
                         }
-
+                        await WriteStateAsync();
                     }
                 }
                 else
