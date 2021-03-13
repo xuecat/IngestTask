@@ -38,7 +38,9 @@ namespace IngestTask.Grain.Service
 
         private readonly IMembershipTable membershipTableProvider;
         private readonly ILocalSiloDetails localsilo;
-        public DeviceMonitorService(IMembershipTable member, ILocalSiloDetails localsilo, IGrainIdentity id, Silo silo,
+
+        private string SiloName;
+        public DeviceMonitorService(IMembershipTable member, ILocalSiloDetails localsilo, IConfiguration configuration, IGrainIdentity id, Silo silo,
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory,
             IGrainFactory grainFactory, MsvClientCtrlSDK msv, RestClient client)
             : base(id, silo, loggerFactory)
@@ -52,6 +54,7 @@ namespace IngestTask.Grain.Service
             _grainKey = string.Empty;
             this.membershipTableProvider = member;
             this.localsilo = localsilo;
+            SiloName = configuration.GetSection("SiloName").Get<string>();
         }
 
         public override async Task Init(IServiceProvider serviceProvider)
@@ -73,6 +76,34 @@ namespace IngestTask.Grain.Service
 
         public override async Task Start()
         {
+            if (this.membershipTableProvider != null)
+            {
+                try
+                {
+                    var info = await this.membershipTableProvider.ReadAll().ConfigureAwait(true);
+                    if (info != null)
+                    {
+                        var lstfind = info.Members.Where(x => x.Item1.SiloName == SiloName 
+                        && x.Item1.SiloAddress!=localsilo.SiloAddress&&x.Item1.Status != SiloStatus.Dead).ToList();
+
+                        if (lstfind != null)
+                        {
+                            foreach (var item in lstfind)
+                            {
+                                item.Item1.Status = SiloStatus.Dead;
+                                await this.membershipTableProvider.UpdateRow(item.Item1, item.Item2, info.Version);
+                            }
+                        }
+                        
+                        
+                    }
+                }
+                catch (Exception)
+                {
+
+                }
+            }
+
             string extrakey = string.Empty;
 
             var refgrain = GetGrainReference();
@@ -82,6 +113,7 @@ namespace IngestTask.Grain.Service
 
             _lstTimerScheduleDevice = await _grainFactory.GetGrain<IDeviceInspections>(0).RequestChannelInfoAsync(_grainKey);
             //await _grainFactory.GetGrain<ICheckSchedule>(0).StartCheckSyncAsync();
+            Logger.Info("decice monitor start");
             await base.Start();
         }
 
@@ -93,7 +125,7 @@ namespace IngestTask.Grain.Service
                 _timer = null;
             }
             await _grainFactory.GetGrain<IDeviceInspections>(0).QuitServiceAsync(_grainKey);
-
+            Logger.Info("deice monitor stop");
             await base.Stop();
         }
 

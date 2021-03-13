@@ -213,6 +213,8 @@ namespace IngestTask.Server
                         services.Configure<ClusterOptions>(opt => { opt.ClusterId = Cluster.ClusterId; opt.ServiceId = Cluster.ServiceId; });
                         services.AddSingletonNamedService<PlacementStrategy, ScheduleTaskPlacementStrategy>(nameof(ScheduleTaskPlacementStrategy));
                         services.AddSingletonKeyedService<Type, IPlacementDirector, ScheduleTaskPlacementSiloDirector>(typeof(ScheduleTaskPlacementStrategy));
+
+                        services.Configure<SiloOptions>(opt => { opt.SiloName = context.Configuration.GetSection("SiloName").Get<string>(); });
 #if DEBUG
 #else
                         services.AddAWSContainerMetadataService();
@@ -226,6 +228,7 @@ namespace IngestTask.Server
                         opt.TableRefreshTimeout = TimeSpan.FromSeconds(10);
                         opt.DeathVoteExpirationTimeout = TimeSpan.FromSeconds(10);
                     })
+                
                 //.AddSartIngestTask()
 #if DEBUG
 #else
@@ -262,9 +265,11 @@ namespace IngestTask.Server
 
                             options.GatewayPort = awsContainerMetadata?.Ports?.FirstOrDefault(p => p.ContainerPort == 40000)?
                             .HostPort ?? EndpointOptions.DEFAULT_GATEWAY_PORT;
+
+                            Console.WriteLine($"aws {awsContainerMetadata.Image} {awsContainerMetadata.ImageID} {awsContainerMetadata.DockerName} {awsContainerMetadata.DockerId}");
                         }
 
-                        Console.WriteLine("ingesttask ipinfo: "+ options.AdvertisedIPAddress.ToString() + options.SiloPort + options.GatewayPort);
+                        Console.WriteLine("ingesttask ipinfo: "+ options.AdvertisedIPAddress.ToString() + options.SiloPort + ":"+ options.GatewayPort);
                        
                         options.GatewayListeningEndpoint = new IPEndPoint(IPAddress.Any, 40000);
                         options.SiloListeningEndpoint = new IPEndPoint(IPAddress.Any, 50000);
