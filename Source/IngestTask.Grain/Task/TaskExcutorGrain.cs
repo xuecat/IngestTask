@@ -62,6 +62,10 @@ namespace IngestTask.Grain
         //修改状态对象之外，TransitionState方法不应该有任何副作用，并且应该是确定性的
         public void Apply(TaskEvent @event)
         {
+            if (TaskLists != null && TaskLists.Count > 0)
+            {
+                TaskLists.RemoveAll(x => x == null || x.TaskContent == null || x.TaskContent.TaskId == 0);
+            }
             //我认为无论任务重复不，都不需要筛选，无非一系列工作交给执行器做而已。后面引入cancletoken保证及时终止就可以了
             switch (@event.OpType)
             {

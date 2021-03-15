@@ -706,12 +706,12 @@ namespace IngestTask.Tool
             return 0;
         }
 
-        public async Task<TaskContent> CreatePeriodcTaskAsync(int taskid)
+        public async Task<DispatchTask> CreatePeriodcTaskAsync(int taskid)
         {
-            var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() =>
+            var back = await AutoRetry.RunAsync<ResponseMessage<DispatchTask>>(() =>
             {
                
-                return PostAsync<ResponseMessage<TaskContent>>(
+                return PostAsync<ResponseMessage<DispatchTask>>(
                     //$"{IngestDbUrl}/{TASKAPI20}/periodic/createtask/{taskid}"
                     $"{IngestDbUrl}/{TASKAPI30}/periodic/{taskid}"
                     , null, GetIngestHeader());

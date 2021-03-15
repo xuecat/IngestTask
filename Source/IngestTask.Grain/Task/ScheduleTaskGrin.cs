@@ -85,7 +85,7 @@ namespace IngestTask.Grain
                     this.State.Add(task);
                     if (_dispoScheduleTimer == null)
                     {
-                        _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+                        _dispoScheduleTimer = RegisterTimer(this.OnScheduleTaskAsync, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
                     }
 
                     this.State.RemoveAll(x => TaskIsInvalid(x));
@@ -211,7 +211,6 @@ namespace IngestTask.Grain
                         if (task.State == (int)taskState.tsReady && task.Tasktype != (int)TaskType.TT_TIEUP)
                         {
                             if (task.Tasktype == (int)TaskType.TT_PERIODIC
-                                && task.State == (int)taskState.tsReady
                                 && task.OldChannelid == 0)
                             {
                                 if ((task.NewBegintime - DateTime.Now).TotalSeconds <=
@@ -223,13 +222,18 @@ namespace IngestTask.Grain
                                     if (info != null)
                                     {
                                         _lstRemoveTask.Add(task);
-
+                                        Logger.Info($"perod new info {JsonHelper.ToJson(info)}");
                                         //周期母任务更新后，再加进去，进行下一个周期
-                                        var taskperiod = await _restClient.GetTaskDBAsync(task.Taskid);
-                                        if (taskperiod.Endtime > DateTime.Now && taskperiod.NewBegintime > DateTime.Now)
+                                        //var taskperiod = await _restClient.GetTaskDBAsync(task.Taskid);
+                                        if (info.Endtime > DateTime.Now && info.NewBegintime > DateTime.Now)
                                         {
-                                            await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(taskperiod);
+                                            await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(info);
                                         }
+                                    }
+                                    else
+                                    {
+                                        _lstRemoveTask.Add(task);
+                                        Logger.Info($"create period failed begin to remove {task.Taskid}");
                                     }
                                 }
                             }

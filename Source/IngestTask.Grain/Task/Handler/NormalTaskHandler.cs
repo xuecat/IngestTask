@@ -81,12 +81,14 @@ namespace IngestTask.Grain
                     if (task.TaskContent.State == taskState.tsExecuting || task.TaskContent.State == taskState.tsManuexecuting)
                     {
                         await UnlockTaskAsync(taskid, taskState.tsExecuting, dispatchState.dpsDispatched, syncState.ssSync);
+                        Logger.Info($"start manu quit {taskid}");
                         return taskid;
                     }
                 }
                 else if (task.TaskContent.TaskType == TaskType.TT_TIEUP)
                 {
                     await HandleTieupTaskAsync(task.TaskContent);
+                    Logger.Info($"start tieup quit {taskid}");
                     return taskid;
                 }
                 else
@@ -94,6 +96,7 @@ namespace IngestTask.Grain
                     if (DateTimeFormat.DateTimeFromString(task.TaskContent.End) < DateTime.Now)//普通任务进行时间有效性判断, 
                     {
                         task.StartOrStop = false;//禁止监听任务
+                        Logger.Info($"start time quit {taskid}");
                         return taskid;
                     }
                 }
@@ -178,8 +181,8 @@ namespace IngestTask.Grain
                     }
                     else if (backinfo.ulID < task.TaskContent.TaskId)
                     {
-                        Logger.Info($"start msv in stop else {backinfo.ulID}");
-                        await ForceStopTaskAsync(task, channel);
+                        
+                        await ForceStopTaskAsync((int)backinfo.ulID, channel);
                     }
 
                     if (task.TaskSource == TaskSource.emStreamMediaUploadTask)
@@ -307,6 +310,7 @@ namespace IngestTask.Grain
                     {
                         if (msvtaskinfo.ulID == task.TaskContent.TaskId)
                         {
+                            Logger.Info($"stop task same {msvtaskinfo.ulID}");
                             var stopback = await msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
 
                             if (stopback > 0)
@@ -346,13 +350,14 @@ namespace IngestTask.Grain
             }
         }
 
-        public async Task<int> ForceStopTaskAsync(TaskFullInfo task, ChannelInfo channel)
+        public async Task<int> ForceStopTaskAsync(int taskid, ChannelInfo channel)
         {
-            var stopback = await msvClient.StopAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
+            Logger.Info($"force stop task {channel.ChannelIndex} {channel.Ip} {taskid}");
+            var stopback = await msvClient.StopAsync(channel.ChannelIndex, channel.Ip, taskid, Logger);
 
             if (stopback > 0)
             {
-                return task.TaskContent.TaskId;
+                return taskid;
             }
             return 0;
         }
