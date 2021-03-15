@@ -116,7 +116,7 @@ namespace IngestTask.Tool.Msv
                         }
 
                         return true;
-                    }).ConfigureAwait(true);
+                    }, 5, 500).ConfigureAwait(true);
                 if (ret == null)
                 {
                     logger.Error($"Cast Interface Function MSVQuerySDIFormat Error!(error {_clientSdk.MSVGetLastErrorString()})...........MsvUdpClientCtrlSDK::QuerySDIFormat");

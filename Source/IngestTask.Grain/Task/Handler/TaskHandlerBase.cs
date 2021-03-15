@@ -135,7 +135,7 @@ namespace IngestTask.Grain
         {
             string captureparam = taskinfo.CaptureMeta;
             var typeinfo = await msvClient.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
-            if (typeinfo.VideoFormat == SignalFormat._unknown_vid_format)
+            if (typeinfo.SignalType == 255 || typeinfo.SignalType == 254)
             {
                 //查询的制式出现了问题，重新再来一遍
                 await Task.Delay(1000);

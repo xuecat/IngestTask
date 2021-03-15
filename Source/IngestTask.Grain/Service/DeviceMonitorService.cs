@@ -88,8 +88,10 @@ namespace IngestTask.Grain.Service
 
                         if (lstfind != null)
                         {
+                            
                             foreach (var item in lstfind)
                             {
+                                Logger.Info($"wirte silo info {item.Item1.SiloAddress.ToParsableString()} {item.Item1.Status} {item.Item1.StartTime}");
                                 item.Item1.Status = SiloStatus.Dead;
                                 await this.membershipTableProvider.UpdateRow(item.Item1, item.Item2, info.Version);
                             }
