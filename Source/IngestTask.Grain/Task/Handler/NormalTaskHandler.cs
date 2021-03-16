@@ -346,6 +346,7 @@ namespace IngestTask.Grain
                             }
                             
                             Logger.Error($"stop task not same {msvtaskinfo.ulID} {task.TaskContent.TaskId}");
+                            await restClient.SetTaskStateAsync(task.TaskContent.TaskId, taskState.tsComplete);
                             return task.TaskContent.TaskId;
                         }
 
