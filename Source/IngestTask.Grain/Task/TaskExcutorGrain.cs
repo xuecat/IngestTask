@@ -270,6 +270,7 @@ namespace IngestTask.Grain
                         }
                         else
                         {
+                            Logger.Error("handletask error not find task");
                             task.HandleTask = false;
                             return 0;
                         }

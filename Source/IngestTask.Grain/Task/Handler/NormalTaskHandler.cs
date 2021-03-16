@@ -71,6 +71,7 @@ namespace IngestTask.Grain
             if (task.ContentMeta == null || string.IsNullOrEmpty(task.CaptureMeta))
             {
                 await UnlockTaskAsync(taskid, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
+                Logger.Error("handle error null");
                 return 0;
             }
 
@@ -143,7 +144,7 @@ namespace IngestTask.Grain
             {
 
                 Logger.Info($"task stop timespan {(DateTimeFormat.DateTimeFromString(task.TaskContent.End) - DateTime.Now).TotalSeconds}");
-                task.TaskContent.End = DateTimeFormat.DateTimeToString(DateTime.Now);
+                //task.TaskContent.End = DateTimeFormat.DateTimeToString(DateTime.Now);
 
                 /*
                  * 手动任务的判断先去掉
@@ -153,6 +154,7 @@ namespace IngestTask.Grain
                     DateTimeFormat.DateTimeFromString(task.TaskContent.Begin)))
                 {
 
+                    Logger.Info("got stop");
                     //里面有IsNeedRedispatchask(task);
                     var backinfo = await StopTaskAsync(task, channel);
 
