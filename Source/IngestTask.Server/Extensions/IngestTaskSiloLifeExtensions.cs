@@ -18,7 +18,7 @@ namespace IngestTask.Server
     {
         public static ISiloBuilder AddSartIngestTask(
        this ISiloBuilder builder,
-       int stage = ServiceLifecycleStage.RuntimeGrainServices)
+       int stage = ServiceLifecycleStage.RuntimeStorageServices)
         {
             builder.ConfigureServices(services =>
                 services.AddTransient<ILifecycleParticipant<ISiloLifecycle>>(sp =>
@@ -57,6 +57,7 @@ namespace IngestTask.Server
             {
                 try
                 {
+                    await this.membershipTableProvider.InitializeMembershipTable(true).ConfigureAwait(true);
                     var info = await this.membershipTableProvider.ReadAll().ConfigureAwait(true);
                     if (info != null && !info.Members.Any(x => x.Item1.Status == SiloStatus.Active))
                     {

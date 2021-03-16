@@ -214,7 +214,6 @@ namespace IngestTask.Server
                         services.AddSingletonNamedService<PlacementStrategy, ScheduleTaskPlacementStrategy>(nameof(ScheduleTaskPlacementStrategy));
                         services.AddSingletonKeyedService<Type, IPlacementDirector, ScheduleTaskPlacementSiloDirector>(typeof(ScheduleTaskPlacementStrategy));
 
-                        services.Configure<SiloOptions>(opt => { opt.SiloName = context.Configuration.GetSection("SiloName").Get<string>(); });
 #if DEBUG
 #else
                         services.AddAWSContainerMetadataService();
@@ -227,7 +226,7 @@ namespace IngestTask.Server
                         opt.DefunctSiloCleanupPeriod = TimeSpan.FromSeconds(5);
                         opt.TableRefreshTimeout = TimeSpan.FromSeconds(10);
                         opt.DeathVoteExpirationTimeout = TimeSpan.FromSeconds(10);
-                        opt.ValidateInitialConnectivity = false;
+                        //opt.ValidateInitialConnectivity = false;
                     })
                 
                 //.AddSartIngestTask()
@@ -330,7 +329,8 @@ namespace IngestTask.Server
                 .UseDashboard(config =>
                 {
                     config.Port = int.Parse(context.Configuration.GetSection("Port").Value, CultureInfo.CurrentCulture);
-                });
+                })
+                .AddSartIngestTask();
 
         private static void ConfigureWebHostBuilder(IWebHostBuilder webHostBuilder) =>
             webHostBuilder

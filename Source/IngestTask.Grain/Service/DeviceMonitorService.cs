@@ -36,11 +36,10 @@ namespace IngestTask.Grain.Service
         private readonly IGrainFactory _grainFactory;
         private string _grainKey;
 
-        private readonly IMembershipTable membershipTableProvider;
+        //private readonly IMembershipTable membershipTableProvider;
         private readonly ILocalSiloDetails localsilo;
 
-        private string SiloName;
-        public DeviceMonitorService(IMembershipTable member, ILocalSiloDetails localsilo, IConfiguration configuration, IGrainIdentity id, Silo silo,
+        public DeviceMonitorService(/*IMembershipTable member*/ ILocalSiloDetails localsilo, IConfiguration configuration, IGrainIdentity id, Silo silo,
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory,
             IGrainFactory grainFactory, MsvClientCtrlSDK msv, RestClient client)
             : base(id, silo, loggerFactory)
@@ -52,9 +51,9 @@ namespace IngestTask.Grain.Service
             _restClient = client;
             _grainFactory = grainFactory;
             _grainKey = string.Empty;
-            this.membershipTableProvider = member;
+            //this.membershipTableProvider = member;
             this.localsilo = localsilo;
-            SiloName = configuration.GetSection("SiloName").Get<string>();
+            //SiloName = configuration.GetSection("SiloName").Get<string>();
         }
 
         public override async Task Init(IServiceProvider serviceProvider)
@@ -76,35 +75,35 @@ namespace IngestTask.Grain.Service
 
         public override async Task Start()
         {
-            if (this.membershipTableProvider != null)
-            {
-                try
-                {
-                    var info = await this.membershipTableProvider.ReadAll().ConfigureAwait(true);
-                    if (info != null)
-                    {
-                        var lstfind = info.Members.Where(x => x.Item1.SiloName == SiloName 
-                        && x.Item1.SiloAddress!=localsilo.SiloAddress&&x.Item1.Status != SiloStatus.Dead).ToList();
+            //if (this.membershipTableProvider != null)
+            //{
+            //    try
+            //    {
+            //        var info = await this.membershipTableProvider.ReadAll().ConfigureAwait(true);
+            //        if (info != null)
+            //        {
+            //            var lstfind = info.Members.Where(x => x.Item1.SiloName == SiloName 
+            //            && x.Item1.SiloAddress!=localsilo.SiloAddress&&x.Item1.Status != SiloStatus.Dead).ToList();
 
-                        if (lstfind != null)
-                        {
+            //            if (lstfind != null)
+            //            {
                             
-                            foreach (var item in lstfind)
-                            {
-                                Logger.Info($"wirte silo info {item.Item1.SiloAddress.ToParsableString()} {item.Item1.Status} {item.Item1.StartTime}");
-                                item.Item1.Status = SiloStatus.Dead;
-                                await this.membershipTableProvider.UpdateRow(item.Item1, item.Item2, info.Version);
-                            }
-                        }
+            //                foreach (var item in lstfind)
+            //                {
+            //                    Logger.Info($"wirte silo info {item.Item1.SiloAddress.ToParsableString()} {item.Item1.Status} {item.Item1.StartTime}");
+            //                    item.Item1.Status = SiloStatus.Dead;
+            //                    await this.membershipTableProvider.UpdateRow(item.Item1, item.Item2, info.Version);
+            //                }
+            //            }
                         
                         
-                    }
-                }
-                catch (Exception)
-                {
+            //        }
+            //    }
+            //    catch (Exception)
+            //    {
 
-                }
-            }
+            //    }
+            //}
 
             string extrakey = string.Empty;
 
