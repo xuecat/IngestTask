@@ -165,6 +165,11 @@ namespace IngestTask.Grain
                     }
                     return backinfo;
                 }
+                else
+                {
+                    Logger.Error("task stop error retry go");
+                    return IsNeedRedispatchask(task);
+                }
             }
             //return 0;
         }
