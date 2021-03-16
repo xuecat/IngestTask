@@ -42,11 +42,19 @@ namespace IngestTask.Grain
         {
             if (taskinfo.StartOrStop)
             {
-                if (DateTime.Now.AddSeconds(5) <=
-                DateTimeFormat.DateTimeFromString(taskinfo.TaskContent.End))
+                if (taskinfo.TaskContent.TaskType == TaskType.TT_MANUTASK)//手动任务要不停的尝试开始
                 {
-                    Logger.Error($"IsNeedRedispatchaskAsync start over {taskinfo.TaskContent.TaskId}");
+                    Logger.Error($"retry manutask {taskinfo.TaskContent.TaskId}");
                     return 0;
+                }
+                else
+                {
+                    if (DateTime.Now.AddSeconds(5) <=
+                        DateTimeFormat.DateTimeFromString(taskinfo.TaskContent.End))
+                    {
+                        Logger.Error($"IsNeedRedispatchaskAsync start over {taskinfo.TaskContent.TaskId}");
+                        return 0;
+                    }
                 }
 
                 return taskinfo.TaskContent.TaskId;
@@ -346,7 +354,6 @@ namespace IngestTask.Grain
                             }
                             
                             Logger.Error($"stop task not same {msvtaskinfo.ulID} {task.TaskContent.TaskId}");
-                            await restClient.SetTaskStateAsync(task.TaskContent.TaskId, taskState.tsComplete);
                             return task.TaskContent.TaskId;
                         }
 

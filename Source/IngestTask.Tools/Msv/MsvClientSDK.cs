@@ -110,8 +110,9 @@ namespace IngestTask.Tool.Msv
                 var ret = await AutoRetry.RunSyncAsync(() => _clientSdk.MSVQuerySDIFormatAsync(strMsvIP, logger, nChPort),
                     (e) =>
                     {
-                        if (e== null|| e.VideoFormat == SignalFormat._unknown_vid_format)
+                        if (e== null|| e.VideoFormat == SignalFormat._unknown_vid_format || e.nWidth == 0)
                         {
+                            logger.Info("MSVQuerySDIFormat retry times");
                             return false;
                         }
 
