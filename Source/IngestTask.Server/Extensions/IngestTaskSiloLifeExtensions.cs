@@ -18,7 +18,7 @@ namespace IngestTask.Server
     {
         public static ISiloBuilder AddSartIngestTask(
        this ISiloBuilder builder,
-       int stage = ServiceLifecycleStage.RuntimeStorageServices)
+       int stage = ServiceLifecycleStage.RuntimeServices)
         {
             builder.ConfigureServices(services =>
                 services.AddTransient<ILifecycleParticipant<ISiloLifecycle>>(sp =>
