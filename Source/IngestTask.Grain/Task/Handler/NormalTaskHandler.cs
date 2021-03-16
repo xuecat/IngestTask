@@ -145,8 +145,12 @@ namespace IngestTask.Grain
                 Logger.Info($"task stop timespan {(DateTimeFormat.DateTimeFromString(task.TaskContent.End) - DateTime.Now).TotalSeconds}");
                 task.TaskContent.End = DateTimeFormat.DateTimeToString(DateTime.Now);
 
-                if (task.TaskContent.TaskType != TaskType.TT_MANUTASK || 
-                    (task.TaskContent.TaskType == TaskType.TT_MANUTASK && task.OpType == opType.otDel))
+                /*
+                 * 手动任务的判断先去掉
+                 */
+                if (task.TaskContent.TaskType != TaskType.TT_MANUTASK ||
+                    (task.TaskContent.TaskType == TaskType.TT_MANUTASK && DateTimeFormat.DateTimeFromString(task.TaskContent.End) >
+                    DateTimeFormat.DateTimeFromString(task.TaskContent.Begin)))
                 {
 
                     //里面有IsNeedRedispatchask(task);
@@ -162,7 +166,7 @@ namespace IngestTask.Grain
                     return backinfo;
                 }
             }
-            return 0;
+            //return 0;
         }
 
         public override async ValueTask<int> StartTaskAsync(TaskFullInfo task, ChannelInfo channel)
