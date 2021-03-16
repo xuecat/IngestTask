@@ -171,7 +171,7 @@ namespace IngestTask.Tool.Msv
                     ret.SignalType = pnSingleType;
                     return ret;
                 }
-                return null;
+                return ret;
             }
             catch (System.Exception e)
             {

@@ -135,149 +135,144 @@ namespace IngestTask.Grain
         {
             string captureparam = taskinfo.CaptureMeta;
             var typeinfo = await msvClient.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
-            Logger.Info($"getparam {JsonHelper.ToJson(typeinfo)}");
-            if (typeinfo.SignalType == 255 || typeinfo.SignalType == 254)
+
+            if (typeinfo != null)
             {
-                //查询的制式出现了问题，重新再来一遍
-                await Task.Delay(1000);
-                Logger.Info("retry captureparam");
-                typeinfo = await msvClient.QuerySDIFormatAsync(channel.ChannelIndex, channel.Ip, Logger);
-            }
-
-            if (typeinfo != null && typeinfo.SignalType < 254)
-            {
-                /*oss路径过滤*/
-                if (captureparam.IndexOf("&amp;") > 0 || captureparam.IndexOf("&lt;") > 0)
+                if (typeinfo.SignalType < 254)
                 {
-                    captureparam = captureparam.Replace("&amp;", "&");
-                    captureparam = captureparam.Replace("&lt;", "<");
-                    captureparam = captureparam.Replace("&gt;", ">");
-                }
-                if (captureparam.IndexOf("&lt;") > 0)
-                {
-                    captureparam = captureparam.Replace("&amp;", "&");
-                    captureparam = captureparam.Replace("&lt;", "<");
-                    captureparam = captureparam.Replace("&gt;", ">");
-                }
-
-                //captureparam = captureparam.Replace("&", "&amp;");
-
-                XElement capturenode = null;
-                var root = XDocument.Parse(captureparam);
-                if (root != null)
-                {
-                    var capturemeta = root.Element("CaptureMetaAll");
-                    switch (typeinfo.SignalType)
+                    /*oss路径过滤*/
+                    if (captureparam.IndexOf("&amp;") > 0 || captureparam.IndexOf("&lt;") > 0)
                     {
-                        case 0:
-                            {
-                                var node = capturemeta.Element("SDCaptureMeta");
-                                if (node != null)
-                                {
-                                    capturenode = node.FirstNode as XElement;
-                                }
-                            }
-                            break;
-                        case 1:
-                            {
-                                var node = capturemeta.Element("HDCaptureMeta");
-                                if (node != null)
-                                {
-                                    capturenode = node.FirstNode as XElement;
-                                }
-                            }
-                            break;
-                        case 2:
-                            {
-                                var node = capturemeta.Element("UHDCaptureMeta");
-                                if (node != null)
-                                {
-                                    capturenode = node.FirstNode as XElement;
-                                }
-                            }
-                            break;
-                        default:
-                            break;
+                        captureparam = captureparam.Replace("&amp;", "&");
+                        captureparam = captureparam.Replace("&lt;", "<");
+                        captureparam = captureparam.Replace("&gt;", ">");
+                    }
+                    if (captureparam.IndexOf("&lt;") > 0)
+                    {
+                        captureparam = captureparam.Replace("&amp;", "&");
+                        captureparam = captureparam.Replace("&lt;", "<");
+                        captureparam = captureparam.Replace("&gt;", ">");
                     }
 
-                    if (capturenode != null)
+                    //captureparam = captureparam.Replace("&", "&amp;");
+
+                    XElement capturenode = null;
+                    var root = XDocument.Parse(captureparam);
+                    if (root != null)
                     {
-                        CTimeCode timecode = new CTimeCode();
-                        timecode.setDBFrameRate(typeinfo.fFrameRate);
-                        timecode.SetDFMode(typeinfo.TCMode == TimeCodeMode.DF ? 1 : 0);
-                        timecode.SetVS(timecode.Rate2VideoStandard(typeinfo.fFrameRate));
-
-                        long bmpframe = timecode.GetFrameByTimeCode(taskinfo.ContentMeta.PresetStamp);
-
-                        Logger.Info($"GetCaptureParm {bmpframe}");
-                        var pic = capturenode.Element("FirPicNum");
-                        if (pic != null)
+                        var capturemeta = root.Element("CaptureMetaAll");
+                        switch (typeinfo.SignalType)
                         {
-                            pic.Value = bmpframe.ToString();
+                            case 0:
+                                {
+                                    var node = capturemeta.Element("SDCaptureMeta");
+                                    if (node != null)
+                                    {
+                                        capturenode = node.FirstNode as XElement;
+                                    }
+                                }
+                                break;
+                            case 1:
+                                {
+                                    var node = capturemeta.Element("HDCaptureMeta");
+                                    if (node != null)
+                                    {
+                                        capturenode = node.FirstNode as XElement;
+                                    }
+                                }
+                                break;
+                            case 2:
+                                {
+                                    var node = capturemeta.Element("UHDCaptureMeta");
+                                    if (node != null)
+                                    {
+                                        capturenode = node.FirstNode as XElement;
+                                    }
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+
+                        if (capturenode != null)
+                        {
+                            CTimeCode timecode = new CTimeCode();
+                            timecode.setDBFrameRate(typeinfo.fFrameRate);
+                            timecode.SetDFMode(typeinfo.TCMode == TimeCodeMode.DF ? 1 : 0);
+                            timecode.SetVS(timecode.Rate2VideoStandard(typeinfo.fFrameRate));
+
+                            long bmpframe = timecode.GetFrameByTimeCode(taskinfo.ContentMeta.PresetStamp);
+
+                            Logger.Info($"GetCaptureParm {bmpframe}");
+                            var pic = capturenode.Element("FirPicNum");
+                            if (pic != null)
+                            {
+                                pic.Value = bmpframe.ToString();
+                            }
+                            else
+                            {
+                                capturenode.Add(new XElement("FirPicNum", bmpframe.ToString()));
+                            }
+
+                            //第三码路径没说过要用，暂时算了
+                            var pathfile = capturenode.Element("path1FileName");
+                            if (pathfile != null)
+                            {
+                                pathfile.Value = FormatCaptureParamPath(pathfile.Value);
+                            }
+                            pathfile = capturenode.Element("path0FileName");
+                            if (pathfile != null)
+                            {
+                                pathfile.Value = FormatCaptureParamPath(pathfile.Value);
+                            }
+
+                            //if (m_bReplaceHighCaptureParams && (nTaskType == 7))
+                            //{
+                            //    XmlNode bPath0 = CAPTUREPARAM.SelectSingleNode("bPath0");
+                            //    if (bPath0 != null)
+                            //    {
+                            //        bPath0.InnerText = "0";
+                            //    }
+                            //}
+
+                            if (taskinfo.ContentMeta.AudioChannels >= 0)
+                            {
+                                pic = capturenode.Element("iPureAudioValue");
+                                if (pic != null)
+                                {
+                                    pic.Value = taskinfo.ContentMeta.AudioChannels.ToString();
+                                }
+                            }
+                            if (taskinfo.ContentMeta.AudioChannelAttribute > 0)
+                            {
+                                pic = capturenode.Element("nAudioChannelAttribute");
+                                if (pic != null)
+                                {
+                                    pic.Value = taskinfo.ContentMeta.AudioChannelAttribute.ToString();
+                                }
+                            }
+
+                            if (taskinfo.ContentMeta.ASRmask >= 0)
+                            {
+                                pic = capturenode.Element("ASR_mask");
+                                if (pic != null)
+                                {
+                                    pic.Value = taskinfo.ContentMeta.ASRmask.ToString();
+                                }
+                            }
+
+                            string backinfo = capturenode.ToString();
+                            //backinfo = backinfo.Replace("&amp;", "&");
+                            return backinfo;
                         }
                         else
-                        {
-                            capturenode.Add(new XElement("FirPicNum", bmpframe.ToString()));
-                        }
-
-                        //第三码路径没说过要用，暂时算了
-                        var pathfile = capturenode.Element("path1FileName");
-                        if (pathfile != null)
-                        {
-                            pathfile.Value = FormatCaptureParamPath(pathfile.Value);
-                        }
-                        pathfile = capturenode.Element("path0FileName");
-                        if (pathfile != null)
-                        {
-                            pathfile.Value = FormatCaptureParamPath(pathfile.Value);
-                        }
-
-                        //if (m_bReplaceHighCaptureParams && (nTaskType == 7))
-                        //{
-                        //    XmlNode bPath0 = CAPTUREPARAM.SelectSingleNode("bPath0");
-                        //    if (bPath0 != null)
-                        //    {
-                        //        bPath0.InnerText = "0";
-                        //    }
-                        //}
-
-                        if (taskinfo.ContentMeta.AudioChannels >= 0)
-                        {
-                            pic = capturenode.Element("iPureAudioValue");
-                            if (pic != null)
-                            {
-                                pic.Value = taskinfo.ContentMeta.AudioChannels.ToString();
-                            }
-                        }
-                        if (taskinfo.ContentMeta.AudioChannelAttribute > 0)
-                        {
-                            pic = capturenode.Element("nAudioChannelAttribute");
-                            if (pic != null)
-                            {
-                                pic.Value = taskinfo.ContentMeta.AudioChannelAttribute.ToString();
-                            }
-                        }
-
-                        if (taskinfo.ContentMeta.ASRmask >= 0)
-                        {
-                            pic = capturenode.Element("ASR_mask");
-                            if (pic != null)
-                            {
-                                pic.Value = taskinfo.ContentMeta.ASRmask.ToString();
-                            }
-                        }
-
-                        string backinfo = capturenode.ToString();
-                        //backinfo = backinfo.Replace("&amp;", "&");
-                        return backinfo;
+                            Logger.Error($"load captureparam error {captureparam} {typeinfo.SignalType}");
                     }
-                    else
-                        Logger.Error($"load captureparam error {captureparam} {typeinfo.SignalType}");
-                }
 
+                }
             }
-            else
-                Logger.Error($"StartTaskAsync QuerySDIFormatAsync error {typeinfo?.SignalType}");
+
+            Logger.Error($"StartTaskAsync QuerySDIFormatAsync error {typeinfo?.SignalType}");
             return string.Empty;
         }
 

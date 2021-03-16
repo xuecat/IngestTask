@@ -178,7 +178,7 @@ namespace IngestTask.Tool
                 {
                     r = await proc().ConfigureAwait(true);
                     isOk = judge(r);
-                    break;
+                    //break;
                 }
                 catch (System.Exception)
                 {
