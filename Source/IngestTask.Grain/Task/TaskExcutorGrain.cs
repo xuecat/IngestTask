@@ -315,11 +315,13 @@ namespace IngestTask.Grain
                                                                 RetryTimes = task.RetryTimes,
                                                                 Timers = 0
                                                             },
-                                                           TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
+                                                           TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
                                 }
                             }
                             else
                             {
+                                //重调度太频繁了，加点延时
+                                await Task.Delay(500);
                                 RaiseEvent(new TaskEvent() { OpType = opType.otReDispatch, TaskContentInfo = task.TaskContent });
                                 await ConfirmEvents();
                             }
@@ -486,14 +488,23 @@ namespace IngestTask.Grain
                     }
                     else
                     {
-                        if (msvtask.ulID >0 && param.TaskId > 0 && msvtask.ulID != param.TaskId)
+                        if (msvtask.ulID >0 && param.TaskId > 0)
                         {
-                            Logger.Warn("OnRunningTaskMonitorAsync quit different task");
-                            if (_timer != null)
+                            if (msvtask.ulID != param.TaskId)
                             {
-                                _timer.Dispose();
-                                _timer = null;
+                                Logger.Warn("OnRunningTaskMonitorAsync quit different task");
+                                if (_timer != null)
+                                {
+                                    _timer.Dispose();
+                                    _timer = null;
+                                }
                             }
+                            else
+                            {
+                                Logger.Info($"running task is ok {msvtask.ulID}");
+                                await Task.Delay(400);//查到了奖励自己不用那么勤快调接口
+                            }
+                            
                         }
                     }
                 }
@@ -506,7 +517,7 @@ namespace IngestTask.Grain
                 runningtask = false;
             }
 
-            if (!runningtask && param.RetryTimes > 0)//任务都没开始起，说明重试过，直接换任务通道吧
+            if (!runningtask )//任务都没开始起，说明重试过，直接换任务通道吧
             {
                 var info = await _restClient.ReScheduleTaskChannelAsync(param.TaskId);
                 if (info == null)//重新分配任务到其它通道或者啥的
