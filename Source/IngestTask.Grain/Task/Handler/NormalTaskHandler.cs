@@ -243,9 +243,6 @@ namespace IngestTask.Grain
                         break;
                 }
 
-                await Task.Delay(200);
-                
-
                 DateTime dtcurrent;
                 DateTime dtbegin = (task.RetryTimes > 0 && task.NewBeginTime != DateTime.MinValue)?task.NewBeginTime :
                     DateTimeFormat.DateTimeFromString(task.TaskContent.Begin).AddSeconds(-1* taskStartPrevious);

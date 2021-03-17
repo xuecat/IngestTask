@@ -208,7 +208,7 @@ namespace IngestTask.Grain
                 {
                     foreach (var task in lsttask)
                     {
-                        if (task.State == (int)taskState.tsReady && task.Tasktype != (int)TaskType.TT_TIEUP)
+                        if (task.State == (int)taskState.tsReady)
                         {
                             if (task.Tasktype == (int)TaskType.TT_PERIODIC
                                 && task.OldChannelid == 0)
