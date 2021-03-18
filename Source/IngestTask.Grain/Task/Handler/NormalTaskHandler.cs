@@ -42,7 +42,7 @@ namespace IngestTask.Grain
         {
             if (taskinfo.StartOrStop)
             {
-                if (taskinfo.TaskContent.TaskType == TaskType.TT_MANUTASK)//手动任务要不停的尝试开始
+                if (taskinfo.TaskContent.TaskType == TaskType.TT_MANUTASK || taskinfo.TaskContent.TaskType == TaskType.TT_OPENEND)//手动任务要不停的尝试开始
                 {
                     Logger.Error($"retry manutask {taskinfo.TaskContent.TaskId}");
                     return 0;
@@ -85,7 +85,7 @@ namespace IngestTask.Grain
 
             if (task.StartOrStop && task.OpType != opType.otDel)
             {
-                if (task.TaskContent.TaskType == TaskType.TT_MANUTASK)//已经执行的手动任务不需要执行，未执行的手动任务需要继续执行
+                if (task.TaskContent.TaskType == TaskType.TT_MANUTASK || task.TaskContent.TaskType == TaskType.TT_OPENEND)//已经执行的手动任务不需要执行，未执行的手动任务需要继续执行
                 {
                     if (task.TaskContent.State == taskState.tsExecuting || task.TaskContent.State == taskState.tsManuexecuting)
                     {
