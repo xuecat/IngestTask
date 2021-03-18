@@ -145,7 +145,7 @@ namespace IngestTask.Grain.Service
             {
                 foreach (var item in _lstTimerScheduleDevice)
                 {
-                    var state = await _msvClient.QueryDeviceStateAsync(item.ChannelIndex, item.Ip, false, Logger);
+                    var state = await _msvClient.QueryDeviceStateAsync(item.ChannelIndex, item.Ip, false, 0, Logger);
 
                     MSV_Mode msvmode = MSV_Mode.NETWORK;
                     if (state == Device_State.DISCONNECTTED)

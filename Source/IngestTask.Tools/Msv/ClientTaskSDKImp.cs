@@ -882,6 +882,19 @@ namespace IngestTask.Tool.Msv
         /*********************************************************************************
         查询媒体服务器状态
         **********************************************************************************/
+        public Task<MSV_STATE> Test_MSVQueryStateAsync(int state)
+        {
+            m_error_desc = "Operation succeed";
+            return Task.FromResult(new MSV_STATE()
+            {
+                dwQueryCounter = 1,
+                bRetroSpect = 1,
+                msv_mode = MSV_MODE.CM_LOCAL,
+                msv_work_mode = WORK_MODE.WM_AUTO,
+                msv_capture_state = (CAPTURE_STATE)state,
+                msv_client_ip = "0.0.0.1"
+            });
+        }
         public async Task<MSV_STATE> MSVQueryStateAsync(string strMsvIp, int nChannel, Sobey.Core.Log.ILogger logger)
         {
 
@@ -1889,6 +1902,10 @@ namespace IngestTask.Tool.Msv
             
 
         }
+        public Task<MSV_RET> Test_MSVStartTaskNewAsync()
+        {
+            return Task.FromResult( MSV_RET.MSV_SUCCESS);
+        }
 
         public async Task<MSV_RET> MSVStartTaskNewAsync(string strMsvIp, TASK_ALL_PARAM_NEW param, int nChannel, Sobey.Core.Log.ILogger logger)
         {
@@ -1992,6 +2009,10 @@ namespace IngestTask.Tool.Msv
         /**********************************************************************************
             描述: 停止一条手动任务  taskID 返回停止的任务的ID
         ***********************************************************************************/
+        public Task<long> Test_MSVStopTaskAsync(long lSendTaskID)
+        {
+            return Task.FromResult(lSendTaskID);
+        }
         public async Task<long> MSVStopTaskAsync(string strMsvIp, long lSendTaskID, int nChannel, Sobey.Core.Log.ILogger logger)
         {
             try
@@ -2646,6 +2667,13 @@ namespace IngestTask.Tool.Msv
             }
             
 
+        }
+        public Task<SDISignalStatus> Test_MSVQuerySDIFormatAsync()
+        {
+            return Task.FromResult(new SDISignalStatus() { 
+                  VideoFormat = SignalFormat._1920_1080_50I,
+                  nWidth = 1920
+            });
         }
         public async Task<SDISignalStatus> MSVQuerySDIFormatAsync(string strMsvIp, Sobey.Core.Log.ILogger logger,int nChannel = -1)
         {

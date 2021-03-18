@@ -94,7 +94,7 @@ namespace IngestTask.Tool.Msv
 
         private bool IsTestDevice(string ip, int port)
         {
-            if (port == 110)
+            if (port == 10101)
             {
                 return true;
             }
@@ -107,7 +107,7 @@ namespace IngestTask.Tool.Msv
             try
             {
                 //ret = _clientSdk.MSVQuerySDIFormat(strMsvIP, ref singleType, ref bIsBack, logger, nChPort);
-                var ret = await AutoRetry.RunSyncAsync(() => _clientSdk.MSVQuerySDIFormatAsync(strMsvIP, logger, nChPort),
+                var ret = await AutoRetry.RunSyncAsync(() => (IsTestDevice(strMsvIP, nChPort) ? _clientSdk.Test_MSVQuerySDIFormatAsync() : _clientSdk.MSVQuerySDIFormatAsync(strMsvIP, logger, nChPort)),
                     (e) =>
                     {
                         if (e== null|| e.VideoFormat == SignalFormat._unknown_vid_format || e.nWidth == 0)
@@ -209,7 +209,7 @@ namespace IngestTask.Tool.Msv
                 logger.Info($"MsvSDK Record Prepare Cast MSVStartTaskNew Function ip={strMsvIP} port={nChPort} cutlen={allparam.nCutLen}");
 
                 //ret = _clientSdk.MSVStartTaskNew(strMsvIP, m_taskAllParam, nChPort, logger);
-                ret = await _clientSdk.MSVStartTaskNewAsync(strMsvIP, allparam, nChPort, logger).ConfigureAwait(true); ;
+                ret = IsTestDevice( strMsvIP, nChPort) ? await _clientSdk.Test_MSVStartTaskNewAsync().ConfigureAwait(true) : await _clientSdk.MSVStartTaskNewAsync(strMsvIP, allparam, nChPort, logger).ConfigureAwait(true); ;
                 nMsvRet = Convert.ToInt32(ret);
                 if (ret == MSV_RET.MSV_NETERROR)
                 {
@@ -339,13 +339,17 @@ namespace IngestTask.Tool.Msv
             }
         }
 
-        public async Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, /*int taskid,*/ Sobey.Core.Log.ILogger logger)
+        public Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, /*int taskid,*/ Sobey.Core.Log.ILogger logger)
+        {
+            return QueryTaskInfoAsync(nChPort, strMsvIP, 0, logger);
+        }
+        public async Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, int taskid, Sobey.Core.Log.ILogger logger)
         {
             logger.Info($"MsvSDK prepare QueryTaskState(ip={strMsvIP})");
             try
             {
                 TASK_PARAM info = IsTestDevice(strMsvIP, nChPort) ?
-                    await _clientSdk.Test_MSVQueryRuningTaskAsync(strMsvIP, nChPort, 0, logger).ConfigureAwait(true)
+                    await _clientSdk.Test_MSVQueryRuningTaskAsync(strMsvIP, nChPort, taskid, logger).ConfigureAwait(true)
                     : await _clientSdk.MSVQueryRuningTaskAsync(strMsvIP,  nChPort, logger).ConfigureAwait(true);
 
                 if (info == null)
@@ -369,12 +373,12 @@ namespace IngestTask.Tool.Msv
         }
 
         //capture 刚发采集命令发完要完全确认状态
-        public async Task<Device_State> QueryDeviceStateAsync(int nChPort, string strMsvIP, bool capture, Sobey.Core.Log.ILogger logger)
+        public async Task<Device_State> QueryDeviceStateAsync(int nChPort, string strMsvIP, bool capture, int capstate, Sobey.Core.Log.ILogger logger)
         {
             try
             {
 
-                MSV_STATE state = await _clientSdk.MSVQueryStateAsync(strMsvIP, nChPort, logger).ConfigureAwait(true);
+                MSV_STATE state = IsTestDevice(strMsvIP, nChPort) ? await _clientSdk.Test_MSVQueryStateAsync(capstate).ConfigureAwait(true): await _clientSdk.MSVQueryStateAsync(strMsvIP, nChPort, logger).ConfigureAwait(true);
                 if (state == null)
                 {
                     logger.Error($"MSVQueryState MSV_NETERROR, {strMsvIP}:{nChPort}, error: {_clientSdk.MSVGetLastErrorString()}");
@@ -428,7 +432,7 @@ namespace IngestTask.Tool.Msv
         {
             try
             {
-                long nRetTaskId = await _clientSdk.MSVStopTaskAsync(strMsvIP, taskID, nChPort, logger).ConfigureAwait(true);
+                long nRetTaskId = IsTestDevice(strMsvIP, nChPort) ? await _clientSdk.Test_MSVStopTaskAsync(taskID).ConfigureAwait(true) : await _clientSdk.MSVStopTaskAsync(strMsvIP, taskID, nChPort, logger).ConfigureAwait(true);
                 if (nRetTaskId <= 0)
                 {
                     logger.Error($"MSVStopTask failed, error:{_clientSdk.MSVGetLastErrorString()} ");
