@@ -519,8 +519,8 @@ namespace IngestTask.Grain
             }
             else
             {
-                Logger.Info($"OnRunningTaskMonitorAsync not runningtask {param.TaskId}");
-                runningtask = false;
+                //Logger.Info($"OnRunningTaskMonitorAsync not runningtask {param.TaskId}");
+                //runningtask = false;
             }
 
             if (!runningtask )//任务都没开始起，说明重试过，直接换任务通道吧
