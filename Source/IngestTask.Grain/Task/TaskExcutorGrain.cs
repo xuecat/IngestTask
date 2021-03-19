@@ -519,6 +519,7 @@ namespace IngestTask.Grain
             }
             else
             {
+                await Task.Delay(400);//查到了奖励自己不用那么勤快调接口
                 //Logger.Info($"OnRunningTaskMonitorAsync not runningtask {param.TaskId}");
                 //runningtask = false;
             }
