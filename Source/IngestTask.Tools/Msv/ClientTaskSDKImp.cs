@@ -882,7 +882,7 @@ namespace IngestTask.Tool.Msv
         /*********************************************************************************
         查询媒体服务器状态
         **********************************************************************************/
-        public Task<MSV_STATE> Test_MSVQueryStateAsync(int state)
+        public Task<MSV_STATE> Test_MSVQueryStateAsync(CAPTURE_STATE state)
         {
             m_error_desc = "Operation succeed";
             return Task.FromResult(new MSV_STATE()
@@ -891,7 +891,7 @@ namespace IngestTask.Tool.Msv
                 bRetroSpect = 1,
                 msv_mode = MSV_MODE.CM_LOCAL,
                 msv_work_mode = WORK_MODE.WM_AUTO,
-                msv_capture_state = (CAPTURE_STATE)state,
+                msv_capture_state = state,
                 msv_client_ip = "0.0.0.1"
             });
         }
