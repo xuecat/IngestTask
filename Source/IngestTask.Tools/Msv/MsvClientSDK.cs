@@ -92,7 +92,7 @@ namespace IngestTask.Tool.Msv
             tmptaskparam.tmBeg = pTaskparam.tmBeg;
         }
 
-        private bool IsTestDevice(string ip, int port)
+        public static bool IsTestDevice(string ip, int port)
         {
             if (port == 10101)
             {
@@ -341,7 +341,7 @@ namespace IngestTask.Tool.Msv
 
         public Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, /*int taskid,*/ Sobey.Core.Log.ILogger logger)
         {
-            return QueryTaskInfoAsync(nChPort, strMsvIP, 0, logger);
+            return QueryTaskInfoAsync(nChPort, strMsvIP,  taskid: 0, logger);
         }
         public async Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, int taskid, Sobey.Core.Log.ILogger logger)
         {
@@ -373,7 +373,7 @@ namespace IngestTask.Tool.Msv
         }
 
         //capture 刚发采集命令发完要完全确认状态
-        public async Task<Device_State> QueryDeviceStateAsync(int nChPort, string strMsvIP, bool capture, int capstate, Sobey.Core.Log.ILogger logger)
+        public async Task<Device_State> QueryDeviceStateAsync(int nChPort, string strMsvIP, bool capture, CAPTURE_STATE capstate, Sobey.Core.Log.ILogger logger)
         {
             try
             {

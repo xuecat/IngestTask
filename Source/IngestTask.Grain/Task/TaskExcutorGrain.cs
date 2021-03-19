@@ -317,7 +317,7 @@ namespace IngestTask.Grain
                                                             },
                                                            TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
 
-                                    if (chinfo.ChannelIndex == 10101)//测试通道，调用接口发送kafka
+                                    if (MsvClientCtrlSDK.IsTestDevice("",chinfo.ChannelIndex))//测试通道，调用接口发送kafka
                                     {
                                         await _restClient.SendMqmsgToKafkaAsync(taskid, 0x01);
                                     }
@@ -439,7 +439,7 @@ namespace IngestTask.Grain
                 var devicegrain = _services.GetRequiredService<MsvClientCtrlSDK>();
                 if (devicegrain != null)
                 {
-                    var msvtask = await devicegrain.QueryTaskInfoAsync(param.DevicePort, param.DeviceIp, Logger);
+                    var msvtask = await devicegrain.QueryTaskInfoAsync(param.DevicePort, param.DeviceIp, taskid: taskinfolst.TaskId,  Logger);
                     if (msvtask == null || msvtask.ulID < 1)//说明msv出问题了查不到任务了,采集中剩下部分要跳转, 3次重试后才移动通道 
                     {
                         Logger.Info($"OnRunningTaskMonitorAsync task need to check {taskinfolst.TaskId}");

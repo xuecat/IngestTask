@@ -211,8 +211,6 @@ namespace IngestTask.Grain
                     //前一个任务是手动任务，特别处理无缝任务 bIsStopLastTask
                 }
 
-                if (channel.ChannelIndex != 10101) //测试端口不切矩阵
-                {
                 switch (task.TaskSource)
                 {
                     case TaskSource.emMSVUploadTask:
@@ -244,7 +242,6 @@ namespace IngestTask.Grain
                     default:
                         break;
                 }
-                }
 
                 DateTime dtcurrent;
                 DateTime dtbegin = (task.RetryTimes > 0 && task.NewBeginTime != DateTime.MinValue)?task.NewBeginTime :
@@ -268,7 +265,7 @@ namespace IngestTask.Grain
                                 {
 
                                     var state = await AutoRetry.RunSyncAsync(() =>
-                                                            msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, 1, Logger),
+                                                            msvClient.QueryDeviceStateAsync(channel.ChannelIndex, channel.Ip, true, capstate:  CAPTURE_STATE.CS_CAPTURE, Logger),
                                                                                                     (e) =>
                                                                                                     {
                                                                                                         if (e == Device_State.WORKING)
@@ -323,7 +320,7 @@ namespace IngestTask.Grain
             {
                 if (DateTime.Now >= end)
                 {
-                    var msvtaskinfo = await msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, task.TaskContent.TaskId, Logger);
+                    var msvtaskinfo = await msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, taskid: task.TaskContent.TaskId, Logger);
 
                     if (msvtaskinfo != null)
                     {
