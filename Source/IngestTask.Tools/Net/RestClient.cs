@@ -26,6 +26,7 @@ namespace IngestTask.Tool
         const string USERAPI30 = "api/v3/user";
         const string DEVICEAPI30 = "api/v3/device";
         //const string DEVICEAPI20 = "api/v2/device";
+        const string MATERIALAPI30 = "api/v3/material";
 
         private string IngestDbUrl { get; set; }
         private string CmServerUrl { get; set; }
@@ -559,6 +560,23 @@ namespace IngestTask.Tool
         }
         #endregion
 
+        #region Material
+        public async Task<bool> SendMqmsgToKafkaAsync(int taskid, int kfkcmd)
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
+            {
+                return GetAsync<ResponseMessage<bool>>(
+                    $"{IngestDbUrl}/{MATERIALAPI30}/sendkfk/{taskid}?mode=1&kafkacmd={kfkcmd}"
+                    , null, GetIngestHeader()
+                    );
+            },1).ConfigureAwait(true);
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return false;
+        }
+        #endregion
         #region Task
 
         public async Task<List<TaskContent>> GetNeedSyncTaskListAsync()

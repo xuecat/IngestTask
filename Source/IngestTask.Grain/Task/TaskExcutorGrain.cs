@@ -316,6 +316,12 @@ namespace IngestTask.Grain
                                                                 Timers = 0
                                                             },
                                                            TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+
+                                    if (chinfo.ChannelIndex == 10101)//测试通道，调用接口发送kafka
+                                    {
+                                        await _restClient.SendMqmsgToKafkaAsync(taskid, 0x01);
+                                    }
+
                                 }
                             }
                             else
