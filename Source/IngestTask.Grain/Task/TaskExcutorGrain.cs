@@ -327,7 +327,7 @@ namespace IngestTask.Grain
                             else
                             {
                                 //重调度太频繁了，加点延时
-                                await Task.Delay(500);
+                                await Task.Delay(400);
                                 RaiseEvent(new TaskEvent() { OpType = opType.otReDispatch, TaskContentInfo = task.TaskContent });
                                 await ConfirmEvents();
                             }

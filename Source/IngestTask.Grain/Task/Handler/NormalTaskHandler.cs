@@ -38,13 +38,17 @@ namespace IngestTask.Grain
             return false;
         }
 
-        public override int IsNeedRedispatchask(TaskFullInfo taskinfo)
+        public async override ValueTask<int> IsNeedRedispatchaskAsync(TaskFullInfo taskinfo)
         {
             if (taskinfo.StartOrStop)
             {
                 if (taskinfo.TaskContent.TaskType == TaskType.TT_MANUTASK || taskinfo.TaskContent.TaskType == TaskType.TT_OPENEND)//手动任务要不停的尝试开始
                 {
                     Logger.Error($"retry manutask {taskinfo.TaskContent.TaskId}");
+                    if (taskinfo.RetryTimes > 3)//重试3次还没有成功说明可能断流，把任务显示界面改了，任务变成重试状态。
+                    {
+                        await UnlockTaskAsync(taskinfo.TaskContent.TaskId, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
+                    }
                     return 0;
                 }
                 else
@@ -53,7 +57,17 @@ namespace IngestTask.Grain
                         DateTimeFormat.DateTimeFromString(taskinfo.TaskContent.End))
                     {
                         Logger.Error($"IsNeedRedispatchaskAsync start over {taskinfo.TaskContent.TaskId}");
+
+                        if (taskinfo.RetryTimes > 3)//重试3次还没有成功说明可能断流，把任务显示界面改了，任务变成重试状态。
+                        {
+                            await UnlockTaskAsync(taskinfo.TaskContent.TaskId, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
+                        }
                         return 0;
+                    }
+                    else//放弃任务，返回taskid
+                    {
+                        Logger.Error($"IsNeedRedispatchaskAsync gaveup over {taskinfo.TaskContent.TaskId}");
+                        await UnlockTaskAsync(taskinfo.TaskContent.TaskId, taskState.tsInvaild, dispatchState.dpsDispatched, syncState.ssSync);
                     }
                 }
 
@@ -65,7 +79,12 @@ namespace IngestTask.Grain
                 DateTimeFormat.DateTimeFromString(taskinfo.TaskContent.End).AddSeconds(2))
                 {
                     Logger.Error($"IsNeedRedispatchaskAsync stop over {taskinfo.TaskContent.TaskId}");
+                    
                     return 0;
+                }
+                else//放弃任务，返回taskid,stop任务没有无效的概念，都已经采集好了
+                {
+                    Logger.Error($"IsNeedRedispatchaskAsync gaveup over {taskinfo.TaskContent.TaskId}");
                 }
                 return taskinfo.TaskContent.TaskId;
             }
@@ -112,9 +131,7 @@ namespace IngestTask.Grain
 
                 if (channel.CurrentDevState == Device_State.DISCONNECTTED)
                 {
-                    await UnlockTaskAsync(taskid,
-                        taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
-                    return IsNeedRedispatchask(task);
+                    return await IsNeedRedispatchaskAsync(task);
                 }
 
                 if (await StartTaskAsync(task, channel) > 0)
@@ -129,24 +146,20 @@ namespace IngestTask.Grain
                     //我擦，居然可以不用写，stop才有
                     Logger.Info("start error. begin to use backupsignal");
 
-
-                    if (task.TaskContent.TaskType == TaskType.TT_OPENEND ||
-                        task.TaskContent.TaskType == TaskType.TT_OPENENDEX)
-                    {
-                        await UnlockTaskAsync(taskid, taskState.tsInvaild, dispatchState.dpsDispatched, syncState.ssSync);
-                    }
-                    else
-                    {
-                        await UnlockTaskAsync(taskid, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
-                    }
+                    //先注释了，感觉没用了
+                    //if (task.TaskContent.TaskType == TaskType.TT_OPENEND ||
+                    //    task.TaskContent.TaskType == TaskType.TT_OPENENDEX)
+                    //{
+                    //    await UnlockTaskAsync(taskid, taskState.tsInvaild, dispatchState.dpsDispatched, syncState.ssSync);
+                    //}
+                    //else
+                    //{
+                    //    await UnlockTaskAsync(taskid, taskState.tsNo, dispatchState.dpsRedispatch, syncState.ssSync);
+                    //}
 
                     //重调度还失败，要看看是否超过了，超过就从列表去了
-                    
-                    return IsNeedRedispatchask(task);
-
+                    return await IsNeedRedispatchaskAsync(task);
                 }
-                
-                
             }
             else
             {
@@ -178,7 +191,7 @@ namespace IngestTask.Grain
                 else
                 {
                     Logger.Error("task stop error retry go");
-                    return IsNeedRedispatchask(task);
+                    return await IsNeedRedispatchaskAsync(task);
                 }
             }
             //return 0;
@@ -337,7 +350,7 @@ namespace IngestTask.Grain
                             }
                             else
                             {
-                                return IsNeedRedispatchask(task);
+                                return await IsNeedRedispatchaskAsync(task);
                             }
                         }
                         else
@@ -357,7 +370,7 @@ namespace IngestTask.Grain
                     }
                     else
                     {
-                        return IsNeedRedispatchask(task);
+                        return await IsNeedRedispatchaskAsync(task);
                     }
 
                 }
