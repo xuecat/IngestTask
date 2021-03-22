@@ -17,7 +17,7 @@ namespace IngestTask.Grain
     using System.Text;
     using System.Threading.Tasks;
 
-    [Reentrant]
+    //[Reentrant]
     [ScheduleTaskPlacementStrategy]
     [MultiGrain("IngestTask.Grain.ScheduleTaskGrin")]
     [TraceGrain("IngestTask.Grain.ScheduleTaskGrin", TaskTraceEnum.TaskSchedule)]
@@ -77,6 +77,7 @@ namespace IngestTask.Grain
 
         public async Task<int> AddScheduleTaskAsync(DispatchTask task)
         {
+            Logger.Info($"add scheduletask {task.Taskid} {task.Tasktype} {task.State} {task.Starttime} {task.Endtime}");
             var finditem = this.State.Find(x => x.Taskid == task.Taskid);
             if (task != null && finditem == null)
             {
@@ -227,7 +228,7 @@ namespace IngestTask.Grain
                                         //var taskperiod = await _restClient.GetTaskDBAsync(task.Taskid);
                                         if (info.Endtime > DateTime.Now && info.NewBegintime > DateTime.Now)
                                         {
-                                            await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(info);
+                                            await GrainFactory.GetGrain<IDispatcherGrain>(0).AddTaskAsync(info);
                                         }
                                     }
                                     else
