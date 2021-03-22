@@ -17,7 +17,7 @@ namespace IngestTask.Grain
     using System.Text;
     using System.Threading.Tasks;
 
-    //[Reentrant]
+    [Reentrant]
     [ScheduleTaskPlacementStrategy]
     [MultiGrain("IngestTask.Grain.ScheduleTaskGrin")]
     [TraceGrain("IngestTask.Grain.ScheduleTaskGrin", TaskTraceEnum.TaskSchedule)]
