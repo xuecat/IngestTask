@@ -333,7 +333,7 @@ namespace IngestTask.Grain
             {
                 if (DateTime.Now >= end)
                 {
-                    var msvtaskinfo = await msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, taskid: task.TaskContent.TaskId, Logger);
+                    var msvtaskinfo = await msvClient.QueryTaskInfoAsync(channel.ChannelIndex, channel.Ip, testtaskid: task.TaskContent.TaskId, Logger);
 
                     if (msvtaskinfo != null)
                     {

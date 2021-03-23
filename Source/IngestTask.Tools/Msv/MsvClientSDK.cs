@@ -341,15 +341,15 @@ namespace IngestTask.Tool.Msv
 
         public Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, /*int taskid,*/ Sobey.Core.Log.ILogger logger)
         {
-            return QueryTaskInfoAsync(nChPort, strMsvIP,  taskid: 0, logger);
+            return QueryTaskInfoAsync(nChPort, strMsvIP,  testtaskid: 0, logger);
         }
-        public async Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, int taskid, Sobey.Core.Log.ILogger logger)
+        public async Task<TASK_PARAM> QueryTaskInfoAsync(int nChPort, string strMsvIP, int testtaskid, Sobey.Core.Log.ILogger logger)
         {
             logger.Info($"MsvSDK prepare QueryTaskState(ip={strMsvIP})");
             try
             {
                 TASK_PARAM info = IsTestDevice(strMsvIP, nChPort) ?
-                    await _clientSdk.Test_MSVQueryRuningTaskAsync(strMsvIP, nChPort, taskid, logger).ConfigureAwait(true)
+                    await _clientSdk.Test_MSVQueryRuningTaskAsync(strMsvIP, nChPort, testtaskid, logger).ConfigureAwait(true)
                     : await _clientSdk.MSVQueryRuningTaskAsync(strMsvIP,  nChPort, logger).ConfigureAwait(true);
 
                 if (info == null)

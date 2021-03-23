@@ -16,5 +16,7 @@ namespace IngestTask.Abstraction.Grains
         Task UpdateTaskAsync(DispatchTask task);
         [OneWay]
         Task DeleteTaskAsync(DispatchTask task);
+
+        
     }
 }

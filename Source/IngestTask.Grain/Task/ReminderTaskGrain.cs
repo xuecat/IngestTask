@@ -28,8 +28,10 @@ namespace IngestTask.Grain
         private TimeSpan _reminderCurPeriod;
         private IGrainReminder _grainReminder;
 
+        private bool _syncScheduled;
         public ReminderTaskGrain(IConfiguration configuration)
         {
+            _syncScheduled = false;
             _reminderCurPeriod = TimeSpan.MaxValue;
             _grainReminder = null;
             _reminderTimerMinutes = configuration.GetSection("Task:TaskSchedulePreviousTimer").Get<int>();
@@ -223,6 +225,33 @@ namespace IngestTask.Grain
                 return Task.FromResult(lstitem.ToList());
             }
             return Task.FromResult(default(List<DispatchTask>));
+        }
+
+        public async Task SyncScheduleTaskAsync(List<DispatchTask> lsttask)
+        {
+            if (_syncScheduled)
+            {
+                return;
+            }
+
+            _syncScheduled = true;//多节点只同步一次
+            if (this.State.Count > 0)
+            {
+                var lsttaskid = this.State.Select(x => x.Taskid);
+                lsttask.RemoveAll(x => lsttaskid.Contains(x.Taskid));
+            }
+
+            if (lsttask.Count > 0)
+            {
+                lock (this.State)
+                {
+                    this.State.AddRange(lsttask);
+                }
+
+                if (!await RecalculateReminderAsync())
+                    await WriteStateAsync();
+
+            }
         }
 
         [NoProfiling]

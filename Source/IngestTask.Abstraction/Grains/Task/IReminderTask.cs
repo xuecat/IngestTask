@@ -19,5 +19,7 @@ namespace IngestTask.Abstraction.Grains
         Task<List<DispatchTask>> GetTaskListAsync(List<int> taskid);
         Task<List<DispatchTask>> GetTaskListAsync();
         Task<bool> IsCachedAsync(int taskid);
+
+        Task SyncScheduleTaskAsync(List<DispatchTask> lsttask);
     }
 }

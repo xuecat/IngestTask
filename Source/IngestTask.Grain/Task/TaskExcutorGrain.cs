@@ -409,7 +409,7 @@ namespace IngestTask.Grain
         }
 
         /*
-         * 开始成功就应该监听
+         * 通道的监听完全可以一直开着，为了节省资源，可以关闭
          */
         private async Task OnRunningTaskMonitorAsync(object type)
         {
@@ -427,7 +427,7 @@ namespace IngestTask.Grain
                 return;
             }
 
-            var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync(param.ChannelId);
+            var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync((int)this.State.ChannelId);
             bool runningtask = true;
             if (taskinfolst != null)
             {
@@ -439,7 +439,7 @@ namespace IngestTask.Grain
                 var devicegrain = _services.GetRequiredService<MsvClientCtrlSDK>();
                 if (devicegrain != null)
                 {
-                    var msvtask = await devicegrain.QueryTaskInfoAsync(param.DevicePort, param.DeviceIp, taskid: taskinfolst.TaskId,  Logger);
+                    var msvtask = await devicegrain.QueryTaskInfoAsync(param.DevicePort, param.DeviceIp, testtaskid: taskinfolst.TaskId,  Logger);
                     if (msvtask == null || msvtask.ulID < 1)//说明msv出问题了查不到任务了,采集中剩下部分要跳转, 3次重试后才移动通道 
                     {
                         Logger.Info($"OnRunningTaskMonitorAsync task need to check {taskinfolst.TaskId}");
@@ -524,7 +524,7 @@ namespace IngestTask.Grain
                 //runningtask = false;
             }
 
-            if (!runningtask )//任务都没开始起，说明重试过，直接换任务通道吧
+            if (!runningtask )
             {
                 var info = await _restClient.ReScheduleTaskChannelAsync(param.TaskId);
                 if (info == null)//重新分配任务到其它通道或者啥的
