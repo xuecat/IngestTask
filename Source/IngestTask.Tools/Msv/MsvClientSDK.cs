@@ -150,6 +150,7 @@ namespace IngestTask.Tool.Msv
                         bValidVideo = true;
                         break;
                 }
+                ret.SignalType = pnSingleType;
                 if (bValidVideo)
                 {
                     if (ret.nWidth > 0 && ret.nWidth <= 720)
