@@ -116,8 +116,11 @@ namespace IngestTask.Grain.Service
         private async Task OnSyncTaskAsync(object type)
         {
             var lst = await _restClient.GetNeedSyncScheduleTaskListAsync();
-            Logger.Info("device syncscheduletask: " + string.Join(",", lst.Select(x=>x.Taskid)));
-            await _grainFactory.GetGrain<IReminderTask>(0).SyncScheduleTaskAsync(lst);
+            if (lst != null && lst.Count >0)
+            {
+                Logger.Info("device syncscheduletask: " + string.Join(",", lst.Select(x => x.Taskid)));
+                await _grainFactory.GetGrain<IReminderTask>(0).SyncScheduleTaskAsync(lst);
+            }
 
             if (_synctimer != null)
             {

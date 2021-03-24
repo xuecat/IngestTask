@@ -255,7 +255,10 @@ namespace IngestTask.Grain
                                 }
                             }
                         }
-                        else if (task.State == (int)taskState.tsExecuting || task.State == (int)taskState.tsManuexecuting)
+                        else if (task.State == (int)taskState.tsExecuting 
+                            || task.State == (int)taskState.tsManuexecuting
+                            || task.State == (int)taskState.tsComplete
+                            || task.State == (int)taskState.tsDelete)
                         {
                             var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
                             if (spansecond < _taskSchedulePreviousSeconds)

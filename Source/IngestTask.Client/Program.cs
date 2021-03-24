@@ -28,7 +28,7 @@ namespace IngestTask.Client
                     //    options.Invariant = "MySql.Data.MySqlClient";
                     //    options.ConnectionString = "Server=172.16.0.205;Port=3307;Database=ingestdb;Uid=ingestdba;Pwd=sobeydba1;Pooling=true;minpoolsize=0;maxpoolsize=40;SslMode=none;";
                     //})
-                    .UseStaticClustering(new IPEndPoint[] { new IPEndPoint(IPAddress.Parse("172.16.135.116"), 30000) })
+                    .UseStaticClustering(new IPEndPoint[] { new IPEndPoint(IPAddress.Parse("172.16.136.9"), 30000) })
                     .Configure<ClusterOptions>(options =>
                     {
                         options.ClusterId = Cluster.ClusterId;
@@ -47,7 +47,7 @@ namespace IngestTask.Client
                     //var lsttask = await _httpClient.GetNeedSyncTaskListAsync().ConfigureAwait(true);
                     //if (lsttask != null && lsttask.Count >0)
                     //{
-                        var taskitem = await _httpClient.GetTaskDBAsync(5245).ConfigureAwait(true);
+                        var taskitem = await _httpClient.GetTaskDBAsync(8342).ConfigureAwait(true);
                         var grain = clusterClient.GetGrain<IDispatcherGrain>(0);
 
                         await grain.AddTaskAsync(taskitem).ConfigureAwait(true);

@@ -324,7 +324,6 @@ namespace IngestTask.Server
                 .UseIf(
                     RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
                     x => x.UsePerfCounterEnvironmentStatistics())
-                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(HelloGrain).Assembly).WithReferences())
                 .ConfigureApplicationParts(parts => parts.AddFromApplicationBaseDirectory())
                 .UseDashboard(config =>
                 {

@@ -126,6 +126,7 @@ namespace IngestTask.Grain
                         }
                     }
                     break;
+                
                 default:
                     break;
             }
@@ -153,6 +154,7 @@ namespace IngestTask.Grain
         private StreamSubscriptionHandle<ChannelInfo> _streamHandle;
         private IDisposable _timer;
         private IMapper _mapper;
+        private bool _init;
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
             RestClient rest,
             ITaskHandlerFactory handlerfac,
@@ -164,6 +166,7 @@ namespace IngestTask.Grain
             _restClient = rest;
             _handlerFactory = handlerfac;
             _mapper = mapper;
+            _init = false;
         }
 
         public override async Task OnActivateAsync()
@@ -176,12 +179,10 @@ namespace IngestTask.Grain
                                     .GetStream<ChannelInfo>(streamid, Abstraction.Constants.StreamName.DeviceReminder);
             _streamHandle = await streamProvider.SubscribeAsync(new StreamObserver(Logger, OnNextStream)).ConfigureAwait(true);
 
-            if (State.TaskLists.Count > 0)
-            {
-                State.TaskLists.Clear();
-            }
+            
             Logger.Info($" TaskBase active {State.ChannelId}");
             await base.OnActivateAsync();
+
         }
 
         public override async Task OnDeactivateAsync()
@@ -232,19 +233,29 @@ namespace IngestTask.Grain
 
             if (State.TaskLists.Count > 0)
             {
-                var orleansts = TaskScheduler.Current;
-                foreach (var item in State.TaskLists)
+                if (!_init)//初始化要清理过期任务
                 {
-                    if (!item.HandleTask && item.TaskContent != null && item.TaskContent.TaskId > 0)
-                    {
-                        item.HandleTask = true;
-                        _ = Task.Factory.StartNew(async () =>
-                        {
-                            return await HandleTaskAsync(item);
-                        }, CancellationToken.None, TaskCreationOptions.None, scheduler: orleansts);
-                    }
-                    
+                    _init = true;
+                    State.TaskLists.RemoveAll(a => DateTimeFormat.DateTimeFromString(a.TaskContent.End) < DateTime.Now.AddSeconds(-5));
                 }
+
+                if (State.TaskLists.Count > 0)
+                {
+                    var orleansts = TaskScheduler.Current;
+                    foreach (var item in State.TaskLists)
+                    {
+                        if (!item.HandleTask && item.TaskContent != null && item.TaskContent.TaskId > 0)
+                        {
+                            item.HandleTask = true;
+                            _ = Task.Factory.StartNew(async () =>
+                            {
+                                return await HandleTaskAsync(item);
+                            }, CancellationToken.None, TaskCreationOptions.None, scheduler: orleansts);
+                        }
+
+                    }
+                }
+                
             }
         }
 
