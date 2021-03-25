@@ -49,12 +49,12 @@ namespace IngestTask.Tool.Msv
                     byteL[1] = (byte)(u >> 16);
                     byteL[0] = (byte)(u >> 24);
                     bytes.CopyTo(byteL, 4);
+                    udpClient.Client.Blocking = false;
                     await udpClient.SendAsync(byteL, byteL.Length, remoteIpep).ConfigureAwait(true);
 
-                    udpClient.Client.Blocking = false;
                     int buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数   
 
-                    logger.Info($"SendAsync one times {udpClient.Available}");
+                    //logger.Info($"SendAsync one times {udpClient.Available}");
 
                     int ntimes = 4;
                     uint nNeedRecvLen = 0;
