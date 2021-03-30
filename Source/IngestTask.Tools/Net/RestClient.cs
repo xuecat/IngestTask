@@ -565,8 +565,8 @@ namespace IngestTask.Tool
         {
             var back = await AutoRetry.RunAsync<ResponseMessage<bool>>(() =>
             {
-                return GetAsync<ResponseMessage<bool>>(
-                    $"{IngestDbUrl}/{MATERIALAPI30}/sendkfk/{taskid}?mode=1&kafkacmd={kfkcmd}"
+                return PostAsync<ResponseMessage<bool>>(
+                    $"{IngestDbUrl}/{MATERIALAPI30}/kafkainfo/{taskid}?mode=1&kafkacmd={kfkcmd}"
                     , null, GetIngestHeader()
                     );
             },1).ConfigureAwait(true);
