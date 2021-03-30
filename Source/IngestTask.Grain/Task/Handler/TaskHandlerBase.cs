@@ -126,7 +126,7 @@ namespace IngestTask.Grain
             return param;
         }
 
-        public virtual int IsNeedRedispatchask(TaskFullInfo taskinfo)
+        public virtual ValueTask<int> IsNeedRedispatchaskAsync(TaskFullInfo taskinfo)
         {
             throw new NotImplementedException();
         }

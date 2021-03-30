@@ -29,6 +29,7 @@ namespace IngestTask.Grain.Service
         private readonly Sobey.Core.Log.ILogger Logger;
 
         private IDisposable _timer;
+        private IDisposable _synctimer;
 
         private readonly MsvClientCtrlSDK _msvClient;
         private readonly RestClient _restClient;
@@ -47,6 +48,7 @@ namespace IngestTask.Grain.Service
             Logger = Sobey.Core.Log.LoggerManager.GetLogger("MonitorService");
             _lstTimerScheduleDevice = new List<ChannelInfo>();
             _timer = null;
+            _synctimer = null;
             _msvClient = msv;
             _restClient = client;
             _grainFactory = grainFactory;
@@ -70,41 +72,14 @@ namespace IngestTask.Grain.Service
         protected override Task StartInBackground()
         {
             _timer = RegisterTimer(this.OnCheckAllDeviceAsync, _lstTimerScheduleDevice, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
+
+            _synctimer = RegisterTimer(this.OnSyncTaskAsync, null, TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(3));
             return Task.CompletedTask;
         }
 
         public override async Task Start()
         {
-            //if (this.membershipTableProvider != null)
-            //{
-            //    try
-            //    {
-            //        var info = await this.membershipTableProvider.ReadAll().ConfigureAwait(true);
-            //        if (info != null)
-            //        {
-            //            var lstfind = info.Members.Where(x => x.Item1.SiloName == SiloName 
-            //            && x.Item1.SiloAddress!=localsilo.SiloAddress&&x.Item1.Status != SiloStatus.Dead).ToList();
-
-            //            if (lstfind != null)
-            //            {
-                            
-            //                foreach (var item in lstfind)
-            //                {
-            //                    Logger.Info($"wirte silo info {item.Item1.SiloAddress.ToParsableString()} {item.Item1.Status} {item.Item1.StartTime}");
-            //                    item.Item1.Status = SiloStatus.Dead;
-            //                    await this.membershipTableProvider.UpdateRow(item.Item1, item.Item2, info.Version);
-            //                }
-            //            }
-                        
-                        
-            //        }
-            //    }
-            //    catch (Exception)
-            //    {
-
-            //    }
-            //}
-
+           
             string extrakey = string.Empty;
 
             var refgrain = GetGrainReference();
@@ -136,6 +111,22 @@ namespace IngestTask.Grain.Service
         public Task RefreshMonnitorDeviceAsync(List<DeviceInfo> info)
         {
             throw new NotImplementedException();
+        }
+
+        private async Task OnSyncTaskAsync(object type)
+        {
+            var lst = await _restClient.GetNeedSyncScheduleTaskListAsync();
+            if (lst != null && lst.Count >0)
+            {
+                Logger.Info("device syncscheduletask: " + string.Join(",", lst.Select(x => x.Taskid)));
+                await _grainFactory.GetGrain<IReminderTask>(0).SyncScheduleTaskAsync(lst);
+            }
+
+            if (_synctimer != null)
+            {
+                _synctimer.Dispose();
+                _synctimer = null;
+            }
         }
 
         private async Task OnCheckAllDeviceAsync(object type)

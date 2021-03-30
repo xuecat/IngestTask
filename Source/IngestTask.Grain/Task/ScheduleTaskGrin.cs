@@ -77,6 +77,7 @@ namespace IngestTask.Grain
 
         public async Task<int> AddScheduleTaskAsync(DispatchTask task)
         {
+            Logger.Info($"add scheduletask {task.Taskid} {task.Tasktype} {task.State} {task.Starttime} {task.Endtime}");
             var finditem = this.State.Find(x => x.Taskid == task.Taskid);
             if (task != null && finditem == null)
             {
@@ -227,7 +228,7 @@ namespace IngestTask.Grain
                                         //var taskperiod = await _restClient.GetTaskDBAsync(task.Taskid);
                                         if (info.Endtime > DateTime.Now && info.NewBegintime > DateTime.Now)
                                         {
-                                            await GrainFactory.GetGrain<IReminderTask>(0).AddTaskAsync(info);
+                                            await GrainFactory.GetGrain<IDispatcherGrain>(0).AddTaskAsync(info);
                                         }
                                     }
                                     else
@@ -254,7 +255,10 @@ namespace IngestTask.Grain
                                 }
                             }
                         }
-                        else if (task.State == (int)taskState.tsExecuting || task.State == (int)taskState.tsManuexecuting)
+                        else if (task.State == (int)taskState.tsExecuting 
+                            || task.State == (int)taskState.tsManuexecuting
+                            || task.State == (int)taskState.tsComplete
+                            || task.State == (int)taskState.tsDelete)
                         {
                             var spansecond = (task.Endtime - DateTime.Now).TotalSeconds;
                             if (spansecond < _taskSchedulePreviousSeconds)

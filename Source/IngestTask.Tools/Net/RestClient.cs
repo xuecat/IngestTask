@@ -596,6 +596,23 @@ namespace IngestTask.Tool
             return null;
         }
 
+        public async Task<List<DispatchTask>> GetNeedSyncScheduleTaskListAsync()
+        {
+            var back = await AutoRetry.RunAsync<ResponseMessage<List<DispatchTask>>>(() =>
+            {
+                return GetAsync<ResponseMessage<List<DispatchTask>>>(
+                    $"{IngestDbUrl}/{TASKAPI30}/sync/schedule"
+                    , null, GetIngestHeader()
+                    );
+            }).ConfigureAwait(true);
+
+            if (back != null)
+            {
+                return back.Ext;
+            }
+            return null;
+        }
+
         public async Task<TaskContent> GetChannelCapturingTaskInfoAsync(int channelid)
         {
             var back = await AutoRetry.RunAsync<ResponseMessage<TaskContent>>(() => {

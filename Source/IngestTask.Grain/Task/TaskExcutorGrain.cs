@@ -126,6 +126,7 @@ namespace IngestTask.Grain
                         }
                     }
                     break;
+                
                 default:
                     break;
             }
@@ -153,6 +154,7 @@ namespace IngestTask.Grain
         private StreamSubscriptionHandle<ChannelInfo> _streamHandle;
         private IDisposable _timer;
         private IMapper _mapper;
+        private bool _init;
         public TaskExcutorGrain(IGrainActivationContext grainActivationContext,
             RestClient rest,
             ITaskHandlerFactory handlerfac,
@@ -164,6 +166,7 @@ namespace IngestTask.Grain
             _restClient = rest;
             _handlerFactory = handlerfac;
             _mapper = mapper;
+            _init = false;
         }
 
         public override async Task OnActivateAsync()
@@ -176,12 +179,10 @@ namespace IngestTask.Grain
                                     .GetStream<ChannelInfo>(streamid, Abstraction.Constants.StreamName.DeviceReminder);
             _streamHandle = await streamProvider.SubscribeAsync(new StreamObserver(Logger, OnNextStream)).ConfigureAwait(true);
 
-            if (State.TaskLists.Count > 0)
-            {
-                State.TaskLists.Clear();
-            }
+            
             Logger.Info($" TaskBase active {State.ChannelId}");
             await base.OnActivateAsync();
+
         }
 
         public override async Task OnDeactivateAsync()
@@ -232,19 +233,29 @@ namespace IngestTask.Grain
 
             if (State.TaskLists.Count > 0)
             {
-                var orleansts = TaskScheduler.Current;
-                foreach (var item in State.TaskLists)
+                if (!_init)//初始化要清理过期任务
                 {
-                    if (!item.HandleTask && item.TaskContent != null && item.TaskContent.TaskId > 0)
-                    {
-                        item.HandleTask = true;
-                        _ = Task.Factory.StartNew(async () =>
-                        {
-                            return await HandleTaskAsync(item);
-                        }, CancellationToken.None, TaskCreationOptions.None, scheduler: orleansts);
-                    }
-                    
+                    _init = true;
+                    State.TaskLists.RemoveAll(a => DateTimeFormat.DateTimeFromString(a.TaskContent.End) < DateTime.Now.AddSeconds(-5));
                 }
+
+                if (State.TaskLists.Count > 0)
+                {
+                    var orleansts = TaskScheduler.Current;
+                    foreach (var item in State.TaskLists)
+                    {
+                        if (!item.HandleTask && item.TaskContent != null && item.TaskContent.TaskId > 0)
+                        {
+                            item.HandleTask = true;
+                            _ = Task.Factory.StartNew(async () =>
+                            {
+                                return await HandleTaskAsync(item);
+                            }, CancellationToken.None, TaskCreationOptions.None, scheduler: orleansts);
+                        }
+
+                    }
+                }
+                
             }
         }
 
@@ -327,7 +338,7 @@ namespace IngestTask.Grain
                             else
                             {
                                 //重调度太频繁了，加点延时
-                                await Task.Delay(500);
+                                await Task.Delay(400);
                                 RaiseEvent(new TaskEvent() { OpType = opType.otReDispatch, TaskContentInfo = task.TaskContent });
                                 await ConfirmEvents();
                             }
@@ -409,7 +420,7 @@ namespace IngestTask.Grain
         }
 
         /*
-         * 开始成功就应该监听
+         * 通道的监听完全可以一直开着，为了节省资源，可以关闭
          */
         private async Task OnRunningTaskMonitorAsync(object type)
         {
@@ -427,7 +438,7 @@ namespace IngestTask.Grain
                 return;
             }
 
-            var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync(param.ChannelId);
+            var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync((int)this.State.ChannelId);
             bool runningtask = true;
             if (taskinfolst != null)
             {
@@ -439,7 +450,7 @@ namespace IngestTask.Grain
                 var devicegrain = _services.GetRequiredService<MsvClientCtrlSDK>();
                 if (devicegrain != null)
                 {
-                    var msvtask = await devicegrain.QueryTaskInfoAsync(param.DevicePort, param.DeviceIp, taskid: taskinfolst.TaskId,  Logger);
+                    var msvtask = await devicegrain.QueryTaskInfoAsync(param.DevicePort, param.DeviceIp, testtaskid: taskinfolst.TaskId,  Logger);
                     if (msvtask == null || msvtask.ulID < 1)//说明msv出问题了查不到任务了,采集中剩下部分要跳转, 3次重试后才移动通道 
                     {
                         Logger.Info($"OnRunningTaskMonitorAsync task need to check {taskinfolst.TaskId}");
@@ -519,11 +530,12 @@ namespace IngestTask.Grain
             }
             else
             {
-                Logger.Info($"OnRunningTaskMonitorAsync not runningtask {param.TaskId}");
-                runningtask = false;
+                await Task.Delay(400);//查到了奖励自己不用那么勤快调接口
+                //Logger.Info($"OnRunningTaskMonitorAsync not runningtask {param.TaskId}");
+                //runningtask = false;
             }
 
-            if (!runningtask )//任务都没开始起，说明重试过，直接换任务通道吧
+            if (!runningtask )
             {
                 var info = await _restClient.ReScheduleTaskChannelAsync(param.TaskId);
                 if (info == null)//重新分配任务到其它通道或者啥的
