@@ -50,6 +50,8 @@ namespace IngestTask.Tool.Msv
                     byteL[0] = (byte)(u >> 24);
                     bytes.CopyTo(byteL, 4);
                     udpClient.Client.Blocking = false;
+                    udpClient.Client.SendTimeout = 2000;
+                    udpClient.Client.ReceiveTimeout = 2000;
                     await udpClient.SendAsync(byteL, byteL.Length, remoteIpep).ConfigureAwait(true);
 
                     int buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数   
@@ -128,7 +130,7 @@ namespace IngestTask.Tool.Msv
 
                         buffSizeCurrent = udpClient.Available;//取得缓冲区当前的数据的个数  
 
-                        await Task.Delay(100).ConfigureAwait(true);
+                        await Task.Delay(50).ConfigureAwait(true);
                         //System.Threading.Thread.Sleep(100);
                     }
 
