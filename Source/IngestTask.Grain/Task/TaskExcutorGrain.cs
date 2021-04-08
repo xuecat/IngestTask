@@ -33,6 +33,7 @@ namespace IngestTask.Grain
         public int TaskId { get; set; }
         public TaskType TaskType { get; set; }
         public string BeginTime { get; set; }
+        public string EndTime { get; set; }
         public int ChannelId { get; set; }
         public int DevicePort { get; set; }
         public string DeviceIp { get; set; }
@@ -303,7 +304,7 @@ namespace IngestTask.Grain
                         if (handle != null)
                         {
                             var taskid = await handle.HandleTaskAsync(task, chinfo);
-                            Logger.Info($"handle over {taskid} {task.StartOrStop}");
+                            //Logger.Info($"handle over {taskid} {task.StartOrStop}");
 
                             if (taskid > 0)
                             {
@@ -321,6 +322,7 @@ namespace IngestTask.Grain
                                                                 TaskId = taskid,
                                                                 TaskType = task.TaskContent.TaskType,
                                                                 BeginTime = task.TaskContent.Begin,
+                                                                EndTime = task.TaskContent.End,
                                                                 ChannelId = chinfo.ChannelId,
                                                                 DeviceIp = chinfo.Ip,
                                                                 DevicePort = chinfo.ChannelIndex,
@@ -442,7 +444,7 @@ namespace IngestTask.Grain
 
             var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync(param.ChannelId);
             bool runningtask = true;
-            Logger.Info($"OnRunningTaskMonitorAsync run {param.ChannelId} {param.TaskId}");
+            //Logger.Info($"OnRunningTaskMonitorAsync run {param.ChannelId} {param.TaskId}");
             if (taskinfolst != null)
             {
                 if (taskinfolst.TaskId != param.TaskId)
@@ -534,9 +536,26 @@ namespace IngestTask.Grain
             }
             else
             {
-                await Task.Delay(500);//查到了奖励自己不用那么勤快调接口
-                //Logger.Info($"OnRunningTaskMonitorAsync not runningtask {param.TaskId}");
-                //runningtask = false;
+                if (param.TaskType != TaskType.TT_MANUTASK 
+                    && param.TaskType != TaskType.TT_OPENENDEX)//这个任务开始采集没有成功,要分配到其它通道. 手动任务这些分配先禁止了
+                {
+                    var taskiteminfo = await _restClient.GetTaskDBAsync(param.TaskId);
+                    if (taskiteminfo != null 
+                        && taskiteminfo.State == (int)taskState.tsReady 
+                        && taskiteminfo.DispatchState == (int)dispatchState.dpsRedispatch)
+                    {
+
+                        if (DateTimeFormat.DateTimeFromString(param.EndTime) > DateTime.Now.AddSeconds(3))
+                        {
+                            runningtask = false;
+                        }
+                        
+                        Logger.Info($"OnRunningTaskMonitorAsync not runningtask {param.TaskId} {runningtask}");
+                    }
+                }
+                else
+                    await Task.Delay(500);//查到了奖励自己不用那么勤快调接口
+                
             }
 
             if (!runningtask )
