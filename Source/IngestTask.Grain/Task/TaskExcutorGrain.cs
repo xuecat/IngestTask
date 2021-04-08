@@ -303,6 +303,8 @@ namespace IngestTask.Grain
                         if (handle != null)
                         {
                             var taskid = await handle.HandleTaskAsync(task, chinfo);
+                            Logger.Info($"handle over {taskid} {task.StartOrStop}");
+
                             if (taskid > 0)
                             {
                                 if (task.StartOrStop)
@@ -312,13 +314,7 @@ namespace IngestTask.Grain
                                         _timer.Dispose();
                                         _timer = null;
                                     }
-                                }
 
-                                RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
-                                await ConfirmEvents();
-
-                                if (task.StartOrStop)
-                                {
                                     _timer = RegisterTimer(this.OnRunningTaskMonitorAsync,
                                                             new TimerTask()
                                                             {
@@ -337,8 +333,10 @@ namespace IngestTask.Grain
                                     {
                                         await _restClient.SendMqmsgToKafkaAsync(taskid, 0x01);
                                     }
-
                                 }
+
+                                RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
+                                await ConfirmEvents();
                             }
                             else
                             {
@@ -438,12 +436,13 @@ namespace IngestTask.Grain
 
             if (_timer == null)
             {
+                Logger.Error("timer null");
                 return;
             }
 
-            var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync((int)this.State.ChannelId);
+            var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync(param.ChannelId);
             bool runningtask = true;
-
+            Logger.Info($"OnRunningTaskMonitorAsync run {param.ChannelId} {param.TaskId}");
             if (taskinfolst != null)
             {
                 if (taskinfolst.TaskId != param.TaskId)
