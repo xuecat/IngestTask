@@ -386,7 +386,7 @@ namespace IngestTask.Tool.Msv
                     return Device_State.DISCONNECTTED;
                 }
                
-                logger.Info($"MSVQueryState End, state:{state.msv_capture_state}......");
+                //logger.Info($"MSVQueryState End, state:{state.msv_capture_state}......");
 
                 if (capture)
                 {
