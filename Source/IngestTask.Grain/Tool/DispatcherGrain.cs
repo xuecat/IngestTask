@@ -119,16 +119,34 @@ namespace IngestTask.Grain
                 }
                 else
                 {
-                    var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
-                    if (!add)
+                    if (task.Tasktype == (int)TaskType.TT_PERIODIC && task.OldChannelid == 0)
                     {
                         await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(task);
                     }
-                    else//添加结束的监听
+                    else
                     {
-                        task.State = (int)taskState.tsExecuting;
-                        await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(task);
+                        var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
+                        if (!add)
+                        {
+                            await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(task);
+                        }
+                        else//添加结束的监听
+                        {
+                            task.State = (int)taskState.tsExecuting;
+                            await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(task);
+                        }
                     }
+
+                    //var add = await GrainFactory.GetGrain<ITask>((long)task.Channelid).AddTaskAsync(_mapper.Map<TaskContent>(task));
+                    //if (!add)
+                    //{
+                    //    await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(task);
+                    //}
+                    //else//添加结束的监听
+                    //{
+                    //    task.State = (int)taskState.tsExecuting;
+                    //    await GrainFactory.GetGrain<IReminderTask>(0).UpdateTaskAsync(task);
+                    //}
                 }
             }
         }

@@ -288,11 +288,7 @@ namespace IngestTask.Grain
                     }
                 }
 
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                    _timer = null;
-                }
+                
 
                 /*
                 * flag katamaki任务检测
@@ -309,6 +305,15 @@ namespace IngestTask.Grain
                             var taskid = await handle.HandleTaskAsync(task, chinfo);
                             if (taskid > 0)
                             {
+                                if (task.StartOrStop)
+                                {
+                                    if (_timer != null)
+                                    {
+                                        _timer.Dispose();
+                                        _timer = null;
+                                    }
+                                }
+
                                 RaiseEvent(new TaskEvent() { OpType = opType.otDel, TaskContentInfo = task.TaskContent });
                                 await ConfirmEvents();
 
@@ -419,9 +424,7 @@ namespace IngestTask.Grain
             return true;
         }
 
-        /*
-         * 通道的监听完全可以一直开着，为了节省资源，可以关闭
-         */
+       
         private async Task OnRunningTaskMonitorAsync(object type)
         {
             //    taskid,
@@ -440,6 +443,7 @@ namespace IngestTask.Grain
 
             var taskinfolst = await _restClient.GetChannelCapturingTaskInfoAsync((int)this.State.ChannelId);
             bool runningtask = true;
+
             if (taskinfolst != null)
             {
                 if (taskinfolst.TaskId != param.TaskId)
@@ -447,6 +451,7 @@ namespace IngestTask.Grain
                     Logger.Info($"OnRunningTaskMonitorAsync not runningtask error {taskinfolst.TaskId} {param.TaskId}");
                     runningtask = false;
                 }
+
                 var devicegrain = _services.GetRequiredService<MsvClientCtrlSDK>();
                 if (devicegrain != null)
                 {
@@ -530,7 +535,7 @@ namespace IngestTask.Grain
             }
             else
             {
-                await Task.Delay(400);//查到了奖励自己不用那么勤快调接口
+                await Task.Delay(500);//查到了奖励自己不用那么勤快调接口
                 //Logger.Info($"OnRunningTaskMonitorAsync not runningtask {param.TaskId}");
                 //runningtask = false;
             }
@@ -540,6 +545,7 @@ namespace IngestTask.Grain
                 var info = await _restClient.ReScheduleTaskChannelAsync(param.TaskId);
                 if (info == null)//重新分配任务到其它通道或者啥的
                 {
+                    Logger.Info($"OnRunningTaskMonitorAsync ReScheduleTaskChannelAsync failed");
                     await _restClient.CompleteSynTasksAsync(param.TaskId, taskState.tsInvaild, dispatchState.dpsDispatched, syncState.ssSync);
                 }
 
