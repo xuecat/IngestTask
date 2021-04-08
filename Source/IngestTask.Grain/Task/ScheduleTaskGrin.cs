@@ -211,6 +211,7 @@ namespace IngestTask.Grain
                     {
                         if (task.State == (int)taskState.tsReady)
                         {
+                            Logger.Info($"OnScheduleTaskAsync before : {task.Taskid}, {task.State}, {task.Tasktype}, {task.OldChannelid} , {task.NewBegintime}");
                             if (task.Tasktype == (int)TaskType.TT_PERIODIC
                                 && task.OldChannelid == 0)
                             {

@@ -142,7 +142,7 @@ namespace IngestTask.Grain.Service
                     if (state == Device_State.DISCONNECTTED)
                     {
                         msvmode = MSV_Mode.ERROR;
-                        Logger.Warn($"QueryDeviceState {state}");
+                        Logger.Warn($"QueryDeviceState : {item.Ip}：{item.ChannelIndex}, {state}");
                     }
 
                     bool changedstate = false;
@@ -166,6 +166,7 @@ namespace IngestTask.Grain.Service
                         item.NeedStopFlag = false;
                     }
 
+                    Logger.Info($"OnCheckAllDeviceAsync one : {item.Ip}：{item.ChannelIndex}, {item.LastDevState}, {item.CurrentDevState}, {changedstate}");
                     if (item.LastDevState == Device_State.DISCONNECTTED
                             && item.CurrentDevState == Device_State.WORKING
                             && changedstate)
@@ -182,6 +183,7 @@ namespace IngestTask.Grain.Service
                                 needstop = false;
                             }
 
+                            Logger.Info($"OnCheckAllDeviceAsync two : {item.Ip}：{item.ChannelIndex}, {taskinfo.ulID}, {cptaskinfo?.TaskId}, {needstop}");
                             if (needstop)
                             {
                                 /*
