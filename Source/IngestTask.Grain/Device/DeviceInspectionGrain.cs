@@ -70,21 +70,29 @@ namespace IngestTask.Grain
                 var lstdevice = await _restClient.GetAllDeviceInfoAsync();
                 var channelstate = await _restClient.GetAllChannelStateAsync();
 
-                lock (State)
+                if (lstdevice != null && lstdevice.Count > 0)
                 {
-                    State = Mapper.Map<List<ChannelInfo>>(lstdevice);
-
-                    State.ForEach(x =>
+                    lock (State)
                     {
-                        var info = channelstate.Find(y => y.ChannelId == x.ChannelId);
-                        if (info != null)
+                        State = Mapper.Map<List<ChannelInfo>>(lstdevice);
+
+                        if (channelstate != null)
                         {
-                            x.CurrentDevState = info.DevState;
-                            x.LastMsvMode = info.MsvMode;
-                            x.VtrId = info.VtrId;
+                            State.ForEach(x =>
+                            {
+                                var info = channelstate.Find(y => y.ChannelId == x.ChannelId);
+                                if (info != null)
+                                {
+                                    x.CurrentDevState = info.DevState;
+                                    x.LastMsvMode = info.MsvMode;
+                                    x.VtrId = info.VtrId;
+                                }
+                            });
                         }
-                    });
+                        
+                    }
                 }
+                
                 
             }
             catch (Exception e)

@@ -2,6 +2,7 @@
 namespace IngestTask.Server
 {
     using K4os.Compression.LZ4.Internal;
+    using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Orleans;
     using Orleans.Hosting;
@@ -32,14 +33,16 @@ namespace IngestTask.Server
     {
         private readonly IServiceProvider serviceProvider;
         private readonly IMembershipTable membershipTableProvider;
-        private readonly int stage;
+        private readonly int _stage;
+        private readonly int _mode;
         public IngestTaskSiloLife(
             IServiceProvider serviceProvider,
             int stage)
         {
             this.serviceProvider = serviceProvider;
-            this.stage = stage;
+            this._stage = stage;
             this.membershipTableProvider = serviceProvider.GetRequiredService<IMembershipTable>();
+            _mode = serviceProvider.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>().GetSection("BalanceMode").Get<int>();
         }
 
 
@@ -47,22 +50,32 @@ namespace IngestTask.Server
         public void Participate(ISiloLifecycle lifecycle)
         {
             lifecycle.Subscribe<IngestTaskSiloLife>(
-                this.stage,
+                this._stage,
                 cancellation => this.OnSiloStopAsync());
         }
 
-        private async Task OnSiloStopAsync( )
+        private async Task OnSiloStopAsync()
         {
             if (this.membershipTableProvider != null)
             {
                 try
                 {
-                    await this.membershipTableProvider.InitializeMembershipTable(true).ConfigureAwait(true);
-                    var info = await this.membershipTableProvider.ReadAll().ConfigureAwait(true);
-                    if (info != null && info.Members.Any(x => x.Item1.Status != SiloStatus.Dead))
+                    switch (_mode)
                     {
-                        await membershipTableProvider.DeleteMembershipTableEntries(Abstraction.Constants.Cluster.ClusterId).ConfigureAwait(true);
+                        case 1:
+                            {
+                                await this.membershipTableProvider.InitializeMembershipTable(true).ConfigureAwait(true);
+                                var info = await this.membershipTableProvider.ReadAll().ConfigureAwait(true);
+                                if (info != null && info.Members.Any(x => x.Item1.Status != SiloStatus.Dead))
+                                {
+                                    await membershipTableProvider.DeleteMembershipTableEntries(Abstraction.Constants.Cluster.ClusterId).ConfigureAwait(true);
+                                }
+                            }
+                            break;
+                        default:
+                            break;
                     }
+                    
                 }
                 catch (Exception)
                 {

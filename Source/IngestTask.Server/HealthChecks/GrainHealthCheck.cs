@@ -7,6 +7,7 @@ namespace IngestTask.Server.HealthChecks
     using Orleans;
     using IngestTask.Abstraction.Grains.HealthChecks;
     using Sobey.Core.Log;
+    using IngestTask.Abstraction.Grains;
 
     public class GrainHealthCheck : IHealthCheck
     {
@@ -25,7 +26,12 @@ namespace IngestTask.Server.HealthChecks
         {
             try
             {
-                await this.client.GetGrain<ILocalHealthCheckGrain>(Guid.Empty).CheckAsync().ConfigureAwait(false);
+                var infoschn = await this.client.GetGrain<IDeviceInspections>(0).GetChannelInfosAsync().ConfigureAwait(true);
+                if (infoschn.Count <= 0)
+                {
+                    return HealthCheckResult.Unhealthy("Device Count is error, unhealthy");
+                }
+                //await this.client.GetGrain<ILocalHealthCheckGrain>(Guid.Empty).CheckAsync().ConfigureAwait(false);
             }
 #pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception exception)
