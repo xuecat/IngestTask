@@ -77,9 +77,10 @@ namespace IngestTask.Grain
                         {
                             TaskLists.Add(new TaskFullInfo() { TaskContent = @event.TaskContentInfo, StartOrStop = true, HandleTask = false });
                         }
-                        else
+
+                        if (info.HandleTask)//没做就让他继续做,在做就直接返回
                         {
-                            info.StartOrStop = false;
+                            info.StartOrStop = true;
                             info.HandleTask = false;
                         }
                         
@@ -234,10 +235,10 @@ namespace IngestTask.Grain
 
             if (State.TaskLists.Count > 0)
             {
-                if (!_init)//初始化要清理过期任务
+                if (!_init)//初始化要清理过期任务和手动任务,这些玩意任务都会通过服务器启动重新调度的
                 {
                     _init = true;
-                    State.TaskLists.RemoveAll(a => DateTimeFormat.DateTimeFromString(a.TaskContent.End) < DateTime.Now.AddSeconds(-5));
+                    State.TaskLists.RemoveAll(a => DateTimeFormat.DateTimeFromString(a.TaskContent.End) < DateTime.Now.AddSeconds(-5) || a.TaskContent.TaskType == TaskType.TT_MANUTASK || a.TaskContent.TaskType == TaskType.TT_OPENEND);
                 }
 
                 if (State.TaskLists.Count > 0)
